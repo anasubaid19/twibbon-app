@@ -578,7 +578,7 @@ Tema disimpan di cookie supaya SSR tidak berkedip."
 {
   "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
   "files": {
-    "includes": ["src/**", "tests/**", "*.config.ts"],
+    "includes": ["src/**", "tests/**", "*.config.ts", "!src/routeTree.gen.ts"],
     "ignoreUnknown": true
   },
   "formatter": {
@@ -590,7 +590,7 @@ Tema disimpan di cookie supaya SSR tidak berkedip."
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": { "noConsole": "warn" }
     }
   },
@@ -605,8 +605,19 @@ Tema disimpan di cookie supaya SSR tidak berkedip."
 
 ```bash
 bun run check
+git status --porcelain src/routeTree.gen.ts
 ```
-Expected: `Checked N files`. `routeTree.gen.ts` tidak diperiksa karena tidak masuk `includes`.
+Expected: `Checked N files`, tanpa peringatan deprecated, dan `git status`
+tidak mengeluarkan apa pun.
+
+> `src/routeTree.gen.ts` **wajib** dikecualikan lewat `!src/routeTree.gen.ts`.
+> Pola `src/**` mencakupnya, dan tanpa negasi itu Biome akan memformat ulang
+> berkas tersebut serta menghapus `import type { createStart }` yang justru
+> dipakai blok `declare module` di dalamnya. Karena plugin TanStack menulis
+> ulang berkas ini setiap `bun dev`, keduanya akan saling menimpa tanpa henti.
+
+> Gunakan `"preset": "recommended"`, bukan `"recommended": true` — bentuk lama
+> sudah deprecated di Biome 2.5 dan akan dihapus di versi mayor berikutnya.
 
 - [ ] **Step 3: Commit**
 
