@@ -1039,6 +1039,10 @@ export const auth = betterAuth({
         required: false,
         // input: false — klien tidak boleh menentukan hash-nya sendiri.
         input: false,
+        // returned: false — dan tidak boleh ikut terkirim balik. Tanpa ini
+        // /sign-in/username dan /get-session mengembalikan objek user
+        // lengkap beserta hash-nya di badan respons JSON.
+        returned: false,
       },
     },
   },
@@ -1285,11 +1289,36 @@ export const registerUser = createServerFn({ method: 'POST' })
 
     // Ditempelkan setelah pendaftaran karena recoveryCodeHash memakai
     // input:false — klien tidak boleh menentukannya lewat endpoint sign-up.
-    await db.update(user).set({ recoveryCodeHash }).where(eq(user.id, result.user.id))
+    //
+    // Dua penulisan ini TIDAK bisa dijadikan satu transaksi: signUpEmail
+    // berjalan lewat koneksi milik Better Auth sendiri, di luar kendali kita.
+    // Jadi dipakai kompensasi. Kalau tanpa ini penulisan kedua gagal, yang
+    // tertinggal adalah akun dengan recovery_code_hash NULL: kode plaintext
+    // sudah hilang, username tidak bisa didaftarkan ulang ("already taken"),
+    // dan reset langsung ditolak karena tidak ada hash. Di aplikasi tanpa
+    // email, itu terkunci permanen tanpa jalan pulih apa pun.
+    try {
+      await db.update(user).set({ recoveryCodeHash }).where(eq(user.id, result.user.id))
+    } catch (error) {
+      // Kembalikan ke keadaan semula supaya username bebas dan pengguna bisa
+      // mencoba lagi. Baris session dan account ikut terhapus lewat cascade.
+      await db.delete(user).where(eq(user.id, result.user.id))
+      /* biome-ignore lint/suspicious/noConsole: kegagalan ini menghapus akun
+         yang baru saja dibuat — harus meninggalkan jejak untuk diselidiki. */
+      console.error('Gagal menyimpan recovery code, pendaftaran dibatalkan:', error)
+      throw new Error('Pendaftaran gagal, silakan coba lagi')
+    }
 
     // Satu-satunya kesempatan kode ini terlihat.
     return { recoveryCode }
   })
+
+/**
+ * Hash boneka untuk menyetarakan waktu respons saat username tidak ditemukan.
+ * Dihitung sekali saat modul dimuat; isinya tidak pernah cocok dengan kode apa
+ * pun karena berasal dari nilai acak yang langsung dibuang.
+ */
+const DUMMY_HASH = await hashRecoveryCode(generateRecoveryCode())
 
 const resetSchema = z.object({
   username: usernameSchema,
@@ -1309,7 +1338,18 @@ export const resetPassword = createServerFn({ method: 'POST' })
     // Pesan yang sama untuk username tidak ada maupun kode salah, supaya
     // tidak bisa dipakai menebak username mana yang terdaftar.
     const invalid = new Error('Username atau recovery code salah')
-    if (!found?.recoveryCodeHash) throw invalid
+
+    if (!found?.recoveryCodeHash) {
+      // Pesan seragam saja tidak cukup: tanpa baris ini, "username tidak ada"
+      // balas dalam ~3ms sementara "kode salah" butuh ~40ms karena menjalankan
+      // scrypt. Selisih itu stopwatch sederhana pun bisa membacanya, dan
+      // enumerasi username yang hendak dicegah pesan seragam tadi jadi
+      // terbuka lagi. Jalankan verifikasi boneka supaya waktunya setara —
+      // pola yang sama dipakai Better Auth di handler sign-in miliknya.
+      await verifyRecoveryCode(data.recoveryCode, DUMMY_HASH)
+      throw invalid
+    }
+
     if (!(await verifyRecoveryCode(data.recoveryCode, found.recoveryCodeHash))) throw invalid
 
     const ctx = await auth.$context
