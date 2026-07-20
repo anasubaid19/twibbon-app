@@ -1422,6 +1422,26 @@ bocor username mana yang terdaftar."
 - Consumes: `registerUser` (Task 8), `ThemeToggle` (Task 2)
 - Produces: rute `/register`
 
+> **Dua error typecheck DIHARAPKAN di task ini.** Halaman ini menaut ke
+> `/login` dan `/dashboard`, yang baru lahir di Task 10, dan TanStack Router
+> mengetikkan daftar route secara ketat:
+>
+> ```
+> src/routes/register.tsx(…): error TS2322: Type '"/dashboard"' is not assignable to type …
+> src/routes/register.tsx(…): error TS2322: Type '"/login"' is not assignable to type …
+> ```
+>
+> **Tepat dua error itu, tidak lebih.** Error lain apa pun adalah masalah nyata.
+>
+> Ketiga halaman auth saling menaut melingkar — daftar → masuk, masuk →
+> reset, reset → masuk — jadi tidak ada urutan pengerjaan yang menghindari
+> forward-reference ini. Membuat stub route hanya untuk menyenangkan
+> typecheck berarti menulis kode yang tidak melayani siapa pun, jadi
+> kegagalan ini diterima secara sadar, dibatasi, dan **wajib kembali nol di
+> Task 11** saat rute terakhir mendarat. Sampai saat itu, `bun run typecheck`
+> bukan gerbang commit untuk Task 9 dan 10; `bun run check` dan `bun test`
+> tetap gerbang.
+
 - [ ] **Step 1: Buat `src/routes/register.tsx`**
 
 ```tsx
@@ -1601,6 +1621,18 @@ git commit -m "feat: halaman daftar dengan penyerahan recovery code"
 **Interfaces:**
 - Consumes: `authClient` (Task 7), `getSession` (Task 7)
 - Produces: rute `/login` dan `/dashboard`; `/dashboard` melempar ke `/login` bila tidak ada sesi
+
+> **Satu error typecheck DIHARAPKAN di task ini** — halaman masuk menaut ke
+> `/lupa-password`, yang baru lahir di Task 11:
+>
+> ```
+> src/routes/login.tsx(…): error TS2322: Type '"/lupa-password"' is not assignable to type …
+> ```
+>
+> Dua error milik Task 9 (`/login`, `/dashboard`) justru **hilang** begitu
+> task ini selesai, karena kedua rute itu kini ada. Jadi hitungannya turun
+> dari 2 menjadi 1. Kalau tidak turun, ada yang salah. Error lain apa pun
+> adalah masalah nyata. Lihat catatan di Task 9 untuk alasannya.
 
 - [ ] **Step 1: Buat `src/routes/login.tsx`**
 
@@ -1793,6 +1825,12 @@ aplikasi lama."
 **Interfaces:**
 - Consumes: `resetPassword` (Task 8)
 - Produces: rute `/lupa-password`
+
+> **Task ini menutup utang typecheck.** Rute terakhir mendarat di sini, jadi
+> `bun run typecheck` **wajib kembali ZERO error** sebelum commit. Hitungannya
+> bergerak 2 (Task 9) → 1 (Task 10) → 0 (di sini). Kalau tidak sampai nol,
+> task ini belum selesai — jangan commit, laporkan angkanya beserta teks
+> error yang tersisa.
 
 - [ ] **Step 1: Buat `src/routes/lupa-password.tsx`**
 
