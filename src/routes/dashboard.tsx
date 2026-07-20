@@ -14,7 +14,7 @@ export const Route = createFileRoute('/dashboard')({
     // memakainya atau tidak. Mengembalikan `session` utuh berarti mengirim
     // email sintetis <username>@openframe.local ke sumber halaman, yang
     // membocorkan pola internal yang pengguna tidak boleh tahu ada.
-    return { username: session.user.username ?? session.user.name }
+    return { username: session.user.username }
   },
   component: DashboardPage,
 })

@@ -5,13 +5,12 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
-    "start": "node .output/server/index.mjs",
+    "start": "echo 'Penyajian produksi belum disambungkan (lihat README). Pakai: bun dev' && exit 1",
     "test": "bun test",
     "check": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "auth:generate": "bunx @better-auth/cli generate --config src/lib/auth.ts --output src/db/auth-schema.ts"
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@tanstack/react-router": "^1.170.18",
