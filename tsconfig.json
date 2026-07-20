@@ -12,7 +12,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "types": ["vite/client", "bun-types"],
+    "types": ["vite/client", "bun"],
     "baseUrl": ".",
     "paths": { "@/*": ["./src/*"] }
   },
