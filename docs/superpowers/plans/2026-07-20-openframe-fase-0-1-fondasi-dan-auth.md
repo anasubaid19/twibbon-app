@@ -436,7 +436,12 @@ Memindahkan bahasa visual dari `index.css` lama ke Tailwind v4. Nilai diambil pe
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: !important wajib di sini
+       supaya override reduced-motion mengalahkan animasi inline. Biome
+       menandai fix ini FIXABLE — tanpa suppression, `--unsafe` akan
+       menghapusnya dan mematikan dukungan reduced-motion tanpa suara. */
     animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: alasan sama */
     transition-duration: 0.01ms !important;
   }
 }
@@ -461,6 +466,9 @@ export function ThemeToggle() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
+    // biome-ignore lint/suspicious/noDocumentCookie: Biome menyarankan
+    // CookieStore API, tapi Safari belum mendukungnya. document.cookie
+    // jalan di semua browser dan penulisannya sepele di sini.
     document.cookie = `theme=${theme}; path=/; max-age=31536000; samesite=lax`
   }, [theme])
 
@@ -597,9 +605,16 @@ Tema disimpan di cookie supaya SSR tidak berkedip."
   "javascript": {
     "formatter": { "quoteStyle": "single", "semicolons": "asNeeded" }
   },
+  "css": {
+    "parser": { "tailwindDirectives": true }
+  },
   "assist": { "actions": { "source": { "organizeImports": "on" } } }
 }
 ```
+
+> `css.parser.tailwindDirectives` wajib ada. Tanpanya parser CSS Biome
+> menolak sintaks Tailwind v4 (`@theme`, `@custom-variant`) yang dipakai
+> Task 2, dan `bun run check` gagal.
 
 - [ ] **Step 2: Jalankan dan perbaiki**
 
