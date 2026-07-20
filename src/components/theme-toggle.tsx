@@ -12,6 +12,7 @@ export function ThemeToggle() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
+    // biome-ignore lint/suspicious/noDocumentCookie: Biome menyarankan CookieStore API, tapi Safari belum mendukungnya. document.cookie jalan di semua browser dan penulisannya sepele di sini.
     document.cookie = `theme=${theme}; path=/; max-age=31536000; samesite=lax`
   }, [theme])
 

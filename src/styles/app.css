@@ -77,7 +77,12 @@
   *,
   *::before,
   *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: !important wajib di sini
+       supaya override reduced-motion mengalahkan animasi inline. Biome
+       menandai fix ini FIXABLE — tanpa suppression, `--unsafe` akan
+       menghapusnya dan mematikan dukungan reduced-motion tanpa suara. */
     animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: alasan sama */
     transition-duration: 0.01ms !important;
   }
 }
