@@ -12,6 +12,12 @@
 
 ---
 
+> **Catatan `biome-ignore`:** komentar suppression harus **persis** mendahului
+> baris yang ditandai. Kalau alasannya lebih dari satu baris, tulis sebagai
+> blok `/* ... */`, bukan beberapa baris `//` — bentuk `//` bertingkat
+> memutus kaitannya dan Biome melaporkan `Suppression comment has no effect`
+> sambil tetap memunculkan peringatan aslinya.
+
 ## Global Constraints
 
 Berlaku untuk **setiap** task di bawah ini.
@@ -473,10 +479,10 @@ export function ThemeToggle() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    // biome-ignore lint/suspicious/noDocumentCookie: CookieStore API bersifat
-    // async dan mengembalikan Promise yang harus ditangani di dalam effect.
-    // Untuk satu penulisan sepele seperti ini, document.cookie yang sinkron
-    // lebih sederhana dan tidak punya kegagalan yang perlu diurus.
+    /* biome-ignore lint/suspicious/noDocumentCookie: CookieStore API bersifat
+       async dan mengembalikan Promise yang harus ditangani di dalam effect.
+       Untuk satu penulisan sepele seperti ini, document.cookie yang sinkron
+       lebih sederhana dan tidak punya kegagalan yang perlu diurus. */
     document.cookie = `theme=${theme}; path=/; max-age=31536000; samesite=lax`
   }, [theme])
 
