@@ -1757,14 +1757,23 @@ function LoginPage() {
     event.preventDefault()
     setError('')
     setLoading(true)
-    const { error: authError } = await authClient.signIn.username({ username, password })
-    setLoading(false)
-    if (authError) {
-      // Pesan seragam: jangan bocorkan username mana yang terdaftar.
-      setError('Username atau password salah')
-      return
+    try {
+      const { error: authError } = await authClient.signIn.username({ username, password })
+      if (authError) {
+        // Pesan seragam: jangan bocorkan username mana yang terdaftar.
+        setError('Username atau password salah')
+        return
+      }
+      navigate({ to: '/dashboard' })
+    } catch (err) {
+      // authClient MELEMPAR saat jaringan putus — @better-fetch/fetch tidak
+      // membungkus fetch() dengan try/catch. Tanpa blok ini tombolnya
+      // terkunci selamanya di "Memproses..." tanpa pesan apa pun, dan
+      // formnya tidak bisa dipakai sampai halaman dimuat ulang.
+      setError(pesanError(err))
+    } finally {
+      setLoading(false)
     }
-    navigate({ to: '/dashboard' })
   }
 
   return (
@@ -1856,7 +1865,12 @@ export const Route = createFileRoute('/dashboard')({
   beforeLoad: async () => {
     const session = await getSession()
     if (!session) throw redirect({ to: '/login' })
-    return { session }
+    // Kembalikan HANYA yang dipakai. TanStack Start men-serialisasi apa pun
+    // yang dikembalikan beforeLoad ke payload hidrasi, tak peduli komponennya
+    // memakainya atau tidak. Mengembalikan `session` utuh berarti mengirim
+    // email sintetis <username>@openframe.local ke sumber halaman, yang
+    // membocorkan pola internal yang pengguna tidak boleh tahu ada.
+    return { username: session.user.username ?? session.user.name }
   },
   component: DashboardPage,
 })
