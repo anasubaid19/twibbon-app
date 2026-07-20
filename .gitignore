@@ -1,8 +1,11 @@
-node_modules/
+node_modules
+.output
+.vinxi
+.tanstack
+dist
 .env
-dist/
-build/
+uploads
+*.tsbuildinfo
 .DS_Store
 *.log
-*.sqlite
-backend/uploads/
+.superpowers
