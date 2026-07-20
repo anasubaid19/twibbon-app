@@ -191,7 +191,10 @@ export default defineConfig({
 
 - [ ] **Step 6: Buat `.gitignore` dan berkas environment**
 
-`.gitignore`:
+`.gitignore` — **tambahkan** ke berkas yang sudah ada, jangan timpa. Baris
+`.superpowers` yang sudah ada wajib dipertahankan (di situ ledger eksekusi
+disimpan):
+
 ```
 node_modules
 .output
@@ -201,7 +204,13 @@ dist
 .env
 uploads
 *.tsbuildinfo
+.DS_Store
+*.log
+.superpowers
 ```
+
+Entri lama `*.sqlite` dan `backend/uploads/` boleh dibuang — keduanya merujuk
+ke backend yang baru saja dihapus.
 
 `.env.example`:
 ```
@@ -240,22 +249,25 @@ Token lengkap menyusul di Task 2. Untuk sekarang cukup agar build jalan.
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 
-export function createRouter() {
+export function getRouter() {
   return createTanStackRouter({
     routeTree,
     scrollRestoration: true,
     defaultPreload: 'intent',
   })
 }
-
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: ReturnType<typeof createRouter>
-  }
-}
 ```
 
-> `routeTree.gen.ts` dihasilkan otomatis oleh plugin saat `bun dev` pertama kali. Editor akan menandai impor ini merah sampai itu terjadi — itu wajar.
+> **Namanya harus persis `getRouter`.** TanStack Start 1.168 mencari ekspor
+> bernama `getRouter` di berkas entri; nama lain menghasilkan
+> `TypeError: entries.routerEntry.getRouter is not a function` pada setiap
+> request. `routeTree.gen.ts` yang digenerate juga mengimpor nama itu
+> (`import type { getRouter } from './router.tsx'`).
+
+> Tidak perlu blok `declare module` manual di sini. `routeTree.gen.ts`
+> sudah men-declare `Register` untuk `@tanstack/react-start` sendiri.
+
+> `routeTree.gen.ts` dihasilkan otomatis oleh plugin saat `bun dev` pertama kali. Editor akan menandai impor ini merah sampai itu terjadi — itu wajar. Berkas ini **di-commit** (konvensi TanStack), bukan di-ignore.
 
 - [ ] **Step 9: Buat `src/routes/__root.tsx`**
 
