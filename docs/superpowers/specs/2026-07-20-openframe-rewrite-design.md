@@ -95,19 +95,24 @@ dan memvalidasi frame yang diunggah.
 **Nama paket adapter.** SETUP_PROMPT menulis `@better-auth/drizzle`; nama
 yang benar `@better-auth/drizzle-adapter`.
 
-### 3.2 Konflik Bun vs Vite
+### 3.2 Bun dan Vite
 
-`CLAUDE.md` global menyatakan *"Don't use vite."* TanStack Start dibangun
-di atas Vite dan tidak bisa berjalan tanpanya.
+**Diputuskan: Vite dipakai, menyesuaikan TanStack Start.**
 
-Resolusi: Bun dipakai sebagai runtime, package manager, dan test runner
-(`bun install`, `bun run`, `bun test`). Vite tetap ada sebagai bagian tak
-terpisahkan dari TanStack Start. Larangan di CLAUDE.md dibaca sebagai
-"jangan pilih Vite ketika ada pilihan lain" — di sini tidak ada.
+`/Users/anasubaid19/CLAUDE.md` menyatakan *"Don't use vite."* Berkas itu
+berada di home directory, bukan di project ini, dan tidak ter-track di
+repo `twibbon-app` — isinya boilerplate Bun umum yang berlaku ke semua
+project di bawah `~`. Ia tidak pernah ditulis untuk OpenFrame, sedangkan
+PRD dan SETUP_PROMPT ditulis khusus untuk OpenFrame. Yang spesifik menang.
 
-Jika larangan itu ternyata mutlak, TanStack Start harus diganti, dan
-seluruh SETUP_PROMPT gugur. Itu keputusan yang harus diambil sebelum
-implementasi dimulai, bukan di tengah jalan.
+Pembagiannya:
+
+- **Vite** — bundler dan dev server, bawaan TanStack Start, dipakai apa
+  adanya tanpa dilawan.
+- **Bun** — runtime, package manager (`bun install`), penjalan skrip
+  (`bun run`), dan test runner (`bun test`).
+
+Keduanya bekerja bersama; tidak ada yang perlu dikorbankan.
 
 ---
 
