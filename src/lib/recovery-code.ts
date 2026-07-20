@@ -26,13 +26,21 @@ export async function hashRecoveryCode(code: string): Promise<string> {
 }
 
 export async function verifyRecoveryCode(code: string, stored: string): Promise<boolean> {
+  // Bentuk sah: "<salt hex>:<turunan hex>". Nilai tersimpan yang cacat adalah
+  // jalur yang memang diharapkan — diperiksa terang-terangan di sini, bukan
+  // ditangkap sebagai exception, supaya `catch` di bawah hanya menyisakan
+  // hal-hal yang benar-benar tak terduga.
+  const parts = typeof stored === 'string' ? stored.split(':') : []
+  const [saltHex, hashHex] = parts
+  if (!saltHex || !hashHex) return false
+
+  const expected = Buffer.from(hashHex, 'hex')
+  // Buffer.from memotong diam-diam pada hex yang tidak valid, jadi panjangnya
+  // yang menentukan — sekaligus menjamin timingSafeEqual tidak pernah menerima
+  // dua buffer berbeda panjang (ia melempar kalau itu terjadi).
+  if (expected.length !== KEY_LENGTH) return false
+
   try {
-    const [saltHex, hashHex] = stored.split(':')
-    if (!saltHex || !hashHex) return false
-
-    const expected = Buffer.from(hashHex, 'hex')
-    if (expected.length !== KEY_LENGTH) return false
-
     const derived = (await scryptAsync(
       normalize(code),
       Buffer.from(saltHex, 'hex'),
@@ -41,8 +49,14 @@ export async function verifyRecoveryCode(code: string, stored: string): Promise<
 
     // Perbandingan waktu-tetap: jangan bocorkan berapa banyak byte yang cocok.
     return timingSafeEqual(expected, derived)
-  } catch {
-    // Hash rusak atau formatnya tidak dikenal — perlakukan sebagai tidak cocok.
+  } catch (error) {
+    /* biome-ignore lint/suspicious/noConsole: sampai di sini berarti ada yang
+       tidak beres di luar dugaan — bukan sekadar kode salah, karena semua
+       bentuk cacat yang diharapkan sudah disaring di atas. Tetap gagal
+       tertutup, tapi jangan ditelan diam-diam: di aplikasi tanpa email,
+       recovery code adalah satu-satunya jalan pulih, jadi kegagalan yang
+       tak terjelaskan harus meninggalkan jejak untuk diselidiki. */
+    console.error('verifyRecoveryCode gagal tak terduga:', error)
     return false
   }
 }

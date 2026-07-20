@@ -13,9 +13,13 @@ describe('generateRecoveryCode', () => {
 })
 
 describe('hashRecoveryCode', () => {
-  test('hash tidak sama dengan kode aslinya', async () => {
+  test('kode aslinya tidak muncul di mana pun dalam hash', async () => {
+    // Bukan sekadar `not.toBe(code)` — itu masih lolos kalau implementasinya
+    // menyisipkan kode apa adanya, misal `${salt}:${code}`.
     const code = generateRecoveryCode()
-    expect(await hashRecoveryCode(code)).not.toBe(code)
+    const hash = await hashRecoveryCode(code)
+    expect(hash).not.toContain(code)
+    expect(hash).not.toContain(code.replace(/-/g, ''))
   })
 
   test('dua hash dari kode sama tetap berbeda karena salt', async () => {
@@ -47,7 +51,24 @@ describe('verifyRecoveryCode', () => {
     expect(await verifyRecoveryCode(code.toLowerCase(), hash)).toBe(true)
   })
 
-  test('mengembalikan false untuk hash yang rusak, bukan melempar error', async () => {
-    expect(await verifyRecoveryCode(generateRecoveryCode(), 'bukan-hash')).toBe(false)
+  // Bentuk-bentuk nilai tersimpan yang rusak. Yang penting bukan cuma
+  // "kembalikan false", tapi "jangan melempar" — verifyRecoveryCode dipanggil
+  // di jalur reset password, dan exception di sana mengunci pengguna keluar
+  // dari satu-satunya cara pulih yang ia punya.
+  test.each([
+    ['tanpa titik dua', 'bukan-hash'],
+    ['titik dua tapi hex tidak valid', 'zzzz:zzzz'],
+    ['hex valid tapi terlalu pendek', 'aabb:ccdd'],
+    ['salt kosong', ':abcdef'],
+    ['bagian hash kosong', 'abcdef:'],
+    ['string kosong', ''],
+  ])('mengembalikan false untuk nilai tersimpan %s', async (_label, stored) => {
+    expect(await verifyRecoveryCode(generateRecoveryCode(), stored)).toBe(false)
+  })
+
+  test('mengembalikan false, bukan melempar, saat nilai tersimpan bukan string', async () => {
+    // Bisa terjadi kalau kolomnya NULL di database.
+    const nilaiTakTerduga = null as unknown as string
+    expect(await verifyRecoveryCode(generateRecoveryCode(), nilaiTakTerduga)).toBe(false)
   })
 })
