@@ -24,6 +24,10 @@ export const auth = betterAuth({
         required: false,
         // input: false — klien tidak boleh menentukan hash-nya sendiri.
         input: false,
+        // returned: false — dan tidak boleh ikut terkirim balik. Tanpa ini
+        // /sign-in/username dan /get-session mengembalikan objek user
+        // lengkap beserta hash-nya di badan respons JSON.
+        returned: false,
       },
     },
   },
