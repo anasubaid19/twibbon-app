@@ -59,6 +59,7 @@ Yang dibuat dalam plan ini. Berkas untuk campaign/slot **tidak** termasuk — it
 | `src/db/schema.ts` | Tabel Better Auth + `recoveryCodeHash` |
 | `src/db/index.ts` | Klien Drizzle |
 | `src/lib/recovery-code.ts` | Generate, format, hash, verifikasi kode |
+| `src/lib/pesan-error.ts` | Terjemahkan error mentah jadi kalimat Indonesia |
 | `src/lib/auth.ts` | Konfigurasi server Better Auth |
 | `src/lib/auth-client.ts` | Klien Better Auth (browser) |
 | `src/server/auth.ts` | Server function: daftar, reset, sesi |
@@ -1413,6 +1414,107 @@ bocor username mana yang terdaftar."
 
 ---
 
+## Task 9a: Penerjemah pesan error
+
+Tanpa lapisan ini, tiga jalur paling umum di form pendaftaran menampilkan
+teks Inggris mentah ke pengguna: dump JSON `ZodError`, `"Username is already
+taken."` dari Better Auth, dan `"Failed to fetch"` dari browser.
+
+**Files:**
+- Create: `src/lib/pesan-error.ts`
+- Test: `tests/lib/pesan-error.test.ts`
+
+**Interfaces:**
+- Produces: `pesanError(err: unknown): string` — selalu mengembalikan kalimat
+  Bahasa Indonesia yang layak dibaca pengguna
+
+```ts
+/** Padanan Indonesia untuk pesan yang datang dari pustaka pihak ketiga. */
+const PADANAN: ReadonlyArray<readonly [RegExp, string]> = [
+  [/already taken|already exists/i, 'Username ini sudah dipakai. Coba yang lain.'],
+  [/failed to fetch|networkerror|load failed/i, 'Gagal terhubung ke server. Cek koneksi kamu, lalu coba lagi.'],
+  [/invalid username or password/i, 'Username atau password salah.'],
+  [/password too short|minPasswordLength/i, 'Password minimal 6 karakter.'],
+]
+
+const UMUM = 'Terjadi kesalahan. Coba lagi sebentar lagi.'
+
+/**
+ * Zod yang dilempar dari server function tiba sebagai JSON array of issues
+ * di dalam `message`. Ambil kalimat pertamanya — pesan Zod di proyek ini
+ * memang sudah ditulis dalam Bahasa Indonesia.
+ */
+function pesanZod(message: string): string | null {
+  try {
+    const parsed: unknown = JSON.parse(message)
+    if (!Array.isArray(parsed)) return null
+    const pertama = parsed[0]
+    if (pertama && typeof pertama === 'object' && 'message' in pertama) {
+      const m = (pertama as { message: unknown }).message
+      if (typeof m === 'string' && m.length > 0) return m
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+export function pesanError(err: unknown): string {
+  if (!(err instanceof Error) || !err.message) return UMUM
+
+  const dariZod = pesanZod(err.message)
+  if (dariZod) return dariZod
+
+  for (const [pola, padanan] of PADANAN) {
+    if (pola.test(err.message)) return padanan
+  }
+
+  // Jangan tampilkan pesan asing apa adanya — pengguna tidak bisa berbuat
+  // apa-apa dengan "TypeError: undefined is not a function".
+  return UMUM
+}
+```
+
+```ts
+// tests/lib/pesan-error.test.ts
+import { describe, expect, test } from 'bun:test'
+import { pesanError } from '@/lib/pesan-error'
+
+describe('pesanError', () => {
+  test('mengambil kalimat pertama dari ZodError yang ter-serialisasi', () => {
+    const zod = new Error(JSON.stringify([{ code: 'too_small', message: 'Username minimal 3 karakter' }]))
+    expect(pesanError(zod)).toBe('Username minimal 3 karakter')
+  })
+
+  test.each([
+    ['Username is already taken. Please try another.', 'Username ini sudah dipakai. Coba yang lain.'],
+    ['Failed to fetch', 'Gagal terhubung ke server. Cek koneksi kamu, lalu coba lagi.'],
+    ['Invalid username or password', 'Username atau password salah.'],
+  ])('menerjemahkan %p', (masuk, keluar) => {
+    expect(pesanError(new Error(masuk))).toBe(keluar)
+  })
+
+  test('tidak pernah membocorkan pesan asing yang tidak dikenal', () => {
+    expect(pesanError(new Error('TypeError: undefined is not a function'))).toBe(
+      'Terjadi kesalahan. Coba lagi sebentar lagi.',
+    )
+  })
+
+  test('menangani nilai yang bukan Error', () => {
+    expect(pesanError('cuma string')).toBe('Terjadi kesalahan. Coba lagi sebentar lagi.')
+    expect(pesanError(null)).toBe('Terjadi kesalahan. Coba lagi sebentar lagi.')
+  })
+
+  test('hasilnya tidak pernah kosong', () => {
+    for (const kasus of [new Error(''), new Error('  '), undefined, 42]) {
+      expect(pesanError(kasus).length).toBeGreaterThan(0)
+    }
+  })
+})
+```
+
+---
+
 ## Task 9: Halaman daftar
 
 **Files:**
@@ -2049,7 +2151,7 @@ Kode lama hangus setelah dipakai dan diganti kode baru."
 ```bash
 bun test
 ```
-Expected: PASS, 18 test (15 recovery code + 3 synthetic email), 0 gagal.
+Expected: PASS, 25 test (15 recovery code + 3 synthetic email + 7 pesan-error), 0 gagal.
 
 - [ ] **Step 2: Pastikan build produksi berhasil**
 
@@ -2147,7 +2249,7 @@ Drizzle, dan autentikasi username + recovery code tanpa email."
 - [ ] `backend/` dan `frontend/` terhapus; riwayatnya tetap ada di `81149b9`
 - [ ] `bun dev` menyalakan aplikasi di port 3000
 - [ ] `bun run build` berhasil
-- [ ] `bun test` lulus semua (18 test)
+- [ ] `bun test` lulus semua (25 test)
 - [ ] `bun run check` bersih
 - [ ] Latar `#0B0B0D`, accent `#CAFF33`, judul Bricolage Grotesque, isi Nunito
 - [ ] Toggle tema bertahan setelah muat ulang, tanpa kedipan saat SSR
