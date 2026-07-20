@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { pesanError } from '@/lib/pesan-error'
 import { registerUser } from '@/server/auth'
 
 export const Route = createFileRoute('/register')({ component: RegisterPage })
@@ -13,6 +14,9 @@ function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [recoveryCode, setRecoveryCode] = useState('')
   const [copied, setCopied] = useState(false)
+  const [copyError, setCopyError] = useState('')
+  const [confirmed, setConfirmed] = useState(false)
+  const recoveryHeadingRef = useRef<HTMLHeadingElement>(null)
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -22,23 +26,49 @@ function RegisterPage() {
       const result = await registerUser({ data: { username, password } })
       setRecoveryCode(result.recoveryCode)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Terjadi kesalahan')
+      setError(pesanError(err))
     } finally {
       setLoading(false)
     }
   }
 
   async function copyCode() {
-    await navigator.clipboard.writeText(recoveryCode)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(recoveryCode)
+      setCopyError('')
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopied(false)
+      setCopyError('Gagal menyalin otomatis. Salin kode di atas secara manual.')
+    }
   }
+
+  useEffect(() => {
+    if (!recoveryCode) return
+    recoveryHeadingRef.current?.focus()
+  }, [recoveryCode])
+
+  useEffect(() => {
+    if (!recoveryCode || confirmed) return
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault()
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [recoveryCode, confirmed])
 
   if (recoveryCode) {
     return (
       <main className="flex min-h-screen items-center justify-center p-6">
         <div className="w-full max-w-md rounded-card border border-border bg-surface p-9">
-          <h1 className="mb-1 font-display text-2xl">🔑 Simpan Kode</h1>
+          <h1
+            ref={recoveryHeadingRef}
+            tabIndex={-1}
+            className="mb-1 font-display text-2xl outline-none"
+          >
+            🔑 Simpan Kode
+          </h1>
           <p className="mb-7 text-sm text-muted">
             Akun berhasil dibuat! Kode ini <strong>hanya muncul sekali</strong> — simpan di tempat
             aman seperti catatan atau password manager.
@@ -52,6 +82,15 @@ function RegisterPage() {
             ⚠️ Tanpa kode ini, kamu tidak bisa reset password kalau lupa.
           </p>
 
+          {copyError && (
+            <p
+              role="alert"
+              className="mb-3 rounded-sm border border-danger/30 bg-danger/10 p-3 text-sm text-danger"
+            >
+              {copyError}
+            </p>
+          )}
+
           <button
             type="button"
             onClick={copyCode}
@@ -59,10 +98,22 @@ function RegisterPage() {
           >
             {copied ? '✅ Tersalin!' : '📋 Salin Recovery Code'}
           </button>
+
+          <label className="mb-3 flex items-start gap-2 text-sm text-muted">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(e) => setConfirmed(e.target.checked)}
+              className="mt-0.5"
+            />
+            Saya sudah menyimpan recovery code ini di tempat aman
+          </label>
+
           <button
             type="button"
+            disabled={!confirmed}
             onClick={() => navigate({ to: '/dashboard' })}
-            className="w-full rounded-pill bg-accent py-3 font-semibold text-bg transition-transform hover:-translate-y-px"
+            className="w-full rounded-pill bg-accent py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             Sudah disimpan → Masuk Dashboard
           </button>
@@ -86,7 +137,10 @@ function RegisterPage() {
         </p>
 
         {error && (
-          <p className="mb-4 rounded-sm border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
+          <p
+            role="alert"
+            className="mb-4 rounded-sm border border-danger/30 bg-danger/10 p-3 text-sm text-danger"
+          >
             {error}
           </p>
         )}
@@ -100,7 +154,7 @@ function RegisterPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              // biome-ignore lint/a11y/noAutofocus: field pertama pada halaman khusus pendaftaran
+              /* biome-ignore lint/a11y/noAutofocus: field pertama pada halaman khusus pendaftaran */
               autoFocus
               placeholder="pilih username unik"
               className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-accent"
