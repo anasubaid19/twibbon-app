@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { authClient } from '@/lib/auth-client'
+import { pesanError } from '@/lib/pesan-error'
 
 export const Route = createFileRoute('/login')({ component: LoginPage })
 
@@ -16,14 +17,23 @@ function LoginPage() {
     event.preventDefault()
     setError('')
     setLoading(true)
-    const { error: authError } = await authClient.signIn.username({ username, password })
-    setLoading(false)
-    if (authError) {
-      // Pesan seragam: jangan bocorkan username mana yang terdaftar.
-      setError('Username atau password salah')
-      return
+    try {
+      const { error: authError } = await authClient.signIn.username({ username, password })
+      if (authError) {
+        // Pesan seragam: jangan bocorkan username mana yang terdaftar.
+        setError('Username atau password salah')
+        return
+      }
+      navigate({ to: '/dashboard' })
+    } catch (err) {
+      // authClient MELEMPAR saat jaringan putus — @better-fetch/fetch tidak
+      // membungkus fetch() dengan try/catch. Tanpa blok ini tombolnya
+      // terkunci selamanya di "Memproses..." tanpa pesan apa pun, dan
+      // formnya tidak bisa dipakai sampai halaman dimuat ulang.
+      setError(pesanError(err))
+    } finally {
+      setLoading(false)
     }
-    navigate({ to: '/dashboard' })
   }
 
   return (
