@@ -103,6 +103,7 @@ Kode lama tetap bisa diambil kapan saja: `git show 81149b9:backend/routes/auth.j
     "start": "node .output/server/index.mjs",
     "test": "bun test",
     "check": "biome check --write .",
+    "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "auth:generate": "bunx @better-auth/cli generate --config src/lib/auth.ts --output src/db/auth-schema.ts"
@@ -124,6 +125,7 @@ Kode lama tetap bisa diambil kapan saja: `git show 81149b9:backend/routes/auth.j
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/bun": "^1.3.14",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.3",
@@ -161,13 +163,20 @@ Expected: `node_modules/` terbentuk, tidak ada error resolusi.
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "types": ["vite/client", "bun-types"],
+    "types": ["vite/client", "bun"],
     "baseUrl": ".",
     "paths": { "@/*": ["./src/*"] }
   },
   "include": ["src", "tests", "*.config.ts"]
 }
 ```
+
+> Tipe Bun dibutuhkan karena berkas test mengimpor `bun:test` (Task 5 dan 8).
+> Nama pendek `"bun"` me-resolve paket `@types/bun` yang terdaftar di
+> devDependencies. **Jangan** tulis `"bun-types"` — paket itu tidak ada di
+> dependensi project, sehingga TypeScript akan menaiki pohon direktori dan
+> mungkin menemukan salinan nyasar di luar repo. Di checkout bersih atau CI
+> hasilnya `TS2688: Cannot find type definition file for 'bun-types'`.
 
 - [ ] **Step 5: Buat `vite.config.ts`**
 
@@ -1853,12 +1862,21 @@ bun run build
 ```
 Expected: selesai tanpa error, `.output/` terbentuk.
 
-- [ ] **Step 3: Pastikan lint bersih**
+- [ ] **Step 3: Pastikan lint dan tipe bersih**
 
 ```bash
 bun run check
+bun run typecheck
 ```
-Expected: tidak ada error tersisa.
+Expected: keduanya tanpa error.
+
+Verifikasi tipe Bun benar-benar berasal dari dalam repo, bukan dari paket
+nyasar di direktori induk:
+```bash
+bun run typecheck -- --listFiles | grep -c "^/Users/[^/]*/node_modules"
+```
+Expected: `0`. Angka selain nol berarti TypeScript menaiki pohon direktori
+keluar dari project — di checkout bersih typecheck-nya akan gagal.
 
 - [ ] **Step 4: Tulis `README.md`**
 
@@ -1897,6 +1915,7 @@ Buka http://localhost:3000
 | `bun dev` | Server pengembangan di port 3000 |
 | `bun test` | Jalankan test |
 | `bun run check` | Lint + format (Biome) |
+| `bun run typecheck` | Cek tipe TypeScript |
 | `bun run build` | Build produksi |
 | `bun run db:generate` | Buat berkas migrasi dari perubahan skema |
 | `bun run db:migrate` | Terapkan migrasi |
