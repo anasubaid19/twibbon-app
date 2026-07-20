@@ -44,8 +44,6 @@
   --radius-card: 18px;
   --radius-base: 14px;
   --radius-sm: 8px;
-
-  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @layer base {
@@ -62,6 +60,14 @@
     font-size: 15px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+
+    /* Cross-fade saat ganti tema, dipertahankan dari index.css lama
+       (--transition: 0.2s cubic-bezier(0.4,0,0.2,1)). Tanpa ini pergantian
+       tema terasa mengejut. Blok prefers-reduced-motion di bawah sudah
+       menetralkannya bagi yang membutuhkan. */
+    transition:
+      background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   h1,
   h2,

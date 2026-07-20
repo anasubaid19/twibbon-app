@@ -1,18 +1,23 @@
+import { useLoaderData } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
 type Theme = 'dark' | 'light'
 
-function readTheme(): Theme {
-  if (typeof document === 'undefined') return 'dark'
-  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
-}
-
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(readTheme)
+  // Ambil tema dari loader root, BUKAN dari `document`. Saat SSR `document`
+  // tidak ada, jadi membacanya selalu jatuh ke 'dark' dan tombol ini
+  // dirender dalam keadaan gelap meski cookie bilang terang — ikon dan
+  // aria-label-nya keliru sampai JS termuat. Loader root sudah tahu tema
+  // sebenarnya dari cookie, jadi server dan klien sepakat sejak awal.
+  const initialTheme = useLoaderData({ from: '__root__' }) as Theme
+  const [theme, setTheme] = useState<Theme>(initialTheme)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    // biome-ignore lint/suspicious/noDocumentCookie: Biome menyarankan CookieStore API, tapi Safari belum mendukungnya. document.cookie jalan di semua browser dan penulisannya sepele di sini.
+    /* biome-ignore lint/suspicious/noDocumentCookie: CookieStore API bersifat
+       async dan mengembalikan Promise yang harus ditangani di dalam effect.
+       Untuk satu penulisan sepele seperti ini, document.cookie yang sinkron
+       lebih sederhana dan tidak punya kegagalan yang perlu diurus. */
     document.cookie = `theme=${theme}; path=/; max-age=31536000; samesite=lax`
   }, [theme])
 
