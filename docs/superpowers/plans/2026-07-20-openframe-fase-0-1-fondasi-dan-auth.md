@@ -753,9 +753,13 @@ describe('generateRecoveryCode', () => {
 })
 
 describe('hashRecoveryCode', () => {
-  test('hash tidak sama dengan kode aslinya', async () => {
+  test('kode aslinya tidak muncul di mana pun dalam hash', async () => {
+    // Bukan sekadar `not.toBe(code)` — itu masih lolos kalau implementasinya
+    // menyisipkan kode apa adanya, misal `${salt}:${code}`.
     const code = generateRecoveryCode()
-    expect(await hashRecoveryCode(code)).not.toBe(code)
+    const hash = await hashRecoveryCode(code)
+    expect(hash).not.toContain(code)
+    expect(hash).not.toContain(code.replace(/-/g, ''))
   })
 
   test('dua hash dari kode sama tetap berbeda karena salt', async () => {
@@ -787,8 +791,25 @@ describe('verifyRecoveryCode', () => {
     expect(await verifyRecoveryCode(code.toLowerCase(), hash)).toBe(true)
   })
 
-  test('mengembalikan false untuk hash yang rusak, bukan melempar error', async () => {
-    expect(await verifyRecoveryCode(generateRecoveryCode(), 'bukan-hash')).toBe(false)
+  // Bentuk-bentuk nilai tersimpan yang rusak. Yang penting bukan cuma
+  // "kembalikan false", tapi "jangan melempar" — verifyRecoveryCode dipanggil
+  // di jalur reset password, dan exception di sana mengunci pengguna keluar
+  // dari satu-satunya cara pulih yang ia punya.
+  test.each([
+    ['tanpa titik dua', 'bukan-hash'],
+    ['titik dua tapi hex tidak valid', 'zzzz:zzzz'],
+    ['hex valid tapi terlalu pendek', 'aabb:ccdd'],
+    ['salt kosong', ':abcdef'],
+    ['bagian hash kosong', 'abcdef:'],
+    ['string kosong', ''],
+  ])('mengembalikan false untuk nilai tersimpan %s', async (_label, stored) => {
+    expect(await verifyRecoveryCode(generateRecoveryCode(), stored)).toBe(false)
+  })
+
+  test('mengembalikan false, bukan melempar, saat nilai tersimpan bukan string', async () => {
+    // Bisa terjadi kalau kolomnya NULL di database.
+    const nilaiTakTerduga = null as unknown as string
+    expect(await verifyRecoveryCode(generateRecoveryCode(), nilaiTakTerduga)).toBe(false)
   })
 })
 ```
@@ -838,13 +859,21 @@ export async function hashRecoveryCode(code: string): Promise<string> {
 }
 
 export async function verifyRecoveryCode(code: string, stored: string): Promise<boolean> {
+  // Bentuk sah: "<salt hex>:<turunan hex>". Nilai tersimpan yang cacat adalah
+  // jalur yang memang diharapkan — diperiksa terang-terangan di sini, bukan
+  // ditangkap sebagai exception, supaya `catch` di bawah hanya menyisakan
+  // hal-hal yang benar-benar tak terduga.
+  const parts = typeof stored === 'string' ? stored.split(':') : []
+  const [saltHex, hashHex] = parts
+  if (!saltHex || !hashHex) return false
+
+  const expected = Buffer.from(hashHex, 'hex')
+  // Buffer.from memotong diam-diam pada hex yang tidak valid, jadi panjangnya
+  // yang menentukan — sekaligus menjamin timingSafeEqual tidak pernah menerima
+  // dua buffer berbeda panjang (ia melempar kalau itu terjadi).
+  if (expected.length !== KEY_LENGTH) return false
+
   try {
-    const [saltHex, hashHex] = stored.split(':')
-    if (!saltHex || !hashHex) return false
-
-    const expected = Buffer.from(hashHex, 'hex')
-    if (expected.length !== KEY_LENGTH) return false
-
     const derived = (await scryptAsync(
       normalize(code),
       Buffer.from(saltHex, 'hex'),
@@ -853,8 +882,14 @@ export async function verifyRecoveryCode(code: string, stored: string): Promise<
 
     // Perbandingan waktu-tetap: jangan bocorkan berapa banyak byte yang cocok.
     return timingSafeEqual(expected, derived)
-  } catch {
-    // Hash rusak atau formatnya tidak dikenal — perlakukan sebagai tidak cocok.
+  } catch (error) {
+    /* biome-ignore lint/suspicious/noConsole: sampai di sini berarti ada yang
+       tidak beres di luar dugaan — bukan sekadar kode salah, karena semua
+       bentuk cacat yang diharapkan sudah disaring di atas. Tetap gagal
+       tertutup, tapi jangan ditelan diam-diam: di aplikasi tanpa email,
+       recovery code adalah satu-satunya jalan pulih, jadi kegagalan yang
+       tak terjelaskan harus meninggalkan jejak untuk diselidiki. */
+    console.error('verifyRecoveryCode gagal tak terduga:', error)
     return false
   }
 }
@@ -865,7 +900,7 @@ export async function verifyRecoveryCode(code: string, stored: string): Promise<
 ```bash
 bun test tests/lib/recovery-code.test.ts
 ```
-Expected: PASS, 9 test.
+Expected: PASS, 15 test.
 
 - [ ] **Step 5: Commit**
 
@@ -1893,7 +1928,7 @@ Kode lama hangus setelah dipakai dan diganti kode baru."
 ```bash
 bun test
 ```
-Expected: PASS, 12 test (9 recovery code + 3 synthetic email), 0 gagal.
+Expected: PASS, 18 test (15 recovery code + 3 synthetic email), 0 gagal.
 
 - [ ] **Step 2: Pastikan build produksi berhasil**
 
@@ -1991,7 +2026,7 @@ Drizzle, dan autentikasi username + recovery code tanpa email."
 - [ ] `backend/` dan `frontend/` terhapus; riwayatnya tetap ada di `81149b9`
 - [ ] `bun dev` menyalakan aplikasi di port 3000
 - [ ] `bun run build` berhasil
-- [ ] `bun test` lulus semua (12 test)
+- [ ] `bun test` lulus semua (18 test)
 - [ ] `bun run check` bersih
 - [ ] Latar `#0B0B0D`, accent `#CAFF33`, judul Bricolage Grotesque, isi Nunito
 - [ ] Toggle tema bertahan setelah muat ulang, tanpa kedipan saat SSR
