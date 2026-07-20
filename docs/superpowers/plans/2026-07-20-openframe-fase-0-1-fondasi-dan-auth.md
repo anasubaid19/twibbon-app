@@ -1147,9 +1147,32 @@ bun dev
 ```
 Di terminal lain:
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000/api/auth/session
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000/api/auth/get-session
 ```
 Expected: `200` (badan respons `null` karena belum ada sesi).
+
+> Endpointnya `/get-session`, **bukan** `/session`. Better Auth 1.6.23
+> mengembalikan 404 untuk `/session`, yang mudah disalahartikan sebagai
+> "handler gagal terpasang" padahal handler-nya baik-baik saja.
+
+Sekalian lunasi utang verifikasi dari Task 6: buktikan `input: false`
+benar-benar menahan klien yang menyuntikkan hash-nya sendiri.
+
+```bash
+curl -s -X POST http://localhost:3000/api/auth/sign-up/email \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"probe@openframe.local","username":"probeuser","name":"probeuser","password":"rahasia123","recoveryCodeHash":"HASH-PALSU-DARI-KLIEN"}'
+psql -d openframe -tAc "SELECT count(*) FROM \"user\" WHERE username='probeuser';"
+```
+Expected: `HTTP 400` dengan `{"code":"FIELD_NOT_ALLOWED"}`, dan hitungan
+baris `0`. Kalau `recovery_code_hash` justru berisi nilai kiriman klien,
+itu temuan Critical — siapa pun bisa menetapkan sendiri kunci pemulihan
+akunnya, dan di aplikasi tanpa email itu satu-satunya kunci yang ada.
+
+Bersihkan bila ada baris tersisa:
+```bash
+psql -d openframe -c "DELETE FROM \"user\" WHERE username='probeuser';"
+```
 
 - [ ] **Step 5: Commit**
 
