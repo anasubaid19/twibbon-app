@@ -8,6 +8,13 @@
       "when": 1784534000475,
       "tag": "0000_next_raider",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784545450109,
+      "tag": "0001_amusing_namora",
+      "breakpoints": true
     }
   ]
 }
