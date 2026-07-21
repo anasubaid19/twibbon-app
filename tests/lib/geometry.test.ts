@@ -106,6 +106,18 @@ describe('clampToFrame', () => {
     })
   })
 
+  test('kotak baru yang dipusatkan di pojok tetap masuk frame', () => {
+    // Rectangle tool memusatkan kotak 20x20% di titik klik. Klik di pojok
+    // berarti separuh kotaknya keluar frame sebelum di-clamp.
+    const UKURAN = 20
+    expect(
+      clampToFrame({ x: 0 - UKURAN / 2, y: 0 - UKURAN / 2, width: UKURAN, height: UKURAN }),
+    ).toEqual({ x: 0, y: 0, width: 20, height: 20 })
+    expect(
+      clampToFrame({ x: 100 - UKURAN / 2, y: 100 - UKURAN / 2, width: UKURAN, height: UKURAN }),
+    ).toEqual({ x: 80, y: 80, width: 20, height: 20 })
+  })
+
   test('mengecilkan kotak yang lebih besar dari frame', () => {
     expect(clampToFrame({ x: -10, y: -10, width: 150, height: 150 })).toEqual({
       x: 0,
