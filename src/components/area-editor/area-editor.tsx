@@ -92,6 +92,38 @@ export function AreaEditor({
     setModeTambah(false)
   }
 
+  function hapusTerpilih() {
+    if (!terpilih || slots.length <= 1) return
+    // ponytail: confirm() bawaan browser sudah cukup untuk pertanyaan ya/tidak
+    // sesederhana ini. Dialog sendiri berarti satu komponen shadcn baru, state
+    // terbuka/tertutup, dan penjebak fokus — untuk sesuatu yang tidak merusak
+    // apa pun kalau dibatalkan.
+    if (!confirm(`Hapus area ${selectedIndex + 1}?`)) return
+
+    onChange(slots.filter((_, i) => i !== selectedIndex))
+    // Pilihan digeser ke area sebelumnya supaya tidak menunjuk indeks yang
+    // sudah tidak ada.
+    onSelect(Math.max(0, selectedIndex - 1))
+  }
+
+  function pindah(arah: -1 | 1) {
+    const tujuan = selectedIndex + arah
+    if (tujuan < 0 || tujuan >= slots.length) return
+
+    const berikut = [...slots]
+    // Tukar tempat. Nomor yang dilihat partisipan adalah urutan array ini;
+    // slotRows() di server menurunkan slotIndex darinya saat menyimpan, jadi
+    // tidak ada yang perlu di-reindex di sini.
+    const geser = berikut[selectedIndex]
+    const digantikan = berikut[tujuan]
+    if (!geser || !digantikan) return
+    berikut[selectedIndex] = digantikan
+    berikut[tujuan] = geser
+
+    onChange(berikut)
+    onSelect(tujuan)
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="relative select-none overflow-hidden rounded-card border border-border bg-surface2">
@@ -154,6 +186,39 @@ export function AreaEditor({
           onClick={() => setModeTambah((m) => !m)}
         >
           {modeTambah ? 'Klik di frame…' : '+ Tambah Area'}
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={selectedIndex <= 0}
+          aria-label="Naikkan urutan area"
+          onClick={() => pindah(-1)}
+        >
+          ↑
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={selectedIndex >= slots.length - 1}
+          aria-label="Turunkan urutan area"
+          onClick={() => pindah(1)}
+        >
+          ↓
+        </Button>
+        {/* Mati saat tersisa satu: campaign tanpa area akan ditolak server
+            (slots.min(1)), jadi lebih baik dicegah di sini daripada membiarkan
+            pengguna menabrak pesan error saat menyimpan. */}
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          disabled={slots.length <= 1}
+          onClick={hapusTerpilih}
+        >
+          Hapus area
         </Button>
 
         <span className="px-1 text-sm text-muted">
