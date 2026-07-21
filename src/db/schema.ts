@@ -1,4 +1,13 @@
-import { boolean, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  index,
+  integer,
+  pgTable,
+  real,
+  text,
+  timestamp,
+  unique,
+} from 'drizzle-orm/pg-core'
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -65,4 +74,56 @@ export const verification = pgTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [index('verification_identifier_idx').on(table.identifier)],
+)
+
+export const campaigns = pgTable(
+  'campaigns',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description').default('').notNull(),
+    // Satu URL kanonik per campaign. Unique-nya ditegakkan database, bukan
+    // hanya oleh pemeriksaan di aplikasi — dua permintaan bersamaan dengan
+    // nama sama akan lolos pemeriksaan itu.
+    slug: text('slug').notNull().unique(),
+    // Relatif terhadap direktori upload, mis. `frames/<id>/a1b2c3d4.png`.
+    framePath: text('frame_path').notNull(),
+    // Piksel asli, dibaca Sharp. Jadi acuan saat koordinat persen
+    // diterjemahkan kembali ke piksel di berkas hasil.
+    frameWidth: integer('frame_width').notNull(),
+    frameHeight: integer('frame_height').notNull(),
+    isPublic: boolean('is_public').default(true).notNull(),
+    useCount: integer('use_count').default(0).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [index('campaigns_user_id_idx').on(table.userId)],
+)
+
+export const frameSlots = pgTable(
+  'frame_slots',
+  {
+    id: text('id').primaryKey(),
+    campaignId: text('campaign_id')
+      .notNull()
+      .references(() => campaigns.id, { onDelete: 'cascade' }),
+    slotIndex: integer('slot_index').notNull(),
+    // Persen 0–100 dari dimensi frame — bebas resolusi, sehingga slot yang
+    // sama bekerja pada keluaran 1x, 2x, maupun 3x (spec 5.3).
+    x: real('x').notNull(),
+    y: real('y').notNull(),
+    width: real('width').notNull(),
+    height: real('height').notNull(),
+    label: text('label').default('').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('frame_slots_campaign_id_idx').on(table.campaignId),
+    // Nomor slot adalah kunci urutan yang dilihat partisipan. Dua baris
+    // dengan nomor sama membuat urutannya bergantung pada kebetulan.
+    unique('frame_slots_campaign_slot_unique').on(table.campaignId, table.slotIndex),
+  ],
 )
