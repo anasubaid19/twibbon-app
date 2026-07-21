@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { createServerFn } from '@tanstack/react-start'
-import { and, count, desc, eq, like, or } from 'drizzle-orm'
+import { and, count, desc, eq, like, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { campaigns, frameSlots, user } from '@/db/schema'
@@ -312,4 +312,21 @@ export const getCampaignBySlug = createServerFn({ method: 'GET' })
     // ditampilkan di halaman partisipan sebagai "oleh @siapa".
     const { ownerName, username, ...campaign } = row
     return { ...campaign, username: username ?? ownerName, slots }
+  })
+
+/* --- incrementUse -------------------------------------------------------- */
+
+export const incrementUse = createServerFn({ method: 'POST' })
+  .validator((input: unknown) => z.object({ id: idSchema }).parse(input))
+  .handler(async ({ data }) => {
+    // Tanpa sesi: partisipan memang anonim. Dinaikkan lewat ekspresi SQL,
+    // bukan baca-lalu-tulis, supaya dua unduhan bersamaan tidak saling
+    // menimpa. isPublic ikut di WHERE supaya campaign privat tidak bisa
+    // dinaikkan hitungannya dari luar.
+    await db
+      .update(campaigns)
+      .set({ useCount: sql`${campaigns.useCount} + 1` })
+      .where(and(eq(campaigns.id, data.id), eq(campaigns.isPublic, true)))
+
+    return { ok: true as const }
   })
