@@ -15,3 +15,9 @@ export const getSession = createServerFn({ method: 'GET' }).handler(async () => 
    * menetapkan bentuk aman untuk Fase 2 saat role/data campaign menempel. */
   return { user: { username: session.user.username ?? session.user.name } }
 })
+
+/* `requireUserId` sengaja TIDAK tinggal di sini, melainkan di
+   `require-user.ts`. Berkas ini diimpor komponen klien (mereka butuh
+   `getSession`), dan hanya badan server function yang dipisahkan ke bundel
+   server. Fungsi biasa yang menyentuh `auth` akan ikut terseret ke bundel
+   klien dan membuat `bun run build` gagal me-resolve modul server. */

@@ -1,8 +1,9 @@
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { authClient } from '@/lib/auth-client'
 import { pesanError } from '@/lib/pesan-error'
+import { listMyCampaigns } from '@/server/campaigns'
 import { getSession } from '@/server/session'
 
 export const Route = createFileRoute('/dashboard')({
@@ -16,11 +17,13 @@ export const Route = createFileRoute('/dashboard')({
     // membocorkan pola internal yang pengguna tidak boleh tahu ada.
     return { username: session.user.username }
   },
+  loader: () => listMyCampaigns(),
   component: DashboardPage,
 })
 
 function DashboardPage() {
   const { username } = Route.useRouteContext()
+  const campaigns = Route.useLoaderData()
   const navigate = useNavigate()
   const [logoutError, setLogoutError] = useState('')
 
@@ -38,7 +41,7 @@ function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-5xl p-6">
-      <header className="flex items-center justify-between py-6">
+      <header className="flex flex-wrap items-center justify-between gap-3 py-6">
         <h1 className="font-display text-2xl">Kampanye Saya</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -64,7 +67,53 @@ function DashboardPage() {
         </p>
       )}
 
-      <p className="text-muted">Daftar kampanye muncul di sini pada Fase 2.</p>
+      <Link
+        to="/buat"
+        className="mb-6 inline-block rounded-pill bg-accent px-6 py-2.5 font-semibold text-bg transition-transform hover:-translate-y-px"
+      >
+        + Bikin Kampanye
+      </Link>
+
+      {campaigns.length === 0 ? (
+        <p className="rounded-card border border-dashed border-border bg-surface p-10 text-center text-muted">
+          Belum ada kampanye. Unggah frame PNG-mu, gambar area fotonya, lalu bagikan tautannya.
+        </p>
+      ) : (
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {campaigns.map((campaign) => (
+            <li key={campaign.id}>
+              <Link
+                to="/edit/$id"
+                params={{ id: campaign.id }}
+                className="block overflow-hidden rounded-card border border-border bg-surface transition-colors hover:border-accent"
+              >
+                <img
+                  src={`/api/frame/${campaign.id}`}
+                  alt=""
+                  loading="lazy"
+                  className="aspect-square w-full bg-surface2 object-contain"
+                />
+                <div className="p-4">
+                  <h2 className="mb-1 truncate font-display text-base">{campaign.name}</h2>
+                  <p className="flex flex-wrap gap-2 text-xs text-muted">
+                    {/* Aplikasi lama menampilkan badge rasio di sini. Jumlah
+                        slot lebih berguna di produk multi-slot (spec bagian 8). */}
+                    <span className="rounded-pill bg-surface2 px-2 py-0.5">
+                      {campaign.slotCount} area
+                    </span>
+                    <span className="rounded-pill bg-surface2 px-2 py-0.5">
+                      {campaign.isPublic ? 'Publik' : 'Privat'}
+                    </span>
+                    <span className="rounded-pill bg-surface2 px-2 py-0.5">
+                      {campaign.useCount}x dipakai
+                    </span>
+                  </p>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </main>
   )
 }

@@ -10,15 +10,23 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BuatRouteImport } from './routes/buat'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LupaPasswordRouteImport } from './routes/lupa-password'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as EditIdRouteImport } from './routes/edit.$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiFrameIdRouteImport } from './routes/api/frame.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuatRoute = BuatRouteImport.update({
+  id: '/buat',
+  path: '/buat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -41,71 +49,102 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EditIdRoute = EditIdRouteImport.update({
+  id: '/edit/$id',
+  path: '/edit/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiFrameIdRoute = ApiFrameIdRouteImport.update({
+  id: '/api/frame/$id',
+  path: '/api/frame/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/buat': typeof BuatRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/lupa-password': typeof LupaPasswordRoute
   '/register': typeof RegisterRoute
+  '/edit/$id': typeof EditIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/frame/$id': typeof ApiFrameIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/buat': typeof BuatRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/lupa-password': typeof LupaPasswordRoute
   '/register': typeof RegisterRoute
+  '/edit/$id': typeof EditIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/frame/$id': typeof ApiFrameIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/buat': typeof BuatRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/lupa-password': typeof LupaPasswordRoute
   '/register': typeof RegisterRoute
+  '/edit/$id': typeof EditIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/frame/$id': typeof ApiFrameIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/buat'
     | '/dashboard'
     | '/login'
     | '/lupa-password'
     | '/register'
+    | '/edit/$id'
     | '/api/auth/$'
+    | '/api/frame/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/buat'
     | '/dashboard'
     | '/login'
     | '/lupa-password'
     | '/register'
+    | '/edit/$id'
     | '/api/auth/$'
+    | '/api/frame/$id'
   id:
     | '__root__'
     | '/'
+    | '/buat'
     | '/dashboard'
     | '/login'
     | '/lupa-password'
     | '/register'
+    | '/edit/$id'
     | '/api/auth/$'
+    | '/api/frame/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BuatRoute: typeof BuatRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   LupaPasswordRoute: typeof LupaPasswordRoute
   RegisterRoute: typeof RegisterRoute
+  EditIdRoute: typeof EditIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiFrameIdRoute: typeof ApiFrameIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -115,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/buat': {
+      id: '/buat'
+      path: '/buat'
+      fullPath: '/buat'
+      preLoaderRoute: typeof BuatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -145,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/edit/$id': {
+      id: '/edit/$id'
+      path: '/edit/$id'
+      fullPath: '/edit/$id'
+      preLoaderRoute: typeof EditIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -152,16 +205,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/frame/$id': {
+      id: '/api/frame/$id'
+      path: '/api/frame/$id'
+      fullPath: '/api/frame/$id'
+      preLoaderRoute: typeof ApiFrameIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BuatRoute: BuatRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   LupaPasswordRoute: LupaPasswordRoute,
   RegisterRoute: RegisterRoute,
+  EditIdRoute: EditIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiFrameIdRoute: ApiFrameIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

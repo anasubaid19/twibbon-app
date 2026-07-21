@@ -7,14 +7,16 @@ tautan. Partisipan mengisi area itu dengan fotonya dan mengunduh hasilnya.
 
 ## Status
 
-Repositori ini sedang dibangun bertahap. **Yang sudah jadi (Fase 0–1):**
-fondasi aplikasi dan autentikasi penuh — daftar, masuk, keluar, dan reset
-password lewat recovery code, semuanya tanpa email maupun nomor telepon.
+Repositori ini sedang dibangun bertahap. **Yang sudah jadi (Fase 0–2):**
+fondasi aplikasi, autentikasi penuh tanpa email, dan sisi creator — unggah
+frame PNG, gambar satu area foto di atasnya, simpan sebagai kampanye, lalu
+ubah lagi lewat dashboard.
 
-Fitur twibbon yang dijelaskan di atas — unggah frame, gambar area, isi slot,
-unduh — adalah arah produknya dan **belum** dibangun. Rinciannya ada di
-`docs/superpowers/plans/`. Sampai fase itu mendarat, aplikasi dijalankan
-lewat `bun dev`; penyajian produksi (`bun run start`) belum disambungkan.
+**Yang belum:** halaman partisipan untuk mengisi area dan mengunduh hasilnya
+(Fase 3), multi-slot (Fase 4–5), galeri publik (Fase 6), dan hapus kampanye
+(Fase 7). Rinciannya ada di `docs/superpowers/plans/`. Sampai fase itu
+mendarat, aplikasi dijalankan lewat `bun dev`; penyajian produksi
+(`bun run start`) belum disambungkan.
 
 ## Jalankan lokal
 
@@ -28,6 +30,7 @@ createdb openframe
   echo "DATABASE_URL=postgres://localhost:5432/openframe"
   echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)"
   echo "BETTER_AUTH_URL=http://localhost:3000"
+  echo "UPLOAD_DIR=./uploads"
 } > .env
 
 bun run db:migrate

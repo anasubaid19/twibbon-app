@@ -15,6 +15,13 @@
       "when": 1784545450109,
       "tag": "0001_amusing_namora",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784634464046,
+      "tag": "0002_nervous_nehzno",
+      "breakpoints": true
     }
   ]
 }

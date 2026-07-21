@@ -42,7 +42,7 @@ Berlaku untuk **setiap** task di bawah ini.
 | `src/lib/slug.ts` | **Baru.** Slugify nama campaign + penyelesaian bentrok |
 | `src/db/schema.ts` | **Ubah.** Tambah tabel `campaigns` dan `frame_slots` |
 | `src/server/upload.ts` | **Baru.** Validasi frame lewat Sharp, tulis/baca/hapus berkas di `uploads/` |
-| `src/server/session.ts` | **Ubah.** Tambah `requireUserId()` untuk dipakai di dalam handler server function |
+| `src/server/require-user.ts` | **Baru.** `requireUserId()` untuk dipakai di dalam handler server function. Berkas terpisah — lihat Task 5 |
 | `src/server/campaigns.ts` | **Baru.** `createCampaign`, `listMyCampaigns`, `getCampaignForEdit`, `updateCampaign` |
 | `src/routes/api/frame.$id.ts` | **Baru.** Menyajikan PNG frame dari disk berdasarkan id campaign |
 | `src/components/area-editor/use-element-size.ts` | **Baru.** Ukuran render elemen lewat `ResizeObserver` |
@@ -760,7 +760,7 @@ Sharp mem-parse berkasnya sendiri. `file.type` dari klien tidak dipercaya sama s
   - `const MAX_FRAME_BYTES = 10 * 1024 * 1024`
   - `validateFrame(bytes: Buffer): Promise<{ width: number; height: number }>` — melempar `Error` berbahasa Indonesia bila ditolak
   - `saveFrame(campaignId: string, bytes: Buffer): Promise<string>` — mengembalikan jalur relatif
-  - `readFrame(relativePath: string): Promise<Buffer>`
+  - `readFrame(relativePath: string): Promise<Uint8Array<ArrayBuffer>>`
   - `deleteFrameDir(campaignId: string): Promise<void>`
 
 - [ ] **Step 1: Tulis test yang gagal**
@@ -805,7 +805,10 @@ describe('validateFrame', () => {
   })
 
   test('menolak frame yang dimensinya tidak masuk akal', async () => {
-    const png = await kanvas(7000, 100).png().toBuffer()
+    // Tingginya sengaja tetap sah (>= 200): kalau kedua sisi melanggar,
+    // pemeriksaan minimum yang jalan lebih dulu dan test ini lulus karena
+    // alasan yang salah.
+    const png = await kanvas(7000, 300).png().toBuffer()
     expect(validateFrame(png)).rejects.toThrow(/maksimal/)
   })
 
@@ -835,7 +838,7 @@ Expected: FAIL — `Cannot find module '@/server/upload'`.
 import { randomBytes } from 'node:crypto'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, resolve, sep } from 'node:path'
-import sharp from 'sharp'
+import sharp, { type Metadata } from 'sharp'
 
 /** PRD US-02. Diperiksa sebelum Sharp supaya berkas raksasa tidak sempat di-parse. */
 export const MAX_FRAME_BYTES = 10 * 1024 * 1024
@@ -855,7 +858,9 @@ const DITOLAK = 'Frame harus berkas PNG yang valid'
 export async function validateFrame(bytes: Buffer): Promise<{ width: number; height: number }> {
   if (bytes.byteLength > MAX_FRAME_BYTES) throw new Error('Ukuran frame maksimal 10MB')
 
-  let metadata: sharp.Metadata
+  // `sharp.Metadata` tidak terjangkau sebagai namespace di bawah
+  // verbatimModuleSyntax; impor tipenya secara bernama.
+  let metadata: Metadata
   try {
     metadata = await sharp(bytes).metadata()
   } catch {
@@ -906,8 +911,16 @@ export async function saveFrame(campaignId: string, bytes: Buffer): Promise<stri
   return relativePath
 }
 
-export async function readFrame(relativePath: string): Promise<Buffer> {
-  return await readFile(frameAbsolutePath(relativePath))
+/**
+ * Mengembalikan `Uint8Array`, bukan `Buffer`, karena itulah yang diterima
+ * `BodyInit` milik Response.
+ *
+ * Parameter generiknya harus `ArrayBuffer`, bukan `ArrayBufferLike` bawaan
+ * `Buffer.buffer`: `ArrayBufferLike` juga mencakup `SharedArrayBuffer`, yang
+ * tidak diterima `BodyInit`. Maka isinya disalin ke buffer milik sendiri.
+ */
+export async function readFrame(relativePath: string): Promise<Uint8Array<ArrayBuffer>> {
+  return new Uint8Array(await readFile(frameAbsolutePath(relativePath)))
 }
 
 /** Dipakai sebagai kompensasi saat penyimpanan database gagal, dan saat hapus campaign. */
@@ -953,29 +966,38 @@ Berkas ditulis apa adanya supaya alpha channel tetap utuh."
 Empat fungsi sekaligus karena keempatnya berbagi skema Zod dan aturan kepemilikan yang sama; memisahkannya berarti menyalin blok validasi yang identik.
 
 **Files:**
-- Modify: `src/server/session.ts`
+- Create: `src/server/require-user.ts`
 - Create: `src/server/campaigns.ts`
 
 **Interfaces:**
 - Consumes: `db` (`@/db`), `campaigns`/`frameSlots` (Task 3), `isValidSlot` (Task 1), `slugify`/`resolveSlug` (Task 2), `validateFrame`/`saveFrame`/`deleteFrameDir` (Task 4)
 - Produces:
-  - `requireUserId(): Promise<string>` dari `@/server/session`
+  - `requireUserId(): Promise<string>` dari `@/server/require-user`
   - `createCampaign` — input `FormData` (`frame`, `name`, `description`, `isPublic`, `slots`), keluaran `{ id: string; slug: string }`
   - `listMyCampaigns` — keluaran `{ id, name, slug, isPublic, useCount, slotCount, createdAt }[]`
   - `getCampaignForEdit` — input `{ id: string }`, keluaran `{ id, name, description, slug, isPublic, frameWidth, frameHeight, slots: { x, y, width, height, label }[] }`
   - `updateCampaign` — input `{ id, name, description, isPublic, slots }`, keluaran `{ ok: true }`
 
-- [ ] **Step 1: Tambahkan `requireUserId` ke `src/server/session.ts`**
+- [ ] **Step 1: Buat `src/server/require-user.ts`**
 
-Tambahkan di akhir berkas, di bawah `getSession` yang sudah ada:
+**Jangan taruh di `session.ts`.** Berkas itu diimpor komponen klien (mereka
+butuh `getSession`), dan bundler hanya memisahkan **badan server function** ke
+sisi server. Fungsi biasa yang menyentuh `auth` akan ikut terseret ke bundel
+klien, dan `bun run build` gagal me-resolve `@tanstack/react-start/server`.
+`bun dev` tidak menangkap ini — hanya build produksi yang menangkapnya.
 
 ```ts
+import { getRequestHeaders } from '@tanstack/react-start/server'
+import { auth } from '@/lib/auth'
+
 /**
  * Dipakai DI DALAM handler server function untuk tahu siapa pemilik data.
  *
  * Sengaja bukan server function sendiri: `userId` tidak boleh melintasi kabel
- * ke klien. Alasannya sama dengan proyeksi di `getSession` di atas — apa pun
- * yang dikembalikan server function ikut terserialisasi ke payload hidrasi.
+ * ke klien. Alasannya sama dengan proyeksi di `getSession` — apa pun yang
+ * dikembalikan server function ikut terserialisasi ke payload hidrasi.
+ *
+ * Berkas ini juga sengaja terpisah dari `session.ts`; lihat catatan di atas.
  */
 export async function requireUserId(): Promise<string> {
   const session = await auth.api.getSession({ headers: getRequestHeaders() })
@@ -995,7 +1017,7 @@ import { db } from '@/db'
 import { campaigns, frameSlots } from '@/db/schema'
 import { isValidSlot } from '@/lib/geometry'
 import { resolveSlug, slugify } from '@/lib/slug'
-import { requireUserId } from '@/server/session'
+import { requireUserId } from '@/server/require-user'
 import { deleteFrameDir, saveFrame, validateFrame } from '@/server/upload'
 
 /* --- Skema bersama ------------------------------------------------------ */
@@ -1327,7 +1349,7 @@ export const Route = createFileRoute('/api/frame/$id')({
           return new Response(null, { status: 304 })
         }
 
-        let bytes: Buffer
+        let bytes: Uint8Array<ArrayBuffer>
         try {
           bytes = await readFrame(row.framePath)
         } catch {
@@ -1994,30 +2016,39 @@ Expected: `200 image/png`.
 
 - [ ] **Step 4: Buktikan koordinat dari klien tidak dipercaya**
 
-Kirim slot yang lebih besar dari frame lewat permintaan buatan tangan.
-Ambil dulu cookie sesi dari DevTools (Application → Cookies), lalu:
+Server function TanStack Start tidak bisa dipanggil dengan `curl` polos. Tiga
+hal yang wajib benar, semuanya ditemukan saat Fase 2 dikerjakan:
 
+1. URL-nya `/_serverFn/<functionId>`, dan `functionId` adalah base64 dari
+   `{"file":"/src/server/campaigns.ts?tss-serverfn-split","export":"<nama>_createServerFn_handler"}`.
+2. Header `x-tsr-serverFn: true` wajib ada — tanpa itu jawabannya `403`.
+3. Payload JSON harus di-encode seroval (`toJSONAsync({ data })`), bukan JSON
+   biasa. FormData dikirim apa adanya. Fungsi `method: 'GET'` menerima payload
+   di query string lewat `encode({ payload })`, bukan di badan permintaan.
+
+**Dan yang paling gampang menipu:** server function menyalurkan error di dalam
+badan respons dengan status **200**, bukan lewat status HTTP. Assertion yang
+memeriksa `status >= 400` akan lulus untuk alasan yang salah. Periksa isi
+badannya.
+
+Skrip verifikasi yang memakai protokol ini ada di riwayat commit Fase 2
+(`tmp-verify.ts`, dihapus setelah dipakai). Yang harus terbukti:
+
+| Percobaan | Harapan |
+|---|---|
+| slot `width: 500` pada frame 1000x500 | badan memuat `Area foto harus berada di dalam frame` |
+| slot `height: 1` (5px asli) | badan memuat `minimal 20x20` |
+| JPEG dengan `type: 'image/png'` | badan memuat `Frame harus berkas PNG yang valid` |
+| akun lain membaca `getCampaignForEdit` | badan memuat `Kampanye tidak ditemukan` |
+| akun lain memanggil `updateCampaign` | badan memuat `Kampanye tidak ditemukan` |
+| `listMyCampaigns` milik akun lain | tidak memuat id campaign orang lain |
+| berkas yatim | `uploads/frames/*` dan baris `campaigns` jumlahnya sama |
+
+Bersihkan data percobaan setelahnya — menghapus barisnya di tabel `user` sudah
+cukup, sisanya ikut lewat cascade:
 ```bash
-curl -s -X POST 'http://localhost:3000/_serverFn/src_server_campaigns_ts--createCampaign_createServerFn_handler' \
-  -H "Cookie: <tempel cookie sesi di sini>" \
-  -F 'frame=@/jalur/ke/frame.png' \
-  -F 'name=Percobaan Nakal' \
-  -F 'description=' \
-  -F 'isPublic=true' \
-  -F 'slots=[{"x":0,"y":0,"width":500,"height":500,"label":""}]'
-```
-
-Expected: respons berisi pesan `Area foto harus berada di dalam frame dan
-minimal 20x20 piksel`, dan `SELECT count(*) FROM campaigns` tidak bertambah.
-
-> URL server function di atas dicetak TanStack Start di panel Network saat
-> kamu menyimpan campaign lewat UI. Kalau bentuknya berbeda di versi yang
-> terpasang, salin yang muncul di sana — yang diuji adalah penolakannya,
-> bukan bentuk URL-nya.
-
-Bersihkan campaign percobaan bila ada yang tersimpan:
-```bash
-psql -d openframe -c "DELETE FROM campaigns WHERE name = 'Percobaan Nakal';"
+psql -d openframe -c "DELETE FROM \"user\" WHERE username LIKE 'v%';"
+rm -rf uploads/frames
 ```
 
 - [ ] **Step 5: Commit**
