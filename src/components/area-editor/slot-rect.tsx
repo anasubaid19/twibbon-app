@@ -61,7 +61,7 @@ export function SlotRect({
   onHandleDown,
   onKeyDown,
 }: Props) {
-  const stroke = isValid ? 'var(--color-accent)' : 'var(--color-danger)'
+  const stroke = isValid ? 'var(--color-brand)' : 'var(--color-danger)'
 
   return (
     <g>

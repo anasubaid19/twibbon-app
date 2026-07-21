@@ -44,7 +44,7 @@ function LoginPage() {
 
       <div className="w-full max-w-md rounded-card border border-border bg-surface p-9">
         <h1 className="mb-1 font-display text-2xl">
-          OpenFrame<span className="text-accent">.</span>
+          OpenFrame<span className="text-brand">.</span>
         </h1>
         <p className="mb-7 text-sm text-muted">Masuk ke akun kamu dan mulai berkarya</p>
 
@@ -69,7 +69,7 @@ function LoginPage() {
               /* biome-ignore lint/a11y/noAutofocus: field pertama pada halaman khusus masuk */
               autoFocus
               placeholder="username kamu"
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-accent"
+              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
             />
           </label>
 
@@ -83,12 +83,12 @@ function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-accent"
+              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
             />
           </label>
 
           <div className="mb-5 text-right">
-            <Link to="/lupa-password" className="text-xs text-accent hover:underline">
+            <Link to="/lupa-password" className="text-xs text-brand hover:underline">
               Lupa password?
             </Link>
           </div>
@@ -96,7 +96,7 @@ function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-pill bg-accent py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
+            className="w-full rounded-pill bg-brand py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             {loading ? 'Memproses...' : 'Masuk →'}
           </button>
@@ -104,7 +104,7 @@ function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-muted">
           Belum punya akun?{' '}
-          <Link to="/register" className="text-accent hover:underline">
+          <Link to="/register" className="text-brand hover:underline">
             Daftar gratis
           </Link>
         </p>

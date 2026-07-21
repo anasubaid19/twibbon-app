@@ -7,7 +7,7 @@ import { resetPassword } from '@/server/auth'
 export const Route = createFileRoute('/lupa-password')({ component: LupaPasswordPage })
 
 const inputClass =
-  'w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-accent'
+  'w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand'
 const labelClass = 'mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted'
 
 /**
@@ -94,7 +94,7 @@ function LupaPasswordPage() {
             ini.
           </p>
 
-          <output className="mb-5 block rounded-base border-2 border-dashed border-accent bg-surface2 p-5 text-center font-mono tracking-widest text-accent">
+          <output className="mb-5 block rounded-base border-2 border-dashed border-brand bg-surface2 p-5 text-center font-mono tracking-widest text-brand">
             {nextCode}
           </output>
 
@@ -133,7 +133,7 @@ function LupaPasswordPage() {
             type="button"
             disabled={!confirmed}
             onClick={() => navigate({ to: '/login' })}
-            className="w-full rounded-pill bg-accent py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
+            className="w-full rounded-pill bg-brand py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             Lanjut ke Halaman Masuk →
           </button>
@@ -217,7 +217,7 @@ function LupaPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-pill bg-accent py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
+            className="w-full rounded-pill bg-brand py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             {loading ? 'Memproses...' : 'Reset Password →'}
           </button>
@@ -225,7 +225,7 @@ function LupaPasswordPage() {
 
         <p className="mt-6 text-center text-sm text-muted">
           Ingat password?{' '}
-          <Link to="/login" className="text-accent hover:underline">
+          <Link to="/login" className="text-brand hover:underline">
             Masuk
           </Link>
         </p>

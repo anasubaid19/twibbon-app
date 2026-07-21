@@ -21,7 +21,7 @@ export const Route = createFileRoute('/edit/$id')({
     <main className="mx-auto max-w-md p-6 text-center">
       <h1 className="mb-2 mt-16 font-display text-2xl">Kampanye tidak ditemukan</h1>
       <p className="mb-6 text-muted">Mungkin sudah dihapus, atau bukan milik akun ini.</p>
-      <Link to="/dashboard" className="text-accent hover:underline">
+      <Link to="/dashboard" className="text-brand hover:underline">
         Kembali ke dashboard
       </Link>
     </main>
@@ -128,7 +128,7 @@ function EditPage() {
               onChange={(event) => setName(event.target.value)}
               required
               maxLength={80}
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-accent"
+              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
             />
           </label>
 
@@ -141,7 +141,7 @@ function EditPage() {
               onChange={(event) => setDescription(event.target.value)}
               maxLength={500}
               rows={3}
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-accent"
+              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
             />
           </label>
 
@@ -158,7 +158,7 @@ function EditPage() {
           <button
             type="submit"
             disabled={!bisaSimpan}
-            className="w-full rounded-pill bg-accent py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
+            className="w-full rounded-pill bg-brand py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>
