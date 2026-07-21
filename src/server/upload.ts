@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, resolve, sep } from 'node:path'
-import sharp from 'sharp'
+import sharp, { type Metadata } from 'sharp'
 
 /** PRD US-02. Diperiksa sebelum Sharp supaya berkas raksasa tidak sempat di-parse. */
 export const MAX_FRAME_BYTES = 10 * 1024 * 1024
@@ -21,7 +21,7 @@ const DITOLAK = 'Frame harus berkas PNG yang valid'
 export async function validateFrame(bytes: Buffer): Promise<{ width: number; height: number }> {
   if (bytes.byteLength > MAX_FRAME_BYTES) throw new Error('Ukuran frame maksimal 10MB')
 
-  let metadata: sharp.Metadata
+  let metadata: Metadata
   try {
     metadata = await sharp(bytes).metadata()
   } catch {

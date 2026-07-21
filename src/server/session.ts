@@ -15,3 +15,16 @@ export const getSession = createServerFn({ method: 'GET' }).handler(async () => 
    * menetapkan bentuk aman untuk Fase 2 saat role/data campaign menempel. */
   return { user: { username: session.user.username ?? session.user.name } }
 })
+
+/**
+ * Dipakai DI DALAM handler server function untuk tahu siapa pemilik data.
+ *
+ * Sengaja bukan server function sendiri: `userId` tidak boleh melintasi kabel
+ * ke klien. Alasannya sama dengan proyeksi di `getSession` di atas — apa pun
+ * yang dikembalikan server function ikut terserialisasi ke payload hidrasi.
+ */
+export async function requireUserId(): Promise<string> {
+  const session = await auth.api.getSession({ headers: getRequestHeaders() })
+  if (!session) throw new Error('Kamu harus masuk dulu')
+  return session.user.id
+}
