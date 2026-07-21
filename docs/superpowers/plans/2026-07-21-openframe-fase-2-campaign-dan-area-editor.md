@@ -2007,30 +2007,39 @@ Expected: `200 image/png`.
 
 - [ ] **Step 4: Buktikan koordinat dari klien tidak dipercaya**
 
-Kirim slot yang lebih besar dari frame lewat permintaan buatan tangan.
-Ambil dulu cookie sesi dari DevTools (Application → Cookies), lalu:
+Server function TanStack Start tidak bisa dipanggil dengan `curl` polos. Tiga
+hal yang wajib benar, semuanya ditemukan saat Fase 2 dikerjakan:
 
+1. URL-nya `/_serverFn/<functionId>`, dan `functionId` adalah base64 dari
+   `{"file":"/src/server/campaigns.ts?tss-serverfn-split","export":"<nama>_createServerFn_handler"}`.
+2. Header `x-tsr-serverFn: true` wajib ada — tanpa itu jawabannya `403`.
+3. Payload JSON harus di-encode seroval (`toJSONAsync({ data })`), bukan JSON
+   biasa. FormData dikirim apa adanya. Fungsi `method: 'GET'` menerima payload
+   di query string lewat `encode({ payload })`, bukan di badan permintaan.
+
+**Dan yang paling gampang menipu:** server function menyalurkan error di dalam
+badan respons dengan status **200**, bukan lewat status HTTP. Assertion yang
+memeriksa `status >= 400` akan lulus untuk alasan yang salah. Periksa isi
+badannya.
+
+Skrip verifikasi yang memakai protokol ini ada di riwayat commit Fase 2
+(`tmp-verify.ts`, dihapus setelah dipakai). Yang harus terbukti:
+
+| Percobaan | Harapan |
+|---|---|
+| slot `width: 500` pada frame 1000x500 | badan memuat `Area foto harus berada di dalam frame` |
+| slot `height: 1` (5px asli) | badan memuat `minimal 20x20` |
+| JPEG dengan `type: 'image/png'` | badan memuat `Frame harus berkas PNG yang valid` |
+| akun lain membaca `getCampaignForEdit` | badan memuat `Kampanye tidak ditemukan` |
+| akun lain memanggil `updateCampaign` | badan memuat `Kampanye tidak ditemukan` |
+| `listMyCampaigns` milik akun lain | tidak memuat id campaign orang lain |
+| berkas yatim | `uploads/frames/*` dan baris `campaigns` jumlahnya sama |
+
+Bersihkan data percobaan setelahnya — menghapus barisnya di tabel `user` sudah
+cukup, sisanya ikut lewat cascade:
 ```bash
-curl -s -X POST 'http://localhost:3000/_serverFn/src_server_campaigns_ts--createCampaign_createServerFn_handler' \
-  -H "Cookie: <tempel cookie sesi di sini>" \
-  -F 'frame=@/jalur/ke/frame.png' \
-  -F 'name=Percobaan Nakal' \
-  -F 'description=' \
-  -F 'isPublic=true' \
-  -F 'slots=[{"x":0,"y":0,"width":500,"height":500,"label":""}]'
-```
-
-Expected: respons berisi pesan `Area foto harus berada di dalam frame dan
-minimal 20x20 piksel`, dan `SELECT count(*) FROM campaigns` tidak bertambah.
-
-> URL server function di atas dicetak TanStack Start di panel Network saat
-> kamu menyimpan campaign lewat UI. Kalau bentuknya berbeda di versi yang
-> terpasang, salin yang muncul di sana — yang diuji adalah penolakannya,
-> bukan bentuk URL-nya.
-
-Bersihkan campaign percobaan bila ada yang tersimpan:
-```bash
-psql -d openframe -c "DELETE FROM campaigns WHERE name = 'Percobaan Nakal';"
+psql -d openframe -c "DELETE FROM \"user\" WHERE username LIKE 'v%';"
+rm -rf uploads/frames
 ```
 
 - [ ] **Step 5: Commit**

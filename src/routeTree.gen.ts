@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BuatRouteImport } from './routes/buat'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LupaPasswordRouteImport } from './routes/lupa-password'
@@ -20,6 +21,11 @@ import { Route as ApiFrameIdRouteImport } from './routes/api/frame.$id'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuatRoute = BuatRouteImport.update({
+  id: '/buat',
+  path: '/buat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -55,6 +61,7 @@ const ApiFrameIdRoute = ApiFrameIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/buat': typeof BuatRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/lupa-password': typeof LupaPasswordRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/buat': typeof BuatRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/lupa-password': typeof LupaPasswordRoute
@@ -74,6 +82,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/buat': typeof BuatRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/lupa-password': typeof LupaPasswordRoute
@@ -85,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/buat'
     | '/dashboard'
     | '/login'
     | '/lupa-password'
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/buat'
     | '/dashboard'
     | '/login'
     | '/lupa-password'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/buat'
     | '/dashboard'
     | '/login'
     | '/lupa-password'
@@ -113,6 +125,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BuatRoute: typeof BuatRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   LupaPasswordRoute: typeof LupaPasswordRoute
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/buat': {
+      id: '/buat'
+      path: '/buat'
+      fullPath: '/buat'
+      preLoaderRoute: typeof BuatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -177,6 +197,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BuatRoute: BuatRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   LupaPasswordRoute: LupaPasswordRoute,
