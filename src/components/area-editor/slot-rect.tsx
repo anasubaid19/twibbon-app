@@ -42,6 +42,8 @@ type Props = {
   index: number
   /** Kotak dalam piksel tampilan, sudah diterjemahkan lewat geometry.toPixels. */
   rect: PixelRect
+  /** Label opsional, ditampilkan di samping nomor. */
+  label?: string
   /** Ukuran gambar frame di layar — batas supaya pegangan tidak terpotong. */
   bounds: FrameSize
   isSelected: boolean
@@ -54,6 +56,7 @@ type Props = {
 export function SlotRect({
   index,
   rect,
+  label,
   bounds,
   isSelected,
   isValid,
@@ -101,7 +104,7 @@ export function SlotRect({
         fontWeight={700}
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
-        {index + 1}
+        {label ? `${index + 1} · ${label}` : index + 1}
       </text>
 
       {isSelected &&
