@@ -145,7 +145,7 @@ function BuatPage() {
               )}
             </>
           ) : (
-            <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-border bg-surface2 p-10 text-center transition-colors hover:border-accent">
+            <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-border bg-surface2 p-10 text-center transition-colors hover:border-brand">
               <span className="font-display text-lg">Pilih frame PNG</span>
               <span className="text-sm text-muted">Maksimal 10MB, dengan latar transparan</span>
               <input
@@ -169,7 +169,7 @@ function BuatPage() {
               required
               maxLength={80}
               placeholder="HUT RI 80"
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-accent"
+              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
             />
           </label>
 
@@ -183,7 +183,7 @@ function BuatPage() {
               maxLength={500}
               rows={3}
               placeholder="Ceritakan sedikit soal kampanye ini"
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-accent"
+              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
             />
           </label>
 
@@ -200,7 +200,7 @@ function BuatPage() {
           <button
             type="submit"
             disabled={!bisaSimpan}
-            className="w-full rounded-pill bg-accent py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
+            className="w-full rounded-pill bg-brand py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             {saving ? 'Menyimpan...' : 'Simpan Kampanye'}
           </button>

@@ -74,7 +74,7 @@ function RegisterPage() {
             aman seperti catatan atau password manager.
           </p>
 
-          <output className="mb-5 block rounded-base border-2 border-dashed border-accent bg-surface2 p-5 text-center font-mono tracking-widest text-accent">
+          <output className="mb-5 block rounded-base border-2 border-dashed border-brand bg-surface2 p-5 text-center font-mono tracking-widest text-brand">
             {recoveryCode}
           </output>
 
@@ -113,7 +113,7 @@ function RegisterPage() {
             type="button"
             disabled={!confirmed}
             onClick={() => navigate({ to: '/dashboard' })}
-            className="w-full rounded-pill bg-accent py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
+            className="w-full rounded-pill bg-brand py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             Sudah disimpan → Masuk Dashboard
           </button>
@@ -130,7 +130,7 @@ function RegisterPage() {
 
       <div className="w-full max-w-md rounded-card border border-border bg-surface p-9">
         <h1 className="mb-1 font-display text-2xl">
-          OpenFrame<span className="text-accent">.</span>
+          OpenFrame<span className="text-brand">.</span>
         </h1>
         <p className="mb-7 text-sm text-muted">
           Buat akun gratis — tanpa email, tanpa nomor telepon
@@ -157,7 +157,7 @@ function RegisterPage() {
               /* biome-ignore lint/a11y/noAutofocus: field pertama pada halaman khusus pendaftaran */
               autoFocus
               placeholder="pilih username unik"
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-accent"
+              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
             />
           </label>
 
@@ -171,14 +171,14 @@ function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-accent"
+              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
             />
           </label>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-pill bg-accent py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
+            className="w-full rounded-pill bg-brand py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             {loading ? 'Membuat akun...' : 'Daftar Sekarang →'}
           </button>
@@ -186,7 +186,7 @@ function RegisterPage() {
 
         <p className="mt-6 text-center text-sm text-muted">
           Sudah punya akun?{' '}
-          <Link to="/login" className="text-accent hover:underline">
+          <Link to="/login" className="text-brand hover:underline">
             Masuk
           </Link>
         </p>

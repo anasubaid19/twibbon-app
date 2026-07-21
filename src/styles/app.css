@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "@fontsource-variable/bricolage-grotesque";
 @import "@fontsource-variable/nunito";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
@@ -33,8 +35,8 @@
   --color-text: var(--of-text);
   --color-muted: var(--of-muted);
 
-  --color-accent: #caff33;
-  --color-accent-dark: #a8d400;
+  --color-brand: #caff33;
+  --color-brand-dark: #a8d400;
   --color-danger: #ff4d4d;
 
   --font-display: "Bricolage Grotesque Variable", sans-serif;
@@ -44,11 +46,40 @@
   --radius-card: 18px;
   --radius-base: 14px;
   --radius-sm: 8px;
+  /* shadcn memakai --font-sans dan --font-heading. Diarahkan ke font
+     OpenFrame, bukan Geist bawaan preset. */
+  --font-sans: "Nunito Variable", sans-serif;
+  --font-heading: "Bricolage Grotesque Variable", sans-serif;
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-destructive: var(--destructive);
+  /* Permukaan hover shadcn. Aman dipakai nama ini sekarang: token merek
+     sudah pindah ke --color-brand. */
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
   html {
     color-scheme: dark;
+    @apply font-sans;
   }
   html[data-theme="light"] {
     color-scheme: light;
@@ -68,6 +99,7 @@
     transition:
       background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
       color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    @apply bg-background text-foreground;
   }
   h1,
   h2,
@@ -76,6 +108,9 @@
     font-weight: 800;
     line-height: 1.2;
     letter-spacing: -0.02em;
+  }
+  * {
+    @apply border-border outline-ring/50;
   }
 }
 
@@ -90,5 +125,132 @@
     animation-duration: 0.01ms !important;
     /* biome-ignore lint/complexity/noImportantStyles: alasan sama */
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Jembatan ke shadcn/ui ───────────────────────────────────────────────
+   Menggantikan palet netral yang ditulis `shadcn init`. Arahnya satu arah:
+   peran-peran shadcn menunjuk ke token OpenFrame, supaya komponennya
+   mewarisi identitas aplikasi alih-alih membawa tema abu-abu bawaannya.
+
+   Ditulis untuk [data-theme], BUKAN .dark — sistem tema proyek ini memakai
+   atribut, dan blok `.dark` hasil generate tidak akan pernah cocok. */
+:root,
+[data-theme="dark"],
+[data-theme="light"] {
+  --background: var(--of-bg);
+  --foreground: var(--of-text);
+
+  --card: var(--of-surface);
+  --card-foreground: var(--of-text);
+  --popover: var(--of-surface);
+  --popover-foreground: var(--of-text);
+
+  /* Warna merek. Teks di atasnya selalu gelap — lime terlalu terang untuk teks putih. */
+  --primary: #caff33;
+  --primary-foreground: #0b0b0d;
+
+  --secondary: var(--of-surface2);
+  --secondary-foreground: var(--of-text);
+
+  --muted: var(--of-surface2);
+  --muted-foreground: var(--of-muted);
+
+  /* Permukaan hover, BUKAN warna merek. Inilah alasan token merek diganti
+     nama jadi `brand`: komponen shadcn menulis hover:bg-accent di mana-mana. */
+  --accent: var(--of-surface2);
+  --accent-foreground: var(--of-text);
+
+  --destructive: #ff4d4d;
+  --destructive-foreground: #ffffff;
+
+  --border: var(--of-border);
+  --input: var(--of-border);
+  /* Cincin fokus lime, memindahkan `box-shadow: 0 0 0 3px #caff3325`
+     dari `.field input:focus` di index.css lama. */
+  --ring: #caff33;
+
+  --radius: 14px;
+}
+
+/* Di tema terang lime murni menyilaukan sebagai isian tombol besar dan
+   kontrasnya tipis di atas latar krem. index.css lama sudah menyelesaikan ini
+   dengan memakai varian gelapnya untuk elemen interaktif. */
+[data-theme="light"] {
+  --primary: #a8d400;
+  --ring: #a8d400;
+}
+
+/* ── Atmosfer ────────────────────────────────────────────────────────────
+   Cahaya lime samar di latar, dipindahkan dari `.auth-wrap::before` dan
+   `.twibbon-wrap::before`. Ditaruh sebagai kelas tersendiri, bukan ::before
+   milik satu halaman, supaya halaman mana pun bisa memakainya. */
+.atmosfer::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 50% at 70% 20%, #caff3312 0%, transparent 70%);
+}
+[data-theme="light"] .atmosfer::before {
+  background: radial-gradient(ellipse 60% 50% at 70% 20%, #a8d40010 0%, transparent 70%);
+}
+
+/* ── Animasi masuk berjenjang ────────────────────────────────────────────
+   Blok prefers-reduced-motion di atas sudah memangkas durasinya jadi 0.01ms,
+   jadi tidak perlu penjagaan tambahan di sini. */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: fadeUp 0.4s ease both;
+}
+.fade-up-2 {
+  animation: fadeUp 0.4s 0.08s ease both;
+}
+.fade-up-3 {
+  animation: fadeUp 0.4s 0.16s ease both;
+}
+
+/* ── Scrollbar tipis ─────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--of-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--of-border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--of-muted);
+}
+
+/* ── Perbaikan kontras tema terang ───────────────────────────────────────
+   Hasil trial-error di aplikasi lama (blok "FIXES KONTRAS"); dipertahankan
+   supaya tidak ditemukan ulang lewat jalan yang sama. */
+[data-theme="light"] .badge-netral {
+  background: #e0ded8;
+  border-color: #c8c6c0;
+  color: #444;
+}
+
+/* ── Anti-zoom iOS ───────────────────────────────────────────────────────
+   Safari iOS memperbesar halaman saat input dengan font di bawah 16px
+   mendapat fokus, dan tidak mengembalikannya. */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
   }
 }

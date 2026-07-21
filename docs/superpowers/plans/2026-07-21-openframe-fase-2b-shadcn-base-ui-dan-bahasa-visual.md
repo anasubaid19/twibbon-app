@@ -112,19 +112,25 @@ Expected: kosong (selain `legacy file/` dan `graphify-out/` yang memang untracke
 
 - [ ] **Step 2: Jalankan init**
 
+CLI-nya interaktif dan `-y` **tidak** melewati prompt preset — tanpa `-p` ia
+menggantung menunggu pilihan lalu keluar begitu stdin tertutup. Nama preset juga
+bukan `base-nova` seperti tertulis di `--help`; yang diterima hanya `nova`,
+`vega`, `maia`, `lyra`, `mira`, `luma`, `sera`, `rhea`.
+
 ```bash
-bunx shadcn@latest init
+bun add -d shadcn@4.13.1
+./node_modules/.bin/shadcn init -b base -p nova -y --no-monorepo
 ```
 
-Jawaban prompt:
-- Primitif: **Base UI** (sejak changelog `2026-07-base-ui-default` ini bawaannya; kalau CLI menawarkan Radix, pilih Base UI secara eksplisit)
-- Base color: **Neutral** — nilainya akan ditimpa total di Step 4, jadi pilihan ini tidak penting
-- CSS file: **`src/styles/app.css`**
-- CSS variables: **Yes** — wajib; tanpa ini komponen memakai warna literal dan tidak bisa ditema ulang
+`-b base` = Base UI (pilihannya `base`, `radix`, `aria`).
 
-Expected: `components.json` terbentuk, `src/lib/utils.ts` terbentuk, dan `clsx`/`tailwind-merge`/`class-variance-authority`/`@base-ui/react` masuk ke `package.json`.
+> CLI-nya dipasang sebagai devDependency, bukan dipanggil lewat `bunx` tiap
+> kali. Resolusi registry bisa makan tiga menit lebih per panggilan, dan
+> memasangnya sekali membuat `shadcn add` di Task 2 langsung jalan sekaligus
+> mengunci versinya di lockfile.
 
-> Kalau CLI gagal mendeteksi framework, jalankan `bunx shadcn@latest init -t start` (`-t start` = TanStack Start, didukung resmi).
+Expected: `Found TanStack Start.`, `Found v4.`, `components.json` terbentuk,
+`src/lib/utils.ts` terbentuk, dan `src/styles/app.css` diperbarui.
 
 - [ ] **Step 3: Lihat persis apa yang disentuh CLI**
 
@@ -133,13 +139,28 @@ git diff --stat
 git diff src/styles/app.css
 ```
 
-Yang **wajib masih ada** setelah init:
-- blok `:root, [data-theme="dark"]` dan `[data-theme="light"]` berisi `--of-*`
-- `@custom-variant dark (...)`
-- `@theme inline` berisi `--color-accent`, `--font-display`, `--radius-pill`, dst.
-- blok `@layer base` (body, h1-h3) dan `@media (prefers-reduced-motion: reduce)`
+Expected: `app.css` bertambah ~113 baris dengan **nol penghapusan** — CLI
+menambahkan di akhir, tidak menimpa. Semua token `--of-*`, `@custom-variant`,
+dan blok `prefers-reduced-motion` tetap utuh.
 
-Kalau ada yang hilang, kembalikan dengan `git checkout -- src/styles/app.css` lalu tempelkan tambahan dari CLI secara manual. **Jangan** lanjut sebelum token lama utuh.
+**Empat hal yang ditambahkan CLI dan harus dibereskan** (dikerjakan di Step 5):
+
+1. **Palet netral abu-abu di blok `:root` pada akhir berkas**, termasuk
+   `--background: oklch(1 0 0)` alias putih. Karena ia datang setelah blok
+   tema kita dan spesifisitasnya sama, ia menang — dan CLI juga menambahkan
+   `body { @apply bg-background }`. Dibiarkan, **latar aplikasi jadi putih di
+   tema gelap.**
+2. **Blok `.dark { … }`** — proyek ini memakai `[data-theme="dark"]`, jadi
+   blok itu tidak akan pernah cocok. Mati sejak lahir.
+3. **Font Geist**: `@import "@fontsource-variable/geist"`, `--font-sans:
+   'Geist Variable'`, dan `html { @apply font-sans }`. Font proyek ini
+   Bricolage + Nunito.
+4. **Token `--color-sidebar-*` dan `--color-chart-*`** yang tidak dipakai
+   proyek ini sama sekali.
+
+Yang **tidak** ditambahkan CLI: `--color-accent`. Ia melewatinya justru karena
+nama itu sudah terpakai oleh lime kita — bukti langsung bahwa jebakan neon di
+Global Constraints nyata, dan alasan Step 4 harus dijalankan.
 
 - [ ] **Step 4: Ganti nama token merek `accent` → `brand`**
 

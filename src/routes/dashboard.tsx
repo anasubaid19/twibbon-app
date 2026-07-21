@@ -69,7 +69,7 @@ function DashboardPage() {
 
       <Link
         to="/buat"
-        className="mb-6 inline-block rounded-pill bg-accent px-6 py-2.5 font-semibold text-bg transition-transform hover:-translate-y-px"
+        className="mb-6 inline-block rounded-pill bg-brand px-6 py-2.5 font-semibold text-bg transition-transform hover:-translate-y-px"
       >
         + Bikin Kampanye
       </Link>
@@ -85,7 +85,7 @@ function DashboardPage() {
               <Link
                 to="/edit/$id"
                 params={{ id: campaign.id }}
-                className="block overflow-hidden rounded-card border border-border bg-surface transition-colors hover:border-accent"
+                className="block overflow-hidden rounded-card border border-border bg-surface transition-colors hover:border-brand"
               >
                 <img
                   src={`/api/frame/${campaign.id}`}
