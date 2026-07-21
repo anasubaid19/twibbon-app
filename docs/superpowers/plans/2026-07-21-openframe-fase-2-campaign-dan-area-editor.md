@@ -805,7 +805,10 @@ describe('validateFrame', () => {
   })
 
   test('menolak frame yang dimensinya tidak masuk akal', async () => {
-    const png = await kanvas(7000, 100).png().toBuffer()
+    // Tingginya sengaja tetap sah (>= 200): kalau kedua sisi melanggar,
+    // pemeriksaan minimum yang jalan lebih dulu dan test ini lulus karena
+    // alasan yang salah.
+    const png = await kanvas(7000, 300).png().toBuffer()
     expect(validateFrame(png)).rejects.toThrow(/maksimal/)
   })
 
