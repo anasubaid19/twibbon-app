@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { AreaEditor } from '@/components/area-editor/area-editor'
+import { AreaEditor, type SlotEditor } from '@/components/area-editor/area-editor'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { type FrameSize, isValidSlot, type SlotRect } from '@/lib/geometry'
 import { pesanError } from '@/lib/pesan-error'
@@ -27,7 +27,7 @@ function BuatPage() {
   const [file, setFile] = useState<File | null>(null)
   const [frameSrc, setFrameSrc] = useState('')
   const [frameSize, setFrameSize] = useState<FrameSize>({ width: 0, height: 0 })
-  const [slots, setSlots] = useState<SlotRect[]>([SLOT_AWAL])
+  const [slots, setSlots] = useState<SlotEditor[]>([SLOT_AWAL])
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')

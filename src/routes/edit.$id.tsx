@@ -1,8 +1,8 @@
 import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { AreaEditor } from '@/components/area-editor/area-editor'
+import { AreaEditor, type SlotEditor } from '@/components/area-editor/area-editor'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { isValidSlot, type SlotRect } from '@/lib/geometry'
+import { isValidSlot } from '@/lib/geometry'
 import { pesanError } from '@/lib/pesan-error'
 import { getCampaignForEdit, updateCampaign } from '@/server/campaigns'
 import { getSession } from '@/server/session'
@@ -34,7 +34,7 @@ function EditPage() {
   const { id } = Route.useParams()
   const navigate = useNavigate()
 
-  const [slots, setSlots] = useState<SlotRect[]>(campaign.slots)
+  const [slots, setSlots] = useState<SlotEditor[]>(campaign.slots)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [name, setName] = useState(campaign.name)
   const [description, setDescription] = useState(campaign.description)
@@ -57,7 +57,7 @@ function EditPage() {
           name,
           description,
           isPublic,
-          slots: slots.map((slot) => ({ ...slot, label: '' })),
+          slots: slots.map((slot) => ({ ...slot, label: slot.label ?? '' })),
         },
       })
       navigate({ to: '/dashboard' })

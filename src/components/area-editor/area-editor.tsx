@@ -5,6 +5,7 @@ import {
   useState,
 } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   clampToFrame,
   type FrameSize,
@@ -24,12 +25,20 @@ const UKURAN_BARU = 20
 /** PRD US-02. */
 const MAKS_SLOT = 20
 
+/**
+ * Slot seperti yang dipegang editor: koordinat plus label opsional.
+ *
+ * `SlotRect` di geometry.ts sengaja tetap tipe koordinat murni — ia dipakai
+ * juga oleh compositing, yang tidak peduli label.
+ */
+export type SlotEditor = Rect & { label?: string }
+
 type Props = {
   frameSrc: string
   /** Dimensi asli frame dalam piksel — dipakai memeriksa ukuran minimum slot. */
   frameSize: FrameSize
-  slots: readonly Rect[]
-  onChange: (slots: Rect[]) => void
+  slots: readonly SlotEditor[]
+  onChange: (slots: SlotEditor[]) => void
   selectedIndex: number
   onSelect: (index: number) => void
 }
@@ -167,6 +176,7 @@ export function AreaEditor({
               index={index}
               rect={toPixels(slot, display)}
               bounds={display}
+              label={slot.label}
               isSelected={index === selectedIndex}
               isValid={isValidSlot(slot, frameSize)}
               onSelect={() => onSelect(index)}
@@ -220,6 +230,21 @@ export function AreaEditor({
         >
           Hapus area
         </Button>
+
+        <Input
+          value={terpilih?.label ?? ''}
+          maxLength={40}
+          placeholder={`Label area ${selectedIndex + 1} (opsional)`}
+          disabled={!terpilih}
+          className="h-8 w-52"
+          onChange={(event) =>
+            onChange(
+              slots.map((slot, i) =>
+                i === selectedIndex ? { ...slot, label: event.target.value } : slot,
+              ),
+            )
+          }
+        />
 
         <span className="px-1 text-sm text-muted">
           {slots.length} area{terpilih ? ` · area ${selectedIndex + 1} terpilih` : ''}
