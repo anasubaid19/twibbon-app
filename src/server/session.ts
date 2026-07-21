@@ -16,15 +16,8 @@ export const getSession = createServerFn({ method: 'GET' }).handler(async () => 
   return { user: { username: session.user.username ?? session.user.name } }
 })
 
-/**
- * Dipakai DI DALAM handler server function untuk tahu siapa pemilik data.
- *
- * Sengaja bukan server function sendiri: `userId` tidak boleh melintasi kabel
- * ke klien. Alasannya sama dengan proyeksi di `getSession` di atas — apa pun
- * yang dikembalikan server function ikut terserialisasi ke payload hidrasi.
- */
-export async function requireUserId(): Promise<string> {
-  const session = await auth.api.getSession({ headers: getRequestHeaders() })
-  if (!session) throw new Error('Kamu harus masuk dulu')
-  return session.user.id
-}
+/* `requireUserId` sengaja TIDAK tinggal di sini, melainkan di
+   `require-user.ts`. Berkas ini diimpor komponen klien (mereka butuh
+   `getSession`), dan hanya badan server function yang dipisahkan ke bundel
+   server. Fungsi biasa yang menyentuh `auth` akan ikut terseret ke bundel
+   klien dan membuat `bun run build` gagal me-resolve modul server. */

@@ -42,7 +42,7 @@ Berlaku untuk **setiap** task di bawah ini.
 | `src/lib/slug.ts` | **Baru.** Slugify nama campaign + penyelesaian bentrok |
 | `src/db/schema.ts` | **Ubah.** Tambah tabel `campaigns` dan `frame_slots` |
 | `src/server/upload.ts` | **Baru.** Validasi frame lewat Sharp, tulis/baca/hapus berkas di `uploads/` |
-| `src/server/session.ts` | **Ubah.** Tambah `requireUserId()` untuk dipakai di dalam handler server function |
+| `src/server/require-user.ts` | **Baru.** `requireUserId()` untuk dipakai di dalam handler server function. Berkas terpisah — lihat Task 5 |
 | `src/server/campaigns.ts` | **Baru.** `createCampaign`, `listMyCampaigns`, `getCampaignForEdit`, `updateCampaign` |
 | `src/routes/api/frame.$id.ts` | **Baru.** Menyajikan PNG frame dari disk berdasarkan id campaign |
 | `src/components/area-editor/use-element-size.ts` | **Baru.** Ukuran render elemen lewat `ResizeObserver` |
@@ -966,29 +966,38 @@ Berkas ditulis apa adanya supaya alpha channel tetap utuh."
 Empat fungsi sekaligus karena keempatnya berbagi skema Zod dan aturan kepemilikan yang sama; memisahkannya berarti menyalin blok validasi yang identik.
 
 **Files:**
-- Modify: `src/server/session.ts`
+- Create: `src/server/require-user.ts`
 - Create: `src/server/campaigns.ts`
 
 **Interfaces:**
 - Consumes: `db` (`@/db`), `campaigns`/`frameSlots` (Task 3), `isValidSlot` (Task 1), `slugify`/`resolveSlug` (Task 2), `validateFrame`/`saveFrame`/`deleteFrameDir` (Task 4)
 - Produces:
-  - `requireUserId(): Promise<string>` dari `@/server/session`
+  - `requireUserId(): Promise<string>` dari `@/server/require-user`
   - `createCampaign` — input `FormData` (`frame`, `name`, `description`, `isPublic`, `slots`), keluaran `{ id: string; slug: string }`
   - `listMyCampaigns` — keluaran `{ id, name, slug, isPublic, useCount, slotCount, createdAt }[]`
   - `getCampaignForEdit` — input `{ id: string }`, keluaran `{ id, name, description, slug, isPublic, frameWidth, frameHeight, slots: { x, y, width, height, label }[] }`
   - `updateCampaign` — input `{ id, name, description, isPublic, slots }`, keluaran `{ ok: true }`
 
-- [ ] **Step 1: Tambahkan `requireUserId` ke `src/server/session.ts`**
+- [ ] **Step 1: Buat `src/server/require-user.ts`**
 
-Tambahkan di akhir berkas, di bawah `getSession` yang sudah ada:
+**Jangan taruh di `session.ts`.** Berkas itu diimpor komponen klien (mereka
+butuh `getSession`), dan bundler hanya memisahkan **badan server function** ke
+sisi server. Fungsi biasa yang menyentuh `auth` akan ikut terseret ke bundel
+klien, dan `bun run build` gagal me-resolve `@tanstack/react-start/server`.
+`bun dev` tidak menangkap ini — hanya build produksi yang menangkapnya.
 
 ```ts
+import { getRequestHeaders } from '@tanstack/react-start/server'
+import { auth } from '@/lib/auth'
+
 /**
  * Dipakai DI DALAM handler server function untuk tahu siapa pemilik data.
  *
  * Sengaja bukan server function sendiri: `userId` tidak boleh melintasi kabel
- * ke klien. Alasannya sama dengan proyeksi di `getSession` di atas — apa pun
- * yang dikembalikan server function ikut terserialisasi ke payload hidrasi.
+ * ke klien. Alasannya sama dengan proyeksi di `getSession` — apa pun yang
+ * dikembalikan server function ikut terserialisasi ke payload hidrasi.
+ *
+ * Berkas ini juga sengaja terpisah dari `session.ts`; lihat catatan di atas.
  */
 export async function requireUserId(): Promise<string> {
   const session = await auth.api.getSession({ headers: getRequestHeaders() })
@@ -1008,7 +1017,7 @@ import { db } from '@/db'
 import { campaigns, frameSlots } from '@/db/schema'
 import { isValidSlot } from '@/lib/geometry'
 import { resolveSlug, slugify } from '@/lib/slug'
-import { requireUserId } from '@/server/session'
+import { requireUserId } from '@/server/require-user'
 import { deleteFrameDir, saveFrame, validateFrame } from '@/server/upload'
 
 /* --- Skema bersama ------------------------------------------------------ */

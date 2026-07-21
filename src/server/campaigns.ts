@@ -6,7 +6,7 @@ import { db } from '@/db'
 import { campaigns, frameSlots } from '@/db/schema'
 import { isValidSlot } from '@/lib/geometry'
 import { resolveSlug, slugify } from '@/lib/slug'
-import { requireUserId } from '@/server/session'
+import { requireUserId } from '@/server/require-user'
 import { deleteFrameDir, saveFrame, validateFrame } from '@/server/upload'
 
 /* --- Skema bersama ------------------------------------------------------ */
