@@ -1,5 +1,5 @@
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
-import type { DragMode, PixelRect } from '@/lib/geometry'
+import type { DragMode, FrameSize, PixelRect } from '@/lib/geometry'
 
 /** Sisi pegangan resize dalam piksel tampilan. */
 const HANDLE = 10
@@ -25,10 +25,25 @@ const HANDLES: ReadonlyArray<{
   { mode: 'w', fx: 0, fy: 0.5, cursor: 'ew-resize', label: 'kiri' },
 ]
 
+/**
+ * Menahan pegangan supaya seluruh kotaknya tetap di dalam area gambar.
+ *
+ * Tanpa ini, slot yang menempel di tepi frame — kasus yang justru paling
+ * sering, misalnya area foto full-bleed — punya pegangan yang separuhnya
+ * menggantung di luar SVG. Induknya `overflow-hidden`, jadi separuh itu
+ * terpotong: pegangannya terlihat cacat DAN titik tengahnya tidak bisa
+ * diklik sama sekali.
+ */
+function tahanDiDalam(nilai: number, batas: number): number {
+  return Math.min(Math.max(nilai, 0), Math.max(0, batas - HANDLE))
+}
+
 type Props = {
   index: number
   /** Kotak dalam piksel tampilan, sudah diterjemahkan lewat geometry.toPixels. */
   rect: PixelRect
+  /** Ukuran gambar frame di layar — batas supaya pegangan tidak terpotong. */
+  bounds: FrameSize
   isSelected: boolean
   isValid: boolean
   onSelect: () => void
@@ -39,6 +54,7 @@ type Props = {
 export function SlotRect({
   index,
   rect,
+  bounds,
   isSelected,
   isValid,
   onSelect,
@@ -92,8 +108,8 @@ export function SlotRect({
         HANDLES.map((handle) => (
           <rect
             key={handle.mode}
-            x={rect.x + handle.fx * rect.width - HANDLE / 2}
-            y={rect.y + handle.fy * rect.height - HANDLE / 2}
+            x={tahanDiDalam(rect.x + handle.fx * rect.width - HANDLE / 2, bounds.width)}
+            y={tahanDiDalam(rect.y + handle.fy * rect.height - HANDLE / 2, bounds.height)}
             width={HANDLE}
             height={HANDLE}
             rx={2}

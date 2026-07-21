@@ -87,6 +87,7 @@ export function AreaEditor({
             key={index}
             index={index}
             rect={toPixels(slot, display)}
+            bounds={display}
             isSelected={index === selectedIndex}
             isValid={isValidSlot(slot, frameSize)}
             onSelect={() => onSelect(index)}
