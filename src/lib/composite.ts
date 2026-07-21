@@ -73,6 +73,33 @@ export function rubberBand(offset: number, batas: number): number {
   return Math.sign(offset) * ditahan
 }
 
+/**
+ * Indeks slot yang berada di bawah sebuah titik kanvas, atau -1.
+ *
+ * Dicari dari belakang: slot bernomor besar digambar paling akhir dan karena
+ * itu tampak paling atas, jadi yang terlihat itulah yang harus tersentuh.
+ */
+export function slotAt(
+  slots: readonly SlotRect[],
+  point: { x: number; y: number },
+  canvas: FrameSize,
+): number {
+  for (let i = slots.length - 1; i >= 0; i--) {
+    const slot = slots[i]
+    if (!slot) continue
+    const kotak = toPixels(slot, canvas)
+    if (
+      point.x >= kotak.x &&
+      point.x <= kotak.x + kotak.width &&
+      point.y >= kotak.y &&
+      point.y <= kotak.y + kotak.height
+    ) {
+      return i
+    }
+  }
+  return -1
+}
+
 /** Isi satu slot: fotonya dan posisinya. */
 export type SlotFill = { image: HTMLImageElement; transform: Transform }
 
