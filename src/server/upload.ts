@@ -72,8 +72,16 @@ export async function saveFrame(campaignId: string, bytes: Buffer): Promise<stri
   return relativePath
 }
 
-export async function readFrame(relativePath: string): Promise<Buffer> {
-  return await readFile(frameAbsolutePath(relativePath))
+/**
+ * Mengembalikan `Uint8Array`, bukan `Buffer`, karena itulah yang diterima
+ * `BodyInit` milik Response.
+ *
+ * Parameter generiknya harus `ArrayBuffer`, bukan `ArrayBufferLike` bawaan
+ * `Buffer.buffer`: `ArrayBufferLike` juga mencakup `SharedArrayBuffer`, yang
+ * tidak diterima `BodyInit`. Maka isinya disalin ke buffer milik sendiri.
+ */
+export async function readFrame(relativePath: string): Promise<Uint8Array<ArrayBuffer>> {
+  return new Uint8Array(await readFile(frameAbsolutePath(relativePath)))
 }
 
 /** Dipakai sebagai kompensasi saat penyimpanan database gagal, dan saat hapus campaign. */
