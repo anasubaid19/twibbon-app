@@ -16,6 +16,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LupaPasswordRouteImport } from './routes/lupa-password'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as EditIdRouteImport } from './routes/edit.$id'
+import { Route as TwibbonSlugRouteImport } from './routes/twibbon.$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiFrameIdRouteImport } from './routes/api/frame.$id'
 
@@ -54,6 +55,11 @@ const EditIdRoute = EditIdRouteImport.update({
   path: '/edit/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TwibbonSlugRoute = TwibbonSlugRouteImport.update({
+  id: '/twibbon/$slug',
+  path: '/twibbon/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/lupa-password': typeof LupaPasswordRoute
   '/register': typeof RegisterRoute
   '/edit/$id': typeof EditIdRoute
+  '/twibbon/$slug': typeof TwibbonSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/frame/$id': typeof ApiFrameIdRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/lupa-password': typeof LupaPasswordRoute
   '/register': typeof RegisterRoute
   '/edit/$id': typeof EditIdRoute
+  '/twibbon/$slug': typeof TwibbonSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/frame/$id': typeof ApiFrameIdRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/lupa-password': typeof LupaPasswordRoute
   '/register': typeof RegisterRoute
   '/edit/$id': typeof EditIdRoute
+  '/twibbon/$slug': typeof TwibbonSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/frame/$id': typeof ApiFrameIdRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/lupa-password'
     | '/register'
     | '/edit/$id'
+    | '/twibbon/$slug'
     | '/api/auth/$'
     | '/api/frame/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/lupa-password'
     | '/register'
     | '/edit/$id'
+    | '/twibbon/$slug'
     | '/api/auth/$'
     | '/api/frame/$id'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/lupa-password'
     | '/register'
     | '/edit/$id'
+    | '/twibbon/$slug'
     | '/api/auth/$'
     | '/api/frame/$id'
   fileRoutesById: FileRoutesById
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   LupaPasswordRoute: typeof LupaPasswordRoute
   RegisterRoute: typeof RegisterRoute
   EditIdRoute: typeof EditIdRoute
+  TwibbonSlugRoute: typeof TwibbonSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiFrameIdRoute: typeof ApiFrameIdRoute
 }
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EditIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/twibbon/$slug': {
+      id: '/twibbon/$slug'
+      path: '/twibbon/$slug'
+      fullPath: '/twibbon/$slug'
+      preLoaderRoute: typeof TwibbonSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -223,6 +243,7 @@ const rootRouteChildren: RootRouteChildren = {
   LupaPasswordRoute: LupaPasswordRoute,
   RegisterRoute: RegisterRoute,
   EditIdRoute: EditIdRoute,
+  TwibbonSlugRoute: TwibbonSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiFrameIdRoute: ApiFrameIdRoute,
 }
