@@ -3,9 +3,9 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, count, desc, eq, like, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import { campaigns, frameSlots } from '@/db/schema'
+import { campaigns, frameSlots, user } from '@/db/schema'
 import { isValidSlot } from '@/lib/geometry'
-import { resolveSlug, slugify } from '@/lib/slug'
+import { resolveSlug, SLUG_PATTERN, slugify } from '@/lib/slug'
 import { requireUserId } from '@/server/require-user'
 import { deleteFrameDir, saveFrame, validateFrame } from '@/server/upload'
 
@@ -262,4 +262,54 @@ export const updateCampaign = createServerFn({ method: 'POST' })
     })
 
     return { ok: true as const }
+  })
+
+/* --- getCampaignBySlug --------------------------------------------------- */
+
+export const getCampaignBySlug = createServerFn({ method: 'GET' })
+  .validator((input: unknown) =>
+    z.object({ slug: z.string().regex(SLUG_PATTERN, TIDAK_DITEMUKAN) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    // Tidak ada `requireUserId` di sini: halaman partisipan memang publik.
+    const [row] = await db
+      .select({
+        id: campaigns.id,
+        name: campaigns.name,
+        description: campaigns.description,
+        slug: campaigns.slug,
+        frameWidth: campaigns.frameWidth,
+        frameHeight: campaigns.frameHeight,
+        useCount: campaigns.useCount,
+        // `username` nullable di schema, jadi diambil berdua lalu dijatuhkan
+        // ke `name` — pola yang sama dipakai getSession di server/session.ts.
+        username: user.username,
+        ownerName: user.name,
+      })
+      .from(campaigns)
+      .innerJoin(user, eq(user.id, campaigns.userId))
+      // `isPublic` masuk ke dalam WHERE, bukan diperiksa setelah barisnya
+      // didapat. Campaign privat jadi "tidak ditemukan", bukan 403 —
+      // keberadaannya tidak boleh bocor ke orang yang bukan pemiliknya.
+      .where(and(eq(campaigns.slug, data.slug), eq(campaigns.isPublic, true)))
+      .limit(1)
+
+    if (!row) throw new Error(TIDAK_DITEMUKAN)
+
+    const slots = await db
+      .select({
+        x: frameSlots.x,
+        y: frameSlots.y,
+        width: frameSlots.width,
+        height: frameSlots.height,
+        label: frameSlots.label,
+      })
+      .from(frameSlots)
+      .where(eq(frameSlots.campaignId, row.id))
+      .orderBy(frameSlots.slotIndex)
+
+    // `userId` sengaja tidak ikut. Yang keluar cuma username, yang memang
+    // ditampilkan di halaman partisipan sebagai "oleh @siapa".
+    const { ownerName, username, ...campaign } = row
+    return { ...campaign, username: username ?? ownerName, slots }
   })
