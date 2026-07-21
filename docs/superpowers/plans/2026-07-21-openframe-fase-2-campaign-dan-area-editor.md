@@ -760,7 +760,7 @@ Sharp mem-parse berkasnya sendiri. `file.type` dari klien tidak dipercaya sama s
   - `const MAX_FRAME_BYTES = 10 * 1024 * 1024`
   - `validateFrame(bytes: Buffer): Promise<{ width: number; height: number }>` — melempar `Error` berbahasa Indonesia bila ditolak
   - `saveFrame(campaignId: string, bytes: Buffer): Promise<string>` — mengembalikan jalur relatif
-  - `readFrame(relativePath: string): Promise<Buffer>`
+  - `readFrame(relativePath: string): Promise<Uint8Array<ArrayBuffer>>`
   - `deleteFrameDir(campaignId: string): Promise<void>`
 
 - [ ] **Step 1: Tulis test yang gagal**
@@ -911,8 +911,16 @@ export async function saveFrame(campaignId: string, bytes: Buffer): Promise<stri
   return relativePath
 }
 
-export async function readFrame(relativePath: string): Promise<Buffer> {
-  return await readFile(frameAbsolutePath(relativePath))
+/**
+ * Mengembalikan `Uint8Array`, bukan `Buffer`, karena itulah yang diterima
+ * `BodyInit` milik Response.
+ *
+ * Parameter generiknya harus `ArrayBuffer`, bukan `ArrayBufferLike` bawaan
+ * `Buffer.buffer`: `ArrayBufferLike` juga mencakup `SharedArrayBuffer`, yang
+ * tidak diterima `BodyInit`. Maka isinya disalin ke buffer milik sendiri.
+ */
+export async function readFrame(relativePath: string): Promise<Uint8Array<ArrayBuffer>> {
+  return new Uint8Array(await readFile(frameAbsolutePath(relativePath)))
 }
 
 /** Dipakai sebagai kompensasi saat penyimpanan database gagal, dan saat hapus campaign. */
@@ -1332,7 +1340,7 @@ export const Route = createFileRoute('/api/frame/$id')({
           return new Response(null, { status: 304 })
         }
 
-        let bytes: Buffer
+        let bytes: Uint8Array<ArrayBuffer>
         try {
           bytes = await readFrame(row.framePath)
         } catch {
