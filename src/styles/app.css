@@ -180,3 +180,77 @@
   --primary: #a8d400;
   --ring: #a8d400;
 }
+
+/* ── Atmosfer ────────────────────────────────────────────────────────────
+   Cahaya lime samar di latar, dipindahkan dari `.auth-wrap::before` dan
+   `.twibbon-wrap::before`. Ditaruh sebagai kelas tersendiri, bukan ::before
+   milik satu halaman, supaya halaman mana pun bisa memakainya. */
+.atmosfer::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 50% at 70% 20%, #caff3312 0%, transparent 70%);
+}
+[data-theme="light"] .atmosfer::before {
+  background: radial-gradient(ellipse 60% 50% at 70% 20%, #a8d40010 0%, transparent 70%);
+}
+
+/* ── Animasi masuk berjenjang ────────────────────────────────────────────
+   Blok prefers-reduced-motion di atas sudah memangkas durasinya jadi 0.01ms,
+   jadi tidak perlu penjagaan tambahan di sini. */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: fadeUp 0.4s ease both;
+}
+.fade-up-2 {
+  animation: fadeUp 0.4s 0.08s ease both;
+}
+.fade-up-3 {
+  animation: fadeUp 0.4s 0.16s ease both;
+}
+
+/* ── Scrollbar tipis ─────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--of-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--of-border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--of-muted);
+}
+
+/* ── Perbaikan kontras tema terang ───────────────────────────────────────
+   Hasil trial-error di aplikasi lama (blok "FIXES KONTRAS"); dipertahankan
+   supaya tidak ditemukan ulang lewat jalan yang sama. */
+[data-theme="light"] .badge-netral {
+  background: #e0ded8;
+  border-color: #c8c6c0;
+  color: #444;
+}
+
+/* ── Anti-zoom iOS ───────────────────────────────────────────────────────
+   Safari iOS memperbesar halaman saat input dengan font di bawah 16px
+   mendapat fokus, dan tidak mengembalikannya. */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

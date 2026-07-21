@@ -1,5 +1,6 @@
 import { useLoaderData } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
 
 type Theme = 'dark' | 'light'
 
@@ -22,13 +23,15 @@ export function ThemeToggle() {
   }, [theme])
 
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
+      size="icon"
       aria-label={theme === 'dark' ? 'Ganti ke tema terang' : 'Ganti ke tema gelap'}
       onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-      className="rounded-pill border border-border bg-surface2 px-3 py-1.5 text-base transition-colors hover:bg-border"
+      className="bg-surface2 text-base"
     >
       {theme === 'dark' ? '☀️' : '🌙'}
-    </button>
+    </Button>
   )
 }
