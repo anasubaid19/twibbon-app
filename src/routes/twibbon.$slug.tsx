@@ -1,16 +1,17 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navbar } from '@/components/navbar'
-import { SlotFiller } from '@/components/slot-filler/slot-filler'
-import { IDENTITAS, renderComposite, type Transform } from '@/lib/composite'
+import { type ModeIsi, SlotFiller } from '@/components/slot-filler/slot-filler'
+import { renderComposite, type SlotFill } from '@/lib/composite'
 import { pesanError } from '@/lib/pesan-error'
 import { getCampaignBySlug, incrementUse } from '@/server/campaigns'
 
 /**
- * PRD US-04 mode single: maksimum 15MB. Divalidasi di klien karena fotonya
- * memang tidak pernah menyeberang ke server (P1).
+ * PRD US-04. Divalidasi di klien karena fotonya memang tidak pernah
+ * menyeberang ke server (P1).
  */
-const MAKS_FOTO = 15 * 1024 * 1024
+const MAKS_SATU = 15 * 1024 * 1024
+const MAKS_PER_SLOT = 5 * 1024 * 1024
 
 export const Route = createFileRoute('/twibbon/$slug')({
   loader: ({ params }) => getCampaignBySlug({ data: { slug: params.slug } }),
@@ -32,20 +33,43 @@ export const Route = createFileRoute('/twibbon/$slug')({
 
 function TwibbonPage() {
   const campaign = Route.useLoaderData()
+  const [mode, setMode] = useState<ModeIsi>('satu')
   const [photo, setPhoto] = useState<HTMLImageElement | null>(null)
   const [photoUrl, setPhotoUrl] = useState('')
+  /** Mode perSlot: satu foto per indeks slot. */
+  const [fotoPerSlot, setFotoPerSlot] = useState<Record<number, HTMLImageElement>>({})
   const [error, setError] = useState('')
   const [sedangUnduh, setSedangUnduh] = useState(false)
 
   /*
-   * Yang disimpan adalah PEMBACA transform, bukan salinan nilainya. Menyimpan
+   * Yang disimpan adalah PEMBACA isi slot, bukan salinan nilainya. Menyimpan
    * nilainya akan membekukan posisi foto pada render terakhir, dan hasil
    * unduhan bisa berbeda dari preview — persis kelas bug yang P3 hapus.
    */
-  const bacaTransform = useRef<() => Transform>(() => IDENTITAS)
-  const simpanPembaca = useCallback((baca: () => Transform) => {
-    bacaTransform.current = baca
+  const bacaIsi = useRef<(index: number) => SlotFill | undefined>(() => undefined)
+  const simpanPembaca = useCallback((getFill: (index: number) => SlotFill | undefined) => {
+    bacaIsi.current = getFill
   }, [])
+
+  /** Memuat berkas jadi elemen gambar, dengan pemeriksaan ukuran dan jenisnya. */
+  function muatGambar(berkas: File, maks: number, pakai: (img: HTMLImageElement) => void) {
+    if (berkas.size > maks) {
+      setError(`Ukuran foto maksimal ${Math.round(maks / 1024 / 1024)}MB`)
+      return
+    }
+    if (!berkas.type.startsWith('image/')) {
+      setError('Berkasnya harus berupa gambar')
+      return
+    }
+    const url = URL.createObjectURL(berkas)
+    const img = new Image()
+    img.onload = () => pakai(img)
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      setError('Gambarnya tidak bisa dibaca. Coba berkas lain.')
+    }
+    img.src = url
+  }
 
   useEffect(() => {
     if (!photoUrl) return
@@ -55,31 +79,21 @@ function TwibbonPage() {
   function pilihFoto(berkas: File | undefined) {
     if (!berkas) return
     setError('')
-
-    if (berkas.size > MAKS_FOTO) {
-      setError('Ukuran foto maksimal 15MB')
-      return
-    }
-    if (!berkas.type.startsWith('image/')) {
-      setError('Berkasnya harus berupa gambar')
-      return
-    }
-
-    const url = URL.createObjectURL(berkas)
-    const img = new Image()
-    img.onload = () => {
-      setPhotoUrl(url)
+    muatGambar(berkas, MAKS_SATU, (img) => {
+      setPhotoUrl(img.src)
       setPhoto(img)
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      setError('Gambarnya tidak bisa dibaca. Coba berkas lain.')
-    }
-    img.src = url
+    })
+  }
+
+  function pilihFotoSlot(index: number, berkas: File | undefined) {
+    if (!berkas) return
+    setError('')
+    muatGambar(berkas, MAKS_PER_SLOT, (img) => {
+      setFotoPerSlot((sebelum) => ({ ...sebelum, [index]: img }))
+    })
   }
 
   async function unduh(scale: number) {
-    if (!photo) return
     setSedangUnduh(true)
     setError('')
     try {
@@ -96,7 +110,7 @@ function TwibbonPage() {
         frame,
         frameSize: { width: campaign.frameWidth, height: campaign.frameHeight },
         slots: campaign.slots,
-        getFill: () => ({ image: photo, transform: bacaTransform.current() }),
+        getFill: bacaIsi.current,
         scale,
       })
 
@@ -143,24 +157,32 @@ function TwibbonPage() {
             frameSrc={`/api/frame/${campaign.id}`}
             frameSize={{ width: campaign.frameWidth, height: campaign.frameHeight }}
             slots={campaign.slots}
+            mode={mode}
+            onMode={setMode}
             photo={photo}
-            onTransform={simpanPembaca}
+            fotoPerSlot={fotoPerSlot}
+            onPilihFotoSlot={pilihFotoSlot}
+            onGetFill={simpanPembaca}
             onUnduh={unduh}
             sedangUnduh={sedangUnduh}
           />
 
-          <label className="w-full max-w-md cursor-pointer rounded-base border-2 border-dashed border-border bg-surface2 p-5 text-center transition-colors hover:border-brand">
-            <span className="font-semibold">{photo ? '🔄 Ganti foto' : '📸 Pilih foto kamu'}</span>
-            <span className="mt-1 block text-xs text-muted">
-              Maksimal 15MB · fotonya diproses di browser, tidak dikirim ke mana pun
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={(e) => pilihFoto(e.target.files?.[0])}
-            />
-          </label>
+          {mode === 'satu' && (
+            <label className="w-full max-w-md cursor-pointer rounded-base border-2 border-dashed border-border bg-surface2 p-5 text-center transition-colors hover:border-brand">
+              <span className="font-semibold">
+                {photo ? '🔄 Ganti foto' : '📸 Pilih foto kamu'}
+              </span>
+              <span className="mt-1 block text-xs text-muted">
+                Maksimal 15MB · fotonya diproses di browser, tidak dikirim ke mana pun
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(e) => pilihFoto(e.target.files?.[0])}
+              />
+            </label>
+          )}
         </div>
       </main>
     </>

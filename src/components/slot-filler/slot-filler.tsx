@@ -1,20 +1,33 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { renderComposite, type SlotFill, type Transform } from '@/lib/composite'
+import { IDENTITAS, renderComposite, type SlotFill, type Transform } from '@/lib/composite'
 import type { FrameSize, SlotRect } from '@/lib/geometry'
 import { useSlotTransform } from './use-slot-transform'
 
 /** Sisi terpanjang kanvas preview di layar. */
 const PREVIEW_MAKS = 460
 
+export type ModeIsi = 'satu' | 'perSlot'
+
+/**
+ * Slot seperti yang diterima halaman partisipan: koordinat plus label.
+ * `SlotRect` di geometry.ts sengaja tetap tipe koordinat murni (P2).
+ */
+export type SlotTampil = SlotRect & { label?: string }
+
 type Props = {
   frameSrc: string
   frameSize: FrameSize
-  slots: readonly SlotRect[]
-  /** Foto partisipan. Null selama belum ada yang diunggah. */
+  slots: readonly SlotTampil[]
+  mode: ModeIsi
+  onMode: (mode: ModeIsi) => void
+  /** Mode `satu`: foto tunggal untuk semua slot. */
   photo: HTMLImageElement | null
-  /** Menyerahkan pembaca transform ke halaman, supaya unduhan memakai nilai terkini. */
-  onTransform: (baca: () => Transform) => void
+  /** Mode `perSlot`: satu foto per indeks slot. */
+  fotoPerSlot: Record<number, HTMLImageElement>
+  onPilihFotoSlot: (index: number, berkas: File | undefined) => void
+  /** Menyerahkan pembaca isi ke halaman, supaya unduhan memakai nilai terkini. */
+  onGetFill: (getFill: (index: number) => SlotFill | undefined) => void
   onUnduh: (scale: number) => void
   sedangUnduh: boolean
 }
@@ -23,16 +36,22 @@ export function SlotFiller({
   frameSrc,
   frameSize,
   slots,
+  mode,
+  onMode,
   photo,
-  onTransform,
+  fotoPerSlot,
+  onPilihFotoSlot,
+  onGetFill,
   onUnduh,
   sedangUnduh,
 }: Props) {
   const kanvasRef = useRef<HTMLCanvasElement>(null)
   const [frame, setFrame] = useState<HTMLImageElement | null>(null)
+  const [slotAktif, setSlotAktif] = useState(0)
 
-  // Frame dimuat sekali sebagai elemen gambar; renderComposite butuh elemen,
-  // bukan URL.
+  /** Posisi tersimpan tiap slot di mode perSlot. */
+  const transforms = useRef<Record<number, Transform>>({})
+
   useEffect(() => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
@@ -43,23 +62,50 @@ export function SlotFiller({
   const rasio = frameSize.width / frameSize.height
   const lebarPreview = rasio >= 1 ? PREVIEW_MAKS : Math.round(PREVIEW_MAKS * rasio)
   const tinggiPreview = rasio >= 1 ? Math.round(PREVIEW_MAKS / rasio) : PREVIEW_MAKS
+  const kanvasSize = { width: lebarPreview, height: tinggiPreview }
 
-  // ponytail: semua slot berbagi satu foto di fase ini, jadi ukuran acuan
-  // geser diambil dari slot pertama. Mode multi-photo di Fase 5 mengganti
-  // sumber isinya, bukan menambah cabang di sini.
-  const slotPertama = slots[0]
-  const slotSize = slotPertama
-    ? {
-        width: (slotPertama.width / 100) * lebarPreview,
-        height: (slotPertama.height / 100) * tinggiPreview,
+  const t = useSlotTransform({
+    image: mode === 'satu' ? photo : (fotoPerSlot[slotAktif] ?? null),
+    slots,
+    canvas: kanvasSize,
+    // Mode satu foto: semua slot bergerak bersamaan, jadi tidak ada slot yang
+    // "aktif" dan tarikan di slot mana pun diterima.
+    slotAktif: mode === 'satu' ? -1 : slotAktif,
+  })
+
+  /*
+   * Inti spec 6.2: mode single dan multi bukan dua fitur, melainkan satu fitur
+   * dengan sumber isi berbeda. Yang berganti hanya fungsi pencari ini —
+   * renderComposite tidak pernah tahu mode mana yang aktif.
+   */
+  const getFill = useCallback(
+    (index: number): SlotFill | undefined => {
+      if (mode === 'satu') {
+        return photo ? { image: photo, transform: t.bacaTransform() } : undefined
       }
-    : { width: 0, height: 0 }
-
-  const t = useSlotTransform({ image: photo, slotSize })
+      const img = fotoPerSlot[index]
+      if (!img) return undefined
+      // Slot yang sedang digeser membaca motion value; sisanya membaca posisi
+      // tersimpannya masing-masing.
+      return {
+        image: img,
+        transform:
+          index === slotAktif ? t.bacaTransform() : (transforms.current[index] ?? IDENTITAS),
+      }
+    },
+    [mode, photo, fotoPerSlot, slotAktif, t.bacaTransform],
+  )
 
   useEffect(() => {
-    onTransform(t.bacaTransform)
-  }, [onTransform, t.bacaTransform])
+    onGetFill(getFill)
+  }, [onGetFill, getFill])
+
+  function pilihSlot(index: number) {
+    if (index === slotAktif) return
+    transforms.current[slotAktif] = t.bacaTransform()
+    setSlotAktif(index)
+    t.muat(transforms.current[index] ?? IDENTITAS)
+  }
 
   // Gambar ulang tiap kali apa pun berubah — termasuk tiap frame animasi
   // spring, lewat langganan MotionValue. Tidak ada state React yang berubah
@@ -73,8 +119,7 @@ export function SlotFiller({
         frame,
         frameSize,
         slots,
-        getFill: (): SlotFill | undefined =>
-          photo ? { image: photo, transform: t.bacaTransform() } : undefined,
+        getFill,
         scale: lebarPreview / frameSize.width,
       })
 
@@ -90,10 +135,33 @@ export function SlotFiller({
       lepasX()
       lepasY()
     }
-  }, [frame, frameSize, slots, photo, lebarPreview, t.offsetX, t.offsetY, t.bacaTransform])
+  }, [frame, frameSize, slots, lebarPreview, getFill, t.offsetX, t.offsetY])
+
+  const adaIsi = mode === 'satu' ? Boolean(photo) : Object.keys(fotoPerSlot).length > 0
 
   return (
     <div className="flex flex-col items-center gap-4">
+      {/* Mode satu foto ditawarkan lebih dulu dan jadi bawaan (PRD US-04).
+          ponytail: dua tombol yang sudah ada, bukan komponen tabs baru. */}
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant={mode === 'satu' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => onMode('satu')}
+        >
+          Satu foto
+        </Button>
+        <Button
+          type="button"
+          variant={mode === 'perSlot' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => onMode('perSlot')}
+        >
+          Upload per Slot
+        </Button>
+      </div>
+
       {/* biome-ignore lint/a11y/noStaticElementInteractions: kanvas komposit memang permukaan gesture dan tidak punya padanan elemen semantik; jalur non-pointer disediakan slider zoom dan tombol reset di bawahnya. */}
       <canvas
         ref={kanvasRef}
@@ -101,7 +169,7 @@ export function SlotFiller({
           width: lebarPreview,
           height: tinggiPreview,
           touchAction: 'none',
-          cursor: photo ? 'grab' : 'default',
+          cursor: adaIsi ? 'grab' : 'default',
         }}
         className="rounded-card shadow-[0_8px_40px_#00000050]"
         onPointerDown={t.mulai}
@@ -110,12 +178,52 @@ export function SlotFiller({
         onPointerCancel={t.selesai}
       />
 
-      {photo && (
+      {mode === 'perSlot' && (
+        <div className="flex w-full max-w-md flex-col gap-2">
+          {slots.map((slot, index) => (
+            <div
+              // biome-ignore lint/suspicious/noArrayIndexKey: urutan slot adalah identitasnya
+              key={index}
+              className={`flex items-center gap-2 rounded-base border p-2 ${
+                index === slotAktif ? 'border-brand bg-surface2' : 'border-border bg-surface'
+              }`}
+            >
+              <Button
+                type="button"
+                variant={index === slotAktif ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => pilihSlot(index)}
+              >
+                {index + 1}
+              </Button>
+              <span className="flex-1 truncate text-sm text-muted">
+                {slot.label || `Area ${index + 1}`}
+                {!fotoPerSlot[index] && ' · belum ada foto'}
+              </span>
+              <label className="cursor-pointer rounded-pill border border-border px-3 py-1 text-xs transition-colors hover:bg-surface2">
+                {fotoPerSlot[index] ? 'Ganti' : 'Pilih foto'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(e) => {
+                    onPilihFotoSlot(index, e.target.files?.[0])
+                    pilihSlot(index)
+                  }}
+                />
+              </label>
+            </div>
+          ))}
+          <p className="text-center text-xs text-muted">Maksimal 5MB per slot</p>
+        </div>
+      )}
+
+      {adaIsi && (
         <div className="flex w-full max-w-md flex-col gap-3">
           <div className="rounded-base border border-border bg-surface p-4">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                Zoom
+                Zoom {mode === 'perSlot' ? `· area ${slotAktif + 1}` : ''}
               </span>
               <span className="rounded-pill border border-border bg-surface2 px-2.5 py-0.5 font-mono text-sm text-brand">
                 {Math.round(t.scale * 100)}%
