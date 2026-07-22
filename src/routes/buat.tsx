@@ -101,12 +101,12 @@ function BuatPage() {
   return (
     <main className="mx-auto max-w-5xl p-6">
       <header className="flex items-center justify-between py-6">
-        <h1 className="font-display text-2xl">Bikin Kampanye</h1>
+        <h1 className="font-heading text-2xl">Bikin Kampanye</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Link
             to="/dashboard"
-            className="rounded-pill border border-border px-4 py-1.5 text-sm transition-colors hover:bg-surface2"
+            className="rounded-lg border border-border px-4 py-1.5 text-sm transition-colors hover:bg-muted"
           >
             Batal
           </Link>
@@ -116,7 +116,7 @@ function BuatPage() {
       {error && (
         <p
           role="alert"
-          className="mb-4 rounded-sm border border-danger/30 bg-danger/10 p-3 text-sm text-danger"
+          className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
         >
           {error}
         </p>
@@ -134,21 +134,23 @@ function BuatPage() {
                 selectedIndex={selectedIndex}
                 onSelect={setSelectedIndex}
               />
-              <p className="mt-3 text-sm text-muted">
+              <p className="mt-3 text-sm text-muted-foreground">
                 Geser kotaknya untuk memindahkan area foto, tarik pegangannya untuk mengubah ukuran.
                 Bisa juga pakai panah keyboard setelah kotaknya dipilih.
               </p>
               {!areaValid && (
-                <p className="mt-2 text-sm text-danger">
+                <p className="mt-2 text-sm text-destructive">
                   Area foto terlalu kecil. Perbesar sampai minimal 20x20 piksel pada ukuran frame
                   aslinya.
                 </p>
               )}
             </>
           ) : (
-            <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-border bg-surface2 p-10 text-center transition-colors hover:border-brand">
-              <span className="font-display text-lg">Pilih frame PNG</span>
-              <span className="text-sm text-muted">Maksimal 10MB, dengan latar transparan</span>
+            <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted p-10 text-center transition-colors hover:border-primary">
+              <span className="font-heading text-lg">Pilih frame PNG</span>
+              <span className="text-sm text-muted-foreground">
+                Maksimal 10MB, dengan latar transparan
+              </span>
               <input
                 type="file"
                 accept="image/png"
@@ -159,9 +161,9 @@ function BuatPage() {
           )}
         </section>
 
-        <aside className="flex flex-col gap-4 rounded-card border border-border bg-surface p-5">
+        <aside className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5">
           <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Nama kampanye
             </span>
             <input
@@ -170,12 +172,12 @@ function BuatPage() {
               required
               maxLength={80}
               placeholder="HUT RI 80"
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
+              className="w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary"
             />
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Deskripsi <span className="normal-case tracking-normal">opsional</span>
             </span>
             <textarea
@@ -184,11 +186,11 @@ function BuatPage() {
               maxLength={500}
               rows={3}
               placeholder="Ceritakan sedikit soal kampanye ini"
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
+              className="w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary"
             />
           </label>
 
-          <label className="flex items-start gap-2 text-sm text-muted">
+          <label className="flex items-start gap-2 text-sm text-muted-foreground">
             <input
               type="checkbox"
               checked={isPublic}
@@ -201,7 +203,7 @@ function BuatPage() {
           <button
             type="submit"
             disabled={!bisaSimpan}
-            className="w-full rounded-pill bg-brand py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
+            className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             {saving ? 'Menyimpan...' : 'Simpan Kampanye'}
           </button>

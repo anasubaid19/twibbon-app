@@ -42,16 +42,16 @@ function LoginPage() {
   }
 
   return (
-    <main className="atmosfer flex min-h-screen items-center justify-center p-6">
+    <main className="flex min-h-screen items-center justify-center p-6">
       <div className="fixed right-5 top-4">
         <ThemeToggle />
       </div>
 
       <Card className="fade-up w-full max-w-md p-9">
-        <h1 className="mb-1 font-display text-2xl">
-          OpenFrame<span className="text-brand">.</span>
+        <h1 className="mb-1 font-heading text-2xl">
+          OpenFrame<span className="text-primary">.</span>
         </h1>
-        <p className="mb-7 text-sm text-muted">Masuk ke akun kamu dan mulai berkarya</p>
+        <p className="mb-7 text-sm text-muted-foreground">Masuk ke akun kamu dan mulai berkarya</p>
 
         {error && (
           <Alert variant="destructive" role="alert" className="mb-4">
@@ -63,7 +63,7 @@ function LoginPage() {
           <div className="mb-4">
             <Label
               htmlFor="username"
-              className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted"
+              className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
             >
               Username
             </Label>
@@ -81,7 +81,7 @@ function LoginPage() {
           <div className="mb-2">
             <Label
               htmlFor="password"
-              className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted"
+              className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
             >
               Password
             </Label>
@@ -96,7 +96,7 @@ function LoginPage() {
           </div>
 
           <div className="mb-5 text-right">
-            <Link to="/lupa-password" className="text-xs text-brand hover:underline">
+            <Link to="/lupa-password" className="text-xs text-primary hover:underline">
               Lupa password?
             </Link>
           </div>
@@ -106,9 +106,9 @@ function LoginPage() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-muted">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           Belum punya akun?{' '}
-          <Link to="/register" className="text-brand hover:underline">
+          <Link to="/register" className="text-primary hover:underline">
             Daftar gratis
           </Link>
         </p>

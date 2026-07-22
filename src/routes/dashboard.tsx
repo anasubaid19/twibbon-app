@@ -70,16 +70,16 @@ function DashboardPage() {
   return (
     <main className="mx-auto max-w-5xl p-6">
       <header className="flex flex-wrap items-center justify-between gap-3 py-6">
-        <h1 className="font-display text-2xl">Kampanye Saya</h1>
+        <h1 className="font-heading text-2xl">Kampanye Saya</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <span className="rounded-pill border border-border bg-surface2 px-3 py-1 text-sm text-muted">
+          <span className="rounded-lg border border-border bg-muted px-3 py-1 text-sm text-muted-foreground">
             👤 {username}
           </span>
           <button
             type="button"
             onClick={handleLogout}
-            className="rounded-pill border border-border px-4 py-1.5 text-sm transition-colors hover:bg-surface2"
+            className="rounded-lg border border-border px-4 py-1.5 text-sm transition-colors hover:bg-muted"
           >
             Keluar
           </button>
@@ -89,7 +89,7 @@ function DashboardPage() {
       {logoutError && (
         <p
           role="alert"
-          className="mb-4 rounded-sm border border-danger/30 bg-danger/10 p-3 text-sm text-danger"
+          className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
         >
           {logoutError}
         </p>
@@ -97,13 +97,13 @@ function DashboardPage() {
 
       <Link
         to="/buat"
-        className="mb-6 inline-block rounded-pill bg-brand px-6 py-2.5 font-semibold text-bg transition-transform hover:-translate-y-px"
+        className="mb-6 inline-block rounded-lg bg-primary px-6 py-2.5 font-semibold text-primary-foreground transition-transform hover:-translate-y-px"
       >
         + Bikin Kampanye
       </Link>
 
       {campaigns.length === 0 ? (
-        <p className="rounded-card border border-dashed border-border bg-surface p-10 text-center text-muted">
+        <p className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
           Belum ada kampanye. Unggah frame PNG-mu, gambar area fotonya, lalu bagikan tautannya.
         </p>
       ) : (
@@ -113,16 +113,16 @@ function DashboardPage() {
               {/* Tombol sengaja DI LUAR <Link> pembungkus: <a> bersarang di
                   dalam <a> bukan HTML yang sah, dan perilaku kliknya jadi tak
                   terduga. */}
-              <Card className="overflow-hidden transition-all hover:-translate-y-[3px] hover:border-brand">
+              <Card className="overflow-hidden transition-all hover:-translate-y-[3px] hover:border-primary">
                 <Link to="/edit/$id" params={{ id: campaign.id }} className="block">
                   <img
                     src={`/api/frame/${campaign.id}`}
                     alt=""
                     loading="lazy"
-                    className="aspect-square w-full bg-surface2 object-contain"
+                    className="aspect-square w-full bg-muted object-contain"
                   />
                   <div className="px-4 pt-4">
-                    <h2 className="mb-1.5 truncate font-display text-base">{campaign.name}</h2>
+                    <h2 className="mb-1.5 truncate font-heading text-base">{campaign.name}</h2>
                     <div className="flex flex-wrap gap-1.5">
                       {/* Aplikasi lama menampilkan badge rasio di sini. Jumlah
                           slot lebih berguna di produk multi-slot (spec bagian 8). */}

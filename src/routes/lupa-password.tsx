@@ -7,8 +7,9 @@ import { resetPassword } from '@/server/auth'
 export const Route = createFileRoute('/lupa-password')({ component: LupaPasswordPage })
 
 const inputClass =
-  'w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand'
-const labelClass = 'mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted'
+  'w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary'
+const labelClass =
+  'mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground'
 
 /**
  * Pesan seragam untuk "username tidak ada" maupun "recovery code salah" —
@@ -81,31 +82,31 @@ function LupaPasswordPage() {
   if (nextCode) {
     return (
       <main className="flex min-h-screen items-center justify-center p-6">
-        <div className="w-full max-w-md rounded-card border border-border bg-surface p-9">
+        <div className="w-full max-w-md rounded-xl border border-border bg-card p-9">
           <h1
             ref={successHeadingRef}
             tabIndex={-1}
-            className="mb-1 font-display text-2xl outline-none"
+            className="mb-1 font-heading text-2xl outline-none"
           >
             ✅ Reset Berhasil
           </h1>
-          <p className="mb-7 text-sm text-muted">
+          <p className="mb-7 text-sm text-muted-foreground">
             Password berhasil diperbarui. Recovery code lama sudah tidak berlaku — simpan yang baru
             ini.
           </p>
 
-          <output className="mb-5 block rounded-base border-2 border-dashed border-brand bg-surface2 p-5 text-center font-mono tracking-widest text-brand">
+          <output className="mb-5 block rounded-lg border-2 border-dashed border-primary bg-muted p-5 text-center font-mono tracking-widest text-primary">
             {nextCode}
           </output>
 
-          <p className="mb-4 rounded-sm border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
+          <p className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             ⚠️ Ini recovery code barumu. Simpan sekarang sebelum menutup halaman.
           </p>
 
           {copyError && (
             <p
               role="alert"
-              className="mb-3 rounded-sm border border-danger/30 bg-danger/10 p-3 text-sm text-danger"
+              className="mb-3 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
             >
               {copyError}
             </p>
@@ -114,12 +115,12 @@ function LupaPasswordPage() {
           <button
             type="button"
             onClick={copyCode}
-            className="mb-3 w-full rounded-pill border border-border py-3 font-semibold transition-colors hover:bg-surface2"
+            className="mb-3 w-full rounded-lg border border-border py-3 font-semibold transition-colors hover:bg-muted"
           >
             {copied ? '✅ Tersalin!' : '📋 Salin Recovery Code Baru'}
           </button>
 
-          <label className="mb-3 flex items-start gap-2 text-sm text-muted">
+          <label className="mb-3 flex items-start gap-2 text-sm text-muted-foreground">
             <input
               type="checkbox"
               checked={confirmed}
@@ -133,7 +134,7 @@ function LupaPasswordPage() {
             type="button"
             disabled={!confirmed}
             onClick={() => navigate({ to: '/login' })}
-            className="w-full rounded-pill bg-brand py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
+            className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             Lanjut ke Halaman Masuk →
           </button>
@@ -148,16 +149,16 @@ function LupaPasswordPage() {
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-md rounded-card border border-border bg-surface p-9">
-        <h1 className="mb-1 font-display text-2xl">Reset Password</h1>
-        <p className="mb-7 text-sm text-muted">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-9">
+        <h1 className="mb-1 font-heading text-2xl">Reset Password</h1>
+        <p className="mb-7 text-sm text-muted-foreground">
           Masukkan username dan recovery code yang kamu simpan saat mendaftar
         </p>
 
         {error && (
           <p
             role="alert"
-            className="mb-4 rounded-sm border border-danger/30 bg-danger/10 p-3 text-sm text-danger"
+            className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
           >
             {error}
           </p>
@@ -217,15 +218,15 @@ function LupaPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-pill bg-brand py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
+            className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             {loading ? 'Memproses...' : 'Reset Password →'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-muted">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           Ingat password?{' '}
-          <Link to="/login" className="text-brand hover:underline">
+          <Link to="/login" className="text-primary hover:underline">
             Masuk
           </Link>
         </p>

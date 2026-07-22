@@ -146,7 +146,7 @@ TanStack Start App (SSR + API)
 
 - **Framework**: TanStack Start (TanStack Router + server functions)
 - **UI**: shadcn/ui + Tailwind CSS v4
-- **Design system**: Apple Design principles
+- **Design system**: shadcn/ui — palet netral dengan aksen biru, font Geist (lihat spec bagian 7)
 - **Auth**: Better Auth (email/password + session cookies)
 - **ORM**: Drizzle
 - **Database**: PostgreSQL

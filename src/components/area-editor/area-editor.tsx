@@ -135,7 +135,7 @@ export function AreaEditor({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative select-none overflow-hidden rounded-card border border-border bg-surface2">
+      <div className="relative select-none overflow-hidden rounded-xl border border-border bg-muted">
         {/* Gambar frame yang jadi latar. Dekoratif: informasinya sudah ada di
             nama campaign dan label tiap area. */}
         <img
@@ -187,7 +187,7 @@ export function AreaEditor({
         </svg>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 rounded-base border border-border bg-surface p-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2">
         <Button
           type="button"
           variant={modeTambah ? 'default' : 'outline'}
@@ -246,7 +246,7 @@ export function AreaEditor({
           }
         />
 
-        <span className="px-1 text-sm text-muted">
+        <span className="px-1 text-sm text-muted-foreground">
           {slots.length} area{terpilih ? ` · area ${selectedIndex + 1} terpilih` : ''}
           {penuh ? ' · maksimal' : ''}
         </span>

@@ -183,7 +183,7 @@ export function SlotFiller({
           touchAction: 'none',
           cursor: adaIsi ? 'grab' : 'default',
         }}
-        className="rounded-card shadow-[0_8px_40px_#00000050]"
+        className="rounded-xl shadow-[0_8px_40px_#00000050]"
         onPointerDown={t.mulai}
         onPointerMove={t.geser}
         onPointerUp={t.selesai}
@@ -196,8 +196,8 @@ export function SlotFiller({
             <div
               // biome-ignore lint/suspicious/noArrayIndexKey: urutan slot adalah identitasnya
               key={index}
-              className={`flex items-center gap-2 rounded-base border p-2 ${
-                index === slotAktif ? 'border-brand bg-surface2' : 'border-border bg-surface'
+              className={`flex items-center gap-2 rounded-lg border p-2 ${
+                index === slotAktif ? 'border-primary bg-muted' : 'border-border bg-card'
               }`}
             >
               <Button
@@ -208,11 +208,11 @@ export function SlotFiller({
               >
                 {index + 1}
               </Button>
-              <span className="flex-1 truncate text-sm text-muted">
+              <span className="flex-1 truncate text-sm text-muted-foreground">
                 {slot.label || `Area ${index + 1}`}
                 {!fotoPerSlot[index] && ' · belum ada foto'}
               </span>
-              <label className="cursor-pointer rounded-pill border border-border px-3 py-1 text-xs transition-colors hover:bg-surface2">
+              <label className="cursor-pointer rounded-lg border border-border px-3 py-1 text-xs transition-colors hover:bg-muted">
                 {fotoPerSlot[index] ? 'Ganti' : 'Pilih foto'}
                 <input
                   type="file"
@@ -226,18 +226,18 @@ export function SlotFiller({
               </label>
             </div>
           ))}
-          <p className="text-center text-xs text-muted">Maksimal 5MB per slot</p>
+          <p className="text-center text-xs text-muted-foreground">Maksimal 5MB per slot</p>
         </div>
       )}
 
       {adaIsi && (
         <div className="flex w-full max-w-md flex-col gap-3">
-          <div className="rounded-base border border-border bg-surface p-4">
+          <div className="rounded-lg border border-border bg-card p-4">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Zoom {mode === 'perSlot' ? `· area ${slotAktif + 1}` : ''}
               </span>
-              <span className="rounded-pill border border-border bg-surface2 px-2.5 py-0.5 font-mono text-sm text-brand">
+              <span className="rounded-lg border border-border bg-muted px-2.5 py-0.5 font-mono text-sm text-primary">
                 {Math.round(t.scale * 100)}%
               </span>
             </div>
@@ -254,13 +254,13 @@ export function SlotFiller({
             <button
               type="button"
               onClick={t.reset}
-              className="mt-2 w-full text-xs text-muted transition-colors hover:text-text"
+              className="mt-2 w-full text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               ↺ Reset posisi
             </button>
           </div>
 
-          <p className="text-center text-sm text-muted">
+          <p className="text-center text-sm text-muted-foreground">
             Geser fotonya langsung di gambar untuk mengatur posisi.
           </p>
 
@@ -277,7 +277,7 @@ export function SlotFiller({
               </Button>
             ))}
           </div>
-          <p className="text-center text-xs text-muted">
+          <p className="text-center text-xs text-muted-foreground">
             {frameSize.width}×{frameSize.height} px pada 1×
           </p>
         </div>

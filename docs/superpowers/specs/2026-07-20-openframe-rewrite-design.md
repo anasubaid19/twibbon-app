@@ -343,24 +343,39 @@ konsekuensi compositing di client.
 
 ## 7. Sistem desain
 
-Aplikasi lama punya bahasa visual yang matang di `index.css`. Rewrite ini
-memindahkannya, tidak menggantinya. shadcn/ui di-generate **di atas** token
-ini, bukan dengan tema netral bawaannya.
+> **Direvisi di Fase 9 (2026-07-22).** Bagian ini semula menyatakan bahwa
+> bahasa visual aplikasi lama *"dipindahkan, tidak diganti"* — lime `#CAFF33`
+> dengan Bricolage Grotesque dan Nunito. Fase 2b memang dibangun begitu.
+>
+> Keputusan itu **dibalik** atas permintaan langsung: aplikasi sekarang memakai
+> bahasa visual shadcn seperti pada `uikit/`. Riwayatnya sengaja ditinggalkan
+> di sini alih-alih dihapus, supaya commit dan plan Fase 2b yang menyebut lime
+> tetap terbaca konteksnya.
+
+Palet dan tipografi mengikuti shadcn/ui, dengan nilai diambil dari `uikit/`.
 
 | Token | Nilai |
 |---|---|
-| Accent | `#CAFF33` (lime), gelap `#a8d400` |
-| Danger | `#FF4D4D` |
-| Font judul | Bricolage Grotesque 700/800 |
-| Font isi | Nunito 400/500/600 |
-| Dark (default) | bg `#0B0B0D` · surface `#131316` · border `#2A2A35` · teks `#F0F0EE` |
-| Light | bg `#F2F1EC` · surface `#FAFAF7` · border `#D8D6D0` · teks `#141412` |
-| Radius | tombol pill `999px` · kartu `18px` · dasar `14px` · kecil `8px` |
+| Primary | biru — `oklch(0.546 0.245 262.9)` (terang), `oklch(0.623 0.214 259.8)` (gelap) |
+| Destructive | `oklch(0.577 0.245 27.325)` |
+| Info / info-subtle | senada primary; dipakai badge dan grafik |
+| Font | Geist Variable, untuk judul maupun isi |
+| Dark (default) | bg `oklch(0.145 0 0)` · card `oklch(0.205 0 0)` · border `oklch(1 0 0 / 10%)` |
+| Light | bg `oklch(1 0 0)` · card `oklch(1 0 0)` · border `oklch(0.922 0 0)` |
+| Radius | `--radius: 0.625rem` dengan skala turunan sm → 4xl |
 
-Dark tetap default. Toggle tema dipertahankan. Font dimuat lokal
-(`font-display: swap`) alih-alih dari Google Fonts CDN seperti sekarang
-(`index.css:1`), agar sesuai aturan performa dan menghapus permintaan
-pihak ketiga.
+Selain warna, arsitektur token `uikit/` ikut diadopsi: spasi semantik
+(`--space-section`, `--space-stack`), token motion (`--motion-duration-*`,
+`--motion-ease-*`), dan alias elevasi (`--shadow-surface`, `--shadow-overlay`).
+
+**Mekanisme temanya tidak ikut diganti.** `uikit/` memakai kelas `.dark`
+bersama `next-themes`; OpenFrame memakai `[data-theme]` yang dibaca dari cookie
+di loader root, sehingga server merender tema yang benar sejak render pertama
+dan tidak ada kedipan. Yang dipinjam nilainya, bukan mekanismenya.
+
+Dark tetap default. Toggle tema dipertahankan. Font dimuat lokal lewat
+`@fontsource-variable/geist`, bukan dari CDN, agar sesuai aturan performa dan
+menghapus permintaan pihak ketiga.
 
 Yang juga dipertahankan: tautan Trakteer dan Instagram, aset `hero.png`,
 serta nada bahasa Indonesia yang santai dan memakai "kamu".

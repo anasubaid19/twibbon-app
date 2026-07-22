@@ -29,7 +29,7 @@ export function ThemeToggle() {
       size="icon"
       aria-label={theme === 'dark' ? 'Ganti ke tema terang' : 'Ganti ke tema gelap'}
       onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-      className="bg-surface2 text-base"
+      className="bg-muted text-base"
     >
       {theme === 'dark' ? '☀️' : '🌙'}
     </Button>

@@ -64,7 +64,7 @@ export function SlotRect({
   onHandleDown,
   onKeyDown,
 }: Props) {
-  const stroke = isValid ? 'var(--color-brand)' : 'var(--color-danger)'
+  const stroke = isValid ? 'var(--color-primary)' : 'var(--color-destructive)'
 
   return (
     <g>
@@ -116,7 +116,7 @@ export function SlotRect({
             width={HANDLE}
             height={HANDLE}
             rx={2}
-            fill="var(--color-bg)"
+            fill="var(--color-background)"
             stroke={stroke}
             strokeWidth={2}
             style={{ cursor: handle.cursor, touchAction: 'none' }}
