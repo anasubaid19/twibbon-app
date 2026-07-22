@@ -84,6 +84,11 @@ export async function readFrame(relativePath: string): Promise<Uint8Array<ArrayB
   return new Uint8Array(await readFile(frameAbsolutePath(relativePath)))
 }
 
+/** Menghapus satu berkas frame. Dipakai saat frame diganti. */
+export async function hapusBerkas(relativePath: string): Promise<void> {
+  await rm(frameAbsolutePath(relativePath), { force: true })
+}
+
 /** Dipakai sebagai kompensasi saat penyimpanan database gagal, dan saat hapus campaign. */
 export async function deleteFrameDir(campaignId: string): Promise<void> {
   await rm(frameAbsolutePath(`frames/${campaignId}`), { recursive: true, force: true })

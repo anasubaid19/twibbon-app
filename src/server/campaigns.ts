@@ -7,7 +7,7 @@ import { campaigns, frameSlots, user } from '@/db/schema'
 import { isValidSlot } from '@/lib/geometry'
 import { resolveSlug, SLUG_PATTERN, slugify } from '@/lib/slug'
 import { requireUserId } from '@/server/require-user'
-import { deleteFrameDir, saveFrame, validateFrame } from '@/server/upload'
+import { deleteFrameDir, hapusBerkas, saveFrame, validateFrame } from '@/server/upload'
 
 /* --- Skema bersama ------------------------------------------------------ */
 
@@ -311,7 +311,16 @@ export const getCampaignBySlug = createServerFn({ method: 'GET' })
     // `userId` sengaja tidak ikut. Yang keluar cuma username, yang memang
     // ditampilkan di halaman partisipan sebagai "oleh @siapa".
     const { ownerName, username, ...campaign } = row
-    return { ...campaign, username: username ?? ownerName, slots }
+    // Open Graph mengabaikan URL relatif, dan hanya server yang tahu alamat
+    // kanonik aplikasi.
+    const asal = process.env.BETTER_AUTH_URL ?? ''
+    return {
+      ...campaign,
+      username: username ?? ownerName,
+      slots,
+      ogImage: `${asal}/api/frame/${campaign.id}`,
+      ogUrl: `${asal}/twibbon/${campaign.slug}`,
+    }
   })
 
 /* --- incrementUse -------------------------------------------------------- */
@@ -397,4 +406,78 @@ export const listPublic = createServerFn({ method: 'GET' })
 
     // `userId` sengaja tidak ikut.
     return { rows, total, hal, totalHal }
+  })
+
+/* --- deleteCampaign ------------------------------------------------------ */
+
+export const deleteCampaign = createServerFn({ method: 'POST' })
+  .validator((input: unknown) => z.object({ id: idSchema }).parse(input))
+  .handler(async ({ data }) => {
+    const userId = await requireUserId()
+
+    // Kepemilikan ikut ke dalam WHERE. `returning` memberi tahu apakah barisnya
+    // benar-benar terhapus — tanpa itu, mencoba menghapus campaign orang lain
+    // akan terlihat berhasil padahal tidak melakukan apa-apa.
+    const terhapus = await db
+      .delete(campaigns)
+      .where(and(eq(campaigns.id, data.id), eq(campaigns.userId, userId)))
+      .returning({ id: campaigns.id })
+
+    if (terhapus.length === 0) throw new Error(TIDAK_DITEMUKAN)
+
+    // Baris slot ikut lewat ON DELETE CASCADE, tapi BERKASNYA tidak — cascade
+    // database tidak menyentuh disk. Dihapus setelah baris, bukan sebelum:
+    // kalau langkah ini gagal yang tertinggal cuma sampah, sedangkan urutan
+    // sebaliknya bisa meninggalkan campaign hidup tanpa frame.
+    await deleteFrameDir(data.id)
+
+    return { ok: true as const }
+  })
+
+/* --- replaceFrame -------------------------------------------------------- */
+
+function parseReplaceInput(input: unknown) {
+  if (!(input instanceof FormData)) throw new Error('Kiriman tidak sah')
+  const frame = input.get('frame')
+  if (!(frame instanceof File) || frame.size === 0) throw new Error('Frame PNG wajib diunggah')
+  return { id: idSchema.parse(String(input.get('id') ?? '')), frame }
+}
+
+export const replaceFrame = createServerFn({ method: 'POST' })
+  .validator(parseReplaceInput)
+  .handler(async ({ data }) => {
+    const userId = await requireUserId()
+
+    const [lama] = await db
+      .select({ framePath: campaigns.framePath })
+      .from(campaigns)
+      .where(and(eq(campaigns.id, data.id), eq(campaigns.userId, userId)))
+      .limit(1)
+
+    if (!lama) throw new Error(TIDAK_DITEMUKAN)
+
+    const bytes = Buffer.from(await data.frame.arrayBuffer())
+    const frame = await validateFrame(bytes)
+
+    // Nama berkas baru diacak saveFrame, jadi jalurnya berbeda dari yang lama.
+    // Itu yang membuat ETag di route penyaji ikut berubah dan browser tidak
+    // menyajikan frame lama dari cache.
+    const framePath = await saveFrame(data.id, bytes)
+
+    await db
+      .update(campaigns)
+      .set({
+        framePath,
+        frameWidth: frame.width,
+        frameHeight: frame.height,
+        updatedAt: new Date(),
+      })
+      .where(eq(campaigns.id, data.id))
+
+    // Slot TIDAK perlu dipetakan ulang: koordinatnya persen, jadi otomatis
+    // menyesuaikan dimensi frame baru (spec 5.3). Itu memang alasan
+    // koordinatnya disimpan sebagai persen sejak awal.
+    await hapusBerkas(lama.framePath)
+
+    return { frameWidth: frame.width, frameHeight: frame.height }
   })

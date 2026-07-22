@@ -15,6 +15,22 @@ const MAKS_PER_SLOT = 5 * 1024 * 1024
 
 export const Route = createFileRoute('/twibbon/$slug')({
   loader: ({ params }) => getCampaignBySlug({ data: { slug: params.slug } }),
+  head: ({ loaderData }) => {
+    if (!loaderData) return {}
+    const ringkas = loaderData.description || 'Bikin twibbonmu di OpenFrame.'
+    return {
+      meta: [
+        { title: `${loaderData.name} · OpenFrame` },
+        { name: 'description', content: ringkas },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:title', content: loaderData.name },
+        { property: 'og:description', content: ringkas },
+        { property: 'og:image', content: loaderData.ogImage },
+        { property: 'og:url', content: loaderData.ogUrl },
+        { name: 'twitter:card', content: 'summary_large_image' },
+      ],
+    }
+  },
   errorComponent: () => (
     <>
       <Navbar />
