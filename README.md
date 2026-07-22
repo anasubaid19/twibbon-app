@@ -7,16 +7,20 @@ tautan. Partisipan mengisi area itu dengan fotonya dan mengunduh hasilnya.
 
 ## Status
 
-Repositori ini sedang dibangun bertahap. **Yang sudah jadi (Fase 0–2):**
-fondasi aplikasi, autentikasi penuh tanpa email, dan sisi creator — unggah
-frame PNG, gambar satu area foto di atasnya, simpan sebagai kampanye, lalu
-ubah lagi lewat dashboard.
+**Fase 0–7 selesai.** Alurnya utuh dari ujung ke ujung: daftar tanpa email,
+buat kampanye dengan mengunggah frame PNG dan menggambar area fotonya,
+bagikan tautannya, lalu siapa pun bisa mengisi area itu dengan fotonya dan
+mengunduh hasilnya sebagai PNG beralpha pada 1×, 2×, atau 3×.
 
-**Yang belum:** halaman partisipan untuk mengisi area dan mengunduh hasilnya
-(Fase 3), multi-slot (Fase 4–5), galeri publik (Fase 6), dan hapus kampanye
-(Fase 7). Rinciannya ada di `docs/superpowers/plans/`. Sampai fase itu
-mendarat, aplikasi dijalankan lewat `bun dev`; penyajian produksi
-(`bun run start`) belum disambungkan.
+Foto partisipan **tidak pernah dikirim ke server** — seluruh compositing
+terjadi di browser.
+
+**Belum siap deploy publik.** Tiga hal masih terbuka: preset server produksi
+belum disambungkan (`bun run start` masih mencetak pesan), `registerUser`
+tidak dibatasi rate limiter Better Auth karena ia server function bukan route
+`auth.handler`, dan rate limit masih memakai penyimpanan dalam memori
+per-proses. Ketiganya sebaiknya dikerjakan bersamaan sebagai satu fase
+penyiapan rilis.
 
 ## Jalankan lokal
 

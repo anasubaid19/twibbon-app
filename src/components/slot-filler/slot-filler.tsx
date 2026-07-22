@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useElementSize } from '@/components/area-editor/use-element-size'
 import { Button } from '@/components/ui/button'
 import { IDENTITAS, renderComposite, type SlotFill, type Transform } from '@/lib/composite'
 import type { FrameSize, SlotRect } from '@/lib/geometry'
@@ -60,9 +61,17 @@ export function SlotFiller({
   }, [frameSrc])
 
   const rasio = frameSize.width / frameSize.height
+  // Ukuran bitmap kanvas — resolusi gambarnya, bukan ukurannya di layar.
   const lebarPreview = rasio >= 1 ? PREVIEW_MAKS : Math.round(PREVIEW_MAKS * rasio)
-  const tinggiPreview = rasio >= 1 ? Math.round(PREVIEW_MAKS / rasio) : PREVIEW_MAKS
-  const kanvasSize = { width: lebarPreview, height: tinggiPreview }
+
+  /*
+   * Ukuran TAMPILAN diukur, bukan diasumsikan. Di layar sempit CSS mengecilkan
+   * kanvas supaya tidak meluber, dan kalau matematika geser tetap memakai
+   * ukuran bitmap-nya, tracking 1:1 akan meleset persis sebesar rasio
+   * pengecilan itu.
+   * ponytail: useElementSize sudah ada dan sudah terpakai di area editor.
+   */
+  const kanvasSize = useElementSize(kanvasRef)
 
   const t = useSlotTransform({
     image: mode === 'satu' ? photo : (fotoPerSlot[slotAktif] ?? null),
@@ -166,8 +175,11 @@ export function SlotFiller({
       <canvas
         ref={kanvasRef}
         style={{
-          width: lebarPreview,
-          height: tinggiPreview,
+          // Menyusut mengikuti lebar yang tersedia, tapi tidak pernah lebih
+          // besar dari resolusi bitmap-nya.
+          width: '100%',
+          maxWidth: lebarPreview,
+          height: 'auto',
           touchAction: 'none',
           cursor: adaIsi ? 'grab' : 'default',
         }}
