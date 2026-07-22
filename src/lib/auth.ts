@@ -2,8 +2,10 @@ import { drizzleAdapter } from '@better-auth/drizzle-adapter'
 import { betterAuth } from 'better-auth'
 import { username } from 'better-auth/plugins'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
+import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import * as schema from '@/db/schema'
+import { rateLimit as tabelBatas } from '@/db/schema'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: 'pg', schema }),
@@ -36,6 +38,28 @@ export const auth = betterAuth({
     enabled: true,
     window: 60,
     max: 10,
+    /*
+     * Status pembatas bertahan melewati restart dan dibagi antar-instans.
+     * Nilainya disimpan opaque: kita tidak pernah menafsirkan bentuknya, jadi
+     * perubahan internal Better Auth tidak merembet ke skema kita.
+     */
+    customStorage: {
+      get: async (key: string) => {
+        const [row] = await db
+          .select({ value: tabelBatas.value })
+          .from(tabelBatas)
+          .where(eq(tabelBatas.key, key))
+          .limit(1)
+        return row?.value ? JSON.parse(row.value) : undefined
+      },
+      set: async (key: string, value: unknown) => {
+        const teks = JSON.stringify(value)
+        await db
+          .insert(tabelBatas)
+          .values({ key, value: teks })
+          .onConflictDoUpdate({ target: tabelBatas.key, set: { value: teks } })
+      },
+    },
   },
 
   plugins: [

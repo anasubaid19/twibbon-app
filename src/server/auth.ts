@@ -6,6 +6,7 @@ import { db } from '@/db'
 import { user } from '@/db/schema'
 import { auth } from '@/lib/auth'
 import { generateRecoveryCode, hashRecoveryCode, verifyRecoveryCode } from '@/lib/recovery-code'
+import { batasiLaju, kunciDariPermintaan } from '@/server/batas-laju'
 
 /**
  * Better Auth mewajibkan kolom email. OpenFrame tidak pernah memintanya
@@ -32,6 +33,12 @@ const registerSchema = z.object({
 export const registerUser = createServerFn({ method: 'POST' })
   .validator((input: unknown) => registerSchema.parse(input))
   .handler(async ({ data }) => {
+    // Pendaftaran adalah titik terlemah: rate limiter Better Auth hanya
+    // menutupi route auth.handler, sedangkan ini server function yang
+    // memanggil auth.api secara langsung. Dipanggil paling awal supaya
+    // percobaan yang ditolak tidak sempat memakan CPU untuk scrypt.
+    await batasiLaju(kunciDariPermintaan('daftar'), 5, 600)
+
     const recoveryCode = generateRecoveryCode()
     const recoveryCodeHash = await hashRecoveryCode(recoveryCode)
 
@@ -87,6 +94,10 @@ const resetSchema = z.object({
 export const resetPassword = createServerFn({ method: 'POST' })
   .validator((input: unknown) => resetSchema.parse(input))
   .handler(async ({ data }) => {
+    // Lebih ketat daripada pendaftaran: jalur ini menebak recovery code, dan
+    // itu satu-satunya kunci pemulihan yang dipunya akun tanpa email.
+    await batasiLaju(kunciDariPermintaan('reset'), 5, 900)
+
     const [found] = await db
       .select()
       .from(user)
