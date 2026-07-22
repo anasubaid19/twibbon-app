@@ -15,12 +15,9 @@ mengunduh hasilnya sebagai PNG beralpha pada 1×, 2×, atau 3×.
 Foto partisipan **tidak pernah dikirim ke server** — seluruh compositing
 terjadi di browser.
 
-**Belum siap deploy publik.** Tiga hal masih terbuka: preset server produksi
-belum disambungkan (`bun run start` masih mencetak pesan), `registerUser`
-tidak dibatasi rate limiter Better Auth karena ia server function bukan route
-`auth.handler`, dan rate limit masih memakai penyimpanan dalam memori
-per-proses. Ketiganya sebaiknya dikerjakan bersamaan sebagai satu fase
-penyiapan rilis.
+Penyajian produksi sudah tersambung, dan pendaftaran maupun reset password
+dibatasi lajunya lewat penghitung di database — statusnya bertahan melewati
+restart.
 
 ## Jalankan lokal
 
@@ -43,6 +40,16 @@ bun dev
 
 Buka http://localhost:3000
 
+Untuk menjalankan versi produksinya:
+
+```bash
+bun run build
+bun run start
+```
+
+Di belakang reverse proxy, header `x-forwarded-for` **wajib** diteruskan.
+Tanpa itu semua pengunjung berbagi satu ember pembatas laju.
+
 ## Perintah
 
 | Perintah | Kegunaan |
@@ -52,6 +59,7 @@ Buka http://localhost:3000
 | `bun run check` | Lint + format (Biome) |
 | `bun run typecheck` | Cek tipe TypeScript |
 | `bun run build` | Build produksi (keluaran di `dist/`) |
+| `bun run start` | Jalankan hasil build (butuh `bun run build` lebih dulu) |
 | `bun run db:generate` | Buat berkas migrasi dari perubahan skema |
 | `bun run db:migrate` | Terapkan migrasi |
 

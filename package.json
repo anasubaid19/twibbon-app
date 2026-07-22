@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
-    "start": "echo 'Penyajian produksi belum disambungkan (lihat README). Pakai: bun dev' && exit 1",
+    "start": "bun run server.ts",
     "test": "bun test",
     "check": "biome check --write .",
     "typecheck": "tsc --noEmit",

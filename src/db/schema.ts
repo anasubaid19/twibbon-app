@@ -127,3 +127,14 @@ export const frameSlots = pgTable(
     unique('frame_slots_campaign_slot_unique').on(table.campaignId, table.slotIndex),
   ],
 )
+
+export const rateLimit = pgTable('rate_limit', {
+  key: text('key').primaryKey(),
+  // Dipakai pembatas milik kita: penghitung atomik per jendela.
+  count: integer('count').default(0).notNull(),
+  windowStart: timestamp('window_start').defaultNow().notNull(),
+  // Dipakai Better Auth lewat customStorage. Isinya opaque — kita menyimpan
+  // dan mengembalikannya apa adanya, tidak pernah menafsirkannya, supaya
+  // perubahan bentuk internal Better Auth tidak merembet ke skema kita.
+  value: text('value'),
+})
