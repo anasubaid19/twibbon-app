@@ -1,0 +1,139 @@
+import { useRender } from "@base-ui/react/use-render"
+import { cva, type VariantProps } from "class-variance-authority"
+import * as React from "react"
+
+import { Spinner } from "@/components/ui/spinner"
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "[&_svg]:-mx-0.5 relative inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg border font-medium text-base outline-none transition-shadow before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] pointer-coarse:after:absolute pointer-coarse:after:size-full pointer-coarse:after:min-h-11 pointer-coarse:after:min-w-11 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-64 sm:text-sm [&_svg:not([class*='opacity-'])]:opacity-80 [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  {
+    defaultVariants: {
+      size: "default",
+      variant: "default",
+    },
+    variants: {
+      size: {
+        default: "h-9 px-[calc(var(--spacing)_*_3_-_1px)] sm:h-8",
+        icon: "size-9 sm:size-8",
+        "icon-lg": "size-10 sm:size-9",
+        "icon-sm": "size-8 sm:size-7",
+        "icon-xl":
+          "size-11 sm:size-10 [&_svg:not([class*='size-'])]:size-5 sm:[&_svg:not([class*='size-'])]:size-4.5",
+        "icon-xs":
+          "size-7 rounded-md before:rounded-[calc(var(--radius-md)-1px)] sm:size-6 not-in-data-[slot=input-group]:[&_svg:not([class*='size-'])]:size-4 sm:not-in-data-[slot=input-group]:[&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-10 px-[calc(var(--spacing)_*_3.5_-_1px)] sm:h-9",
+        sm: "h-8 gap-1.5 px-[calc(var(--spacing)_*_2.5_-_1px)] sm:h-7",
+        xl: "h-11 px-[calc(var(--spacing)_*_4_-_1px)] text-lg sm:h-10 sm:text-base [&_svg:not([class*='size-'])]:size-5 sm:[&_svg:not([class*='size-'])]:size-4.5",
+        xs: "h-7 gap-1 rounded-md px-[calc(var(--spacing)_*_2_-_1px)] text-sm before:rounded-[calc(var(--radius-md)-1px)] sm:h-6 sm:text-xs [&_svg:not([class*='size-'])]:size-4 sm:[&_svg:not([class*='size-'])]:size-3.5",
+      },
+      variant: {
+        default:
+          "not-disabled:inset-shadow-[0_1px_--theme(--color-white/16%)] border-primary bg-primary text-primary-foreground shadow-primary/24 shadow-xs hover:bg-primary/90 data-pressed:bg-primary/90 [:active,[data-pressed]]:inset-shadow-[0_1px_--theme(--color-black/8%)] [:disabled,:active,[data-pressed]]:shadow-none",
+        destructive:
+          "not-disabled:inset-shadow-[0_1px_--theme(--color-white/16%)] border-destructive bg-destructive text-white shadow-destructive/24 shadow-xs hover:bg-destructive/90 data-pressed:bg-destructive/90 [:active,[data-pressed]]:inset-shadow-[0_1px_--theme(--color-black/8%)] [:disabled,:active,[data-pressed]]:shadow-none",
+        "destructive-outline":
+          "border-input bg-popover not-dark:bg-clip-padding text-destructive-foreground shadow-xs/5 not-disabled:not-active:not-data-pressed:before:shadow-[0_1px_--theme(--color-black/4%)] hover:border-destructive/32 hover:bg-destructive/4 data-pressed:border-destructive/32 data-pressed:bg-destructive/4 dark:bg-input/32 dark:not-disabled:before:shadow-[0_-1px_--theme(--color-white/2%)] dark:not-disabled:not-active:not-data-pressed:before:shadow-[0_-1px_--theme(--color-white/6%)] [:disabled,:active,[data-pressed]]:shadow-none",
+        ghost:
+          "border-transparent text-foreground hover:bg-accent data-pressed:bg-accent",
+        link: "border-transparent underline-offset-4 hover:underline data-pressed:underline",
+        outline:
+          "border-input bg-popover not-dark:bg-clip-padding text-foreground shadow-xs/5 not-disabled:not-active:not-data-pressed:before:shadow-[0_1px_--theme(--color-black/4%)] hover:bg-accent/50 data-pressed:bg-accent/50 dark:bg-input/32 dark:data-pressed:bg-input/64 dark:hover:bg-input/64 dark:not-disabled:before:shadow-[0_-1px_--theme(--color-white/2%)] dark:not-disabled:not-active:not-data-pressed:before:shadow-[0_-1px_--theme(--color-white/6%)] [:disabled,:active,[data-pressed]]:shadow-none",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/90 data-pressed:bg-secondary/90 [:active,[data-pressed]]:bg-secondary/80",
+      },
+    },
+  }
+)
+
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
+  VariantProps<typeof buttonVariants> & {
+    isLoading?: boolean
+    loadingText?: React.ReactNode
+    nativeButton?: boolean
+    render?: React.ReactElement
+  }
+
+function hasTextContent(node: React.ReactNode): boolean {
+  return React.Children.toArray(node).some((child) => {
+    if (typeof child === "string") {
+      return child.trim().length > 0
+    }
+
+    if (typeof child === "number") {
+      return true
+    }
+
+    if (!React.isValidElement<{ children?: React.ReactNode }>(child)) {
+      return false
+    }
+
+    return hasTextContent(child.props.children)
+  })
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      children,
+      className,
+      disabled,
+      isLoading = false,
+      loadingText,
+      nativeButton: _nativeButton,
+      render,
+      size,
+      type,
+      variant,
+      ...props
+    },
+    ref
+  ) => {
+    const childNodes = React.Children.toArray(children).filter(
+      (child) => child !== null && child !== undefined
+    )
+    const hasTextChild = hasTextContent(children)
+    const isIconOnly = !hasTextChild && childNodes.length <= 1
+
+    let content = children
+    if (isLoading) {
+      if (loadingText !== undefined) {
+        content = (
+          <>
+            <Spinner className="size-4" />
+            <span data-slot="button-content">{loadingText}</span>
+          </>
+        )
+      } else if (isIconOnly) {
+        content = <Spinner className="size-4" />
+      } else {
+        content = (
+          <>
+            <Spinner className="size-4" />
+            <span data-slot="button-content">{children}</span>
+          </>
+        )
+      }
+    }
+
+    return useRender({
+      defaultTagName: "button",
+      props: {
+        "aria-busy": isLoading || undefined,
+        "data-loading": isLoading || undefined,
+        "data-slot": "button",
+        className: cn(buttonVariants({ className, size, variant })),
+        disabled: disabled || isLoading,
+        type: type ?? "button",
+        ...props,
+        children: content,
+      },
+      ref,
+      render,
+    })
+  }
+)
+
+Button.displayName = "Button"
+
+export { Button, buttonVariants }
