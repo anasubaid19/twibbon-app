@@ -22,7 +22,7 @@ export const Route = createFileRoute('/twibbon/$slug')({
         <p className="mb-3 mt-16 text-5xl">😕</p>
         <h1 className="mb-2 font-display text-2xl">Kampanye tidak ditemukan</h1>
         <p className="mb-6 text-muted">Mungkin tautannya salah, atau kampanyenya sudah privat.</p>
-        <Link to="/" className="text-brand hover:underline">
+        <Link to="/" search={{ q: '', hal: 1 }} className="text-brand hover:underline">
           Kembali ke beranda
         </Link>
       </main>

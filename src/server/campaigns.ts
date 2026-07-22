@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { createServerFn } from '@tanstack/react-start'
-import { and, count, desc, eq, like, or, sql } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, like, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { campaigns, frameSlots, user } from '@/db/schema'
@@ -329,4 +329,72 @@ export const incrementUse = createServerFn({ method: 'POST' })
       .where(and(eq(campaigns.id, data.id), eq(campaigns.isPublic, true)))
 
     return { ok: true as const }
+  })
+
+/* --- listPublic ---------------------------------------------------------- */
+
+/** Berapa kartu per halaman. Cukup untuk grid 3 kolom tanpa bikin halaman berat. */
+const PER_HALAMAN = 12
+const MAKS_KATA_KUNCI = 80
+
+/**
+ * Menyiapkan kata kunci untuk `ILIKE`.
+ *
+ * `%` dan `_` adalah wildcard di `LIKE`; dibiarkan mentah, mencari "50%" akan
+ * mencocokkan seluruh isi tabel. Backslash diloloskan lebih dulu supaya
+ * pelolosan berikutnya tidak dobel.
+ */
+export function bersihkanKataKunci(q: string): string {
+  return q
+    .trim()
+    .slice(0, MAKS_KATA_KUNCI)
+    .replace(/\\/g, '\\\\')
+    .replace(/%/g, '\\%')
+    .replace(/_/g, '\\_')
+}
+
+export const listPublic = createServerFn({ method: 'GET' })
+  .validator((input: unknown) =>
+    z
+      .object({
+        q: z.string().max(MAKS_KATA_KUNCI).default(''),
+        hal: z.number().int().min(1).default(1),
+      })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data }) => {
+    const kunci = bersihkanKataKunci(data.q)
+
+    // `isPublic` masuk ke dalam WHERE, bukan disaring setelah query — campaign
+    // privat tidak boleh sempat terbaca sama sekali.
+    const syarat = kunci
+      ? and(eq(campaigns.isPublic, true), ilike(campaigns.name, `%${kunci}%`))
+      : eq(campaigns.isPublic, true)
+
+    const [jumlah] = await db.select({ n: count() }).from(campaigns).where(syarat)
+    const total = jumlah?.n ?? 0
+    const totalHal = Math.max(1, Math.ceil(total / PER_HALAMAN))
+    // Halaman di luar jangkauan dijepit, bukan ditolak: URL yang dibagikan
+    // orang bisa saja menunjuk halaman yang isinya sudah menyusut.
+    const hal = Math.min(data.hal, totalHal)
+
+    const rows = await db
+      .select({
+        id: campaigns.id,
+        name: campaigns.name,
+        slug: campaigns.slug,
+        description: campaigns.description,
+        useCount: campaigns.useCount,
+        slotCount: count(frameSlots.id),
+      })
+      .from(campaigns)
+      .leftJoin(frameSlots, eq(frameSlots.campaignId, campaigns.id))
+      .where(syarat)
+      .groupBy(campaigns.id)
+      .orderBy(desc(campaigns.createdAt))
+      .limit(PER_HALAMAN)
+      .offset((hal - 1) * PER_HALAMAN)
+
+    // `userId` sengaja tidak ikut.
+    return { rows, total, hal, totalHal }
   })

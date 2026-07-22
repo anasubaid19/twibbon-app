@@ -1,16 +1,159 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { z } from 'zod'
+import heroPng from '@/assets/hero.png'
+import { Navbar } from '@/components/navbar'
+import { Badge } from '@/components/ui/badge'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { listPublic } from '@/server/campaigns'
 
-export const Route = createFileRoute('/')({ component: Home })
+export const Route = createFileRoute('/')({
+  /*
+   * `.catch()` dipakai, bukan `.default()`: search param datang dari URL yang
+   * bisa diketik siapa saja. `?hal=abc` harus jatuh ke halaman 1, bukan
+   * menjatuhkan seluruh halaman.
+   */
+  validateSearch: z.object({
+    q: z.string().catch(''),
+    hal: z.number().int().min(1).catch(1),
+  }),
+  loaderDeps: ({ search }) => ({ q: search.q, hal: search.hal }),
+  loader: ({ deps }) => listPublic({ data: deps }),
+  component: Beranda,
+})
 
-function Home() {
+function Beranda() {
+  const data = Route.useLoaderData()
+  const search = Route.useSearch()
+  const navigate = useNavigate()
+
+  const adaPencarian = search.q.trim().length > 0
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6">
-      <h1 className="font-display text-5xl">
-        Open<span className="text-brand">Frame</span>
-      </h1>
-      <p className="text-muted">Bikin twibbon multi-slot. Gratis, tanpa email.</p>
-      <ThemeToggle />
-    </main>
+    <>
+      <Navbar />
+
+      <section className="atmosfer flex flex-col items-center gap-4 px-6 py-14 text-center">
+        {/* Dekoratif: judul di bawahnya sudah menyampaikan isinya. */}
+        <img src={heroPng} alt="" width={120} height={120} className="fade-up" />
+        <h1 className="fade-up font-display text-4xl tracking-[-0.02em] sm:text-5xl">
+          Bikin twibbon <span className="text-brand">multi-slot</span>
+        </h1>
+        <p className="fade-up-2 max-w-md text-muted">
+          Unggah frame-mu, gambar area fotonya, lalu bagikan tautannya. Gratis, tanpa email, tanpa
+          nomor telepon.
+        </p>
+        <Link to="/buat" className={`fade-up-3 ${buttonVariants({})} px-8`}>
+          Bikin punyamu →
+        </Link>
+      </section>
+
+      <main className="mx-auto max-w-[1140px] px-6 pb-16">
+        <h2 className="mb-4 text-center font-display text-2xl">Kampanye terbaru</h2>
+
+        {/* ponytail: form yang disubmit, bukan filter hidup per ketikan. Tanpa
+            debounce, tanpa dependensi, dan tiap pencarian menghasilkan satu URL
+            yang bisa dibagikan. */}
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            const q = new FormData(event.currentTarget).get('q')?.toString() ?? ''
+            navigate({ to: '/', search: { q, hal: 1 } })
+          }}
+          className="mx-auto mb-6 flex max-w-md gap-2"
+        >
+          <Input
+            name="q"
+            defaultValue={search.q}
+            placeholder="Cari nama kampanye…"
+            aria-label="Cari nama kampanye"
+          />
+          <Button type="submit">Cari</Button>
+          {adaPencarian && (
+            <Link
+              to="/"
+              search={{ q: '', hal: 1 }}
+              className={buttonVariants({ variant: 'outline' })}
+            >
+              Hapus
+            </Link>
+          )}
+        </form>
+
+        {data.rows.length === 0 ? (
+          <p className="rounded-card border border-dashed border-border bg-surface p-12 text-center text-muted">
+            {adaPencarian ? (
+              <>
+                Tidak ada kampanye yang cocok dengan <strong>{search.q}</strong>. Coba kata lain.
+              </>
+            ) : (
+              'Belum ada kampanye publik. Jadilah yang pertama!'
+            )}
+          </p>
+        ) : (
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {data.rows.map((campaign) => (
+              <li key={campaign.id}>
+                <Link to="/twibbon/$slug" params={{ slug: campaign.slug }} className="block">
+                  <Card className="overflow-hidden transition-all hover:-translate-y-[3px] hover:border-brand hover:shadow-[0_8px_32px_#00000040]">
+                    <img
+                      src={`/api/frame/${campaign.id}`}
+                      alt=""
+                      loading="lazy"
+                      className="aspect-square w-full bg-surface2 object-contain"
+                    />
+                    <div className="p-4">
+                      <h3 className="mb-1.5 truncate font-display text-base">{campaign.name}</h3>
+                      {campaign.description && (
+                        <p className="mb-2 line-clamp-2 text-xs text-muted">
+                          {campaign.description}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-1.5">
+                        <Badge variant="netral">{campaign.slotCount} area</Badge>
+                        <Badge variant="netral">{campaign.useCount}x dipakai</Badge>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {data.totalHal > 1 && (
+          <nav className="mt-8 flex items-center justify-center gap-3" aria-label="Paginasi">
+            {data.hal > 1 ? (
+              <Link
+                to="/"
+                search={{ q: search.q, hal: data.hal - 1 }}
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                ← Sebelumnya
+              </Link>
+            ) : (
+              <span className="text-sm text-muted opacity-45">← Sebelumnya</span>
+            )}
+
+            <span className="text-sm text-muted">
+              Halaman {data.hal} dari {data.totalHal}
+            </span>
+
+            {data.hal < data.totalHal ? (
+              <Link
+                to="/"
+                search={{ q: search.q, hal: data.hal + 1 }}
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                Berikutnya →
+              </Link>
+            ) : (
+              <span className="text-sm text-muted opacity-45">Berikutnya →</span>
+            )}
+          </nav>
+        )}
+      </main>
+    </>
   )
 }
