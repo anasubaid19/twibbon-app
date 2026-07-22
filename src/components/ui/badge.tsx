@@ -13,16 +13,14 @@ const badgeVariants = cva(
         secondary: 'bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80',
         destructive:
           'bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20',
-        outline:
-          'border-border text-foreground [a]:hover:bg-surface2 [a]:hover:text-muted-foreground',
-        ghost: 'hover:bg-surface2 hover:text-muted-foreground dark:hover:bg-surface2/50',
+        outline: 'border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground',
+        ghost: 'hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50',
         link: 'text-primary underline-offset-4 hover:underline',
-        // Warna diambil persis dari `.badge-ratio`, `.badge-public`, dan
-        // `.badge-private` di index.css lama. Kelas `badge-netral` dipakai
-        // perbaikan kontras tema terang di app.css.
-        netral: 'badge-netral bg-surface2 border-border text-muted',
-        publik: 'bg-[#caff3322] border-[#caff3344] text-brand',
-        privat: 'bg-[#c080ff22] border-[#c080ff44] text-[#c080ff]',
+        // Warnanya semantik, bukan literal: publik memakai nada info, privat
+        // memakai secondary, netral memakai muted.
+        netral: 'bg-muted border-border text-muted-foreground',
+        publik: 'bg-info-subtle border-transparent text-info-subtle-foreground',
+        privat: 'bg-secondary border-border text-secondary-foreground',
       },
     },
     defaultVariants: {

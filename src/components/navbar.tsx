@@ -30,11 +30,11 @@ export function Navbar({ username }: Props) {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-surface/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
       <nav className="mx-auto flex h-[58px] max-w-[1140px] items-center justify-between px-6">
         <Link
           to={username ? '/dashboard' : '/'}
-          className="font-display text-[1.15rem] font-extrabold tracking-[-0.5px] text-text no-underline"
+          className="font-heading text-[1.15rem] font-extrabold tracking-[-0.5px] text-foreground no-underline"
         >
           OpenFrame
         </Link>
@@ -48,7 +48,7 @@ export function Navbar({ username }: Props) {
             target="_blank"
             rel="noopener noreferrer"
             title="Traktir kopi"
-            className={buttonVariants({ variant: 'outline', size: 'sm', className: 'bg-surface2' })}
+            className={buttonVariants({ variant: 'outline', size: 'sm', className: 'bg-muted' })}
           >
             ☕ <span className="hidden sm:inline">Support</span>
           </a>
@@ -57,7 +57,7 @@ export function Navbar({ username }: Props) {
 
           {username && (
             <>
-              <span className="hidden rounded-pill border border-border bg-surface2 px-2.5 py-1 text-[0.82rem] text-muted sm:inline">
+              <span className="hidden rounded-lg border border-border bg-muted px-2.5 py-1 text-[0.82rem] text-muted-foreground sm:inline">
                 👤 {username}
               </span>
               <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -69,7 +69,10 @@ export function Navbar({ username }: Props) {
       </nav>
 
       {logoutError && (
-        <p role="alert" className="bg-danger/10 px-6 py-2 text-center text-sm text-danger">
+        <p
+          role="alert"
+          className="bg-destructive/10 px-6 py-2 text-center text-sm text-destructive"
+        >
           {logoutError}
         </p>
       )}

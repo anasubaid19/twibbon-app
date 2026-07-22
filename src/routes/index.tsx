@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import heroPng from '@/assets/hero.png'
+import { Footer } from '@/components/footer'
 import { Navbar } from '@/components/navbar'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -34,13 +35,13 @@ function Beranda() {
     <>
       <Navbar />
 
-      <section className="atmosfer flex flex-col items-center gap-4 px-6 py-14 text-center">
+      <section className="flex flex-col items-center gap-4 px-6 py-14 text-center">
         {/* Dekoratif: judul di bawahnya sudah menyampaikan isinya. */}
         <img src={heroPng} alt="" width={120} height={120} className="fade-up" />
-        <h1 className="fade-up font-display text-4xl tracking-[-0.02em] sm:text-5xl">
-          Bikin twibbon <span className="text-brand">multi-slot</span>
+        <h1 className="fade-up font-heading text-4xl tracking-[-0.02em] sm:text-5xl">
+          Bikin twibbon <span className="text-primary">multi-slot</span>
         </h1>
-        <p className="fade-up-2 max-w-md text-muted">
+        <p className="fade-up-2 max-w-md text-muted-foreground">
           Unggah frame-mu, gambar area fotonya, lalu bagikan tautannya. Gratis, tanpa email, tanpa
           nomor telepon.
         </p>
@@ -50,7 +51,7 @@ function Beranda() {
       </section>
 
       <main className="mx-auto max-w-[1140px] px-6 pb-16">
-        <h2 className="mb-4 text-center font-display text-2xl">Kampanye terbaru</h2>
+        <h2 className="mb-4 text-center font-heading text-2xl">Kampanye terbaru</h2>
 
         {/* ponytail: form yang disubmit, bukan filter hidup per ketikan. Tanpa
             debounce, tanpa dependensi, dan tiap pencarian menghasilkan satu URL
@@ -82,7 +83,7 @@ function Beranda() {
         </form>
 
         {data.rows.length === 0 ? (
-          <p className="rounded-card border border-dashed border-border bg-surface p-12 text-center text-muted">
+          <p className="rounded-xl border border-dashed border-border bg-card p-12 text-center text-muted-foreground">
             {adaPencarian ? (
               <>
                 Tidak ada kampanye yang cocok dengan <strong>{search.q}</strong>. Coba kata lain.
@@ -96,17 +97,17 @@ function Beranda() {
             {data.rows.map((campaign) => (
               <li key={campaign.id}>
                 <Link to="/twibbon/$slug" params={{ slug: campaign.slug }} className="block">
-                  <Card className="overflow-hidden transition-all hover:-translate-y-[3px] hover:border-brand hover:shadow-[0_8px_32px_#00000040]">
+                  <Card className="overflow-hidden transition-all hover:-translate-y-[3px] hover:border-primary hover:shadow-[0_8px_32px_#00000040]">
                     <img
                       src={`/api/frame/${campaign.id}`}
                       alt=""
                       loading="lazy"
-                      className="aspect-square w-full bg-surface2 object-contain"
+                      className="aspect-square w-full bg-muted object-contain"
                     />
                     <div className="p-4">
-                      <h3 className="mb-1.5 truncate font-display text-base">{campaign.name}</h3>
+                      <h3 className="mb-1.5 truncate font-heading text-base">{campaign.name}</h3>
                       {campaign.description && (
-                        <p className="mb-2 line-clamp-2 text-xs text-muted">
+                        <p className="mb-2 line-clamp-2 text-xs text-muted-foreground">
                           {campaign.description}
                         </p>
                       )}
@@ -133,10 +134,10 @@ function Beranda() {
                 ← Sebelumnya
               </Link>
             ) : (
-              <span className="text-sm text-muted opacity-45">← Sebelumnya</span>
+              <span className="text-sm text-muted-foreground opacity-45">← Sebelumnya</span>
             )}
 
-            <span className="text-sm text-muted">
+            <span className="text-sm text-muted-foreground">
               Halaman {data.hal} dari {data.totalHal}
             </span>
 
@@ -149,11 +150,12 @@ function Beranda() {
                 Berikutnya →
               </Link>
             ) : (
-              <span className="text-sm text-muted opacity-45">Berikutnya →</span>
+              <span className="text-sm text-muted-foreground opacity-45">Berikutnya →</span>
             )}
           </nav>
         )}
       </main>
+      <Footer />
     </>
   )
 }

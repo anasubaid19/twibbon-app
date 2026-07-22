@@ -19,9 +19,11 @@ export const Route = createFileRoute('/edit/$id')({
   loader: ({ params }) => getCampaignForEdit({ data: { id: params.id } }),
   errorComponent: () => (
     <main className="mx-auto max-w-md p-6 text-center">
-      <h1 className="mb-2 mt-16 font-display text-2xl">Kampanye tidak ditemukan</h1>
-      <p className="mb-6 text-muted">Mungkin sudah dihapus, atau bukan milik akun ini.</p>
-      <Link to="/dashboard" className="text-brand hover:underline">
+      <h1 className="mb-2 mt-16 font-heading text-2xl">Kampanye tidak ditemukan</h1>
+      <p className="mb-6 text-muted-foreground">
+        Mungkin sudah dihapus, atau bukan milik akun ini.
+      </p>
+      <Link to="/dashboard" className="text-primary hover:underline">
         Kembali ke dashboard
       </Link>
     </main>
@@ -93,16 +95,16 @@ function EditPage() {
     <main className="mx-auto max-w-5xl p-6">
       <header className="flex items-center justify-between py-6">
         <div>
-          <h1 className="font-display text-2xl">Ubah Kampanye</h1>
+          <h1 className="font-heading text-2xl">Ubah Kampanye</h1>
           {/* Slug tidak ikut berubah saat nama diubah — tautan yang sudah
               dibagikan harus tetap hidup. */}
-          <p className="text-sm text-muted">/twibbon/{campaign.slug}</p>
+          <p className="text-sm text-muted-foreground">/twibbon/{campaign.slug}</p>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Link
             to="/dashboard"
-            className="rounded-pill border border-border px-4 py-1.5 text-sm transition-colors hover:bg-surface2"
+            className="rounded-lg border border-border px-4 py-1.5 text-sm transition-colors hover:bg-muted"
           >
             Batal
           </Link>
@@ -112,7 +114,7 @@ function EditPage() {
       {error && (
         <p
           role="alert"
-          className="mb-4 rounded-sm border border-danger/30 bg-danger/10 p-3 text-sm text-danger"
+          className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
         >
           {error}
         </p>
@@ -128,14 +130,14 @@ function EditPage() {
             selectedIndex={selectedIndex}
             onSelect={setSelectedIndex}
           />
-          <p className="mt-3 text-sm text-muted">
+          <p className="mt-3 text-sm text-muted-foreground">
             Geser kotaknya untuk memindahkan area foto, tarik pegangannya untuk mengubah ukuran.
           </p>
-          <label className="mt-3 block cursor-pointer rounded-base border-2 border-dashed border-border bg-surface2 p-4 text-center text-sm transition-colors hover:border-brand">
+          <label className="mt-3 block cursor-pointer rounded-lg border-2 border-dashed border-border bg-muted p-4 text-center text-sm transition-colors hover:border-primary">
             <span className="font-semibold">
               {sedangGanti ? 'Mengganti frame…' : '🖼 Ganti frame PNG'}
             </span>
-            <span className="mt-1 block text-xs text-muted">
+            <span className="mt-1 block text-xs text-muted-foreground">
               Area foto tetap di posisi yang sama — koordinatnya persen, jadi ikut menyesuaikan
               ukuran frame baru
             </span>
@@ -149,16 +151,16 @@ function EditPage() {
           </label>
 
           {!areaValid && (
-            <p className="mt-2 text-sm text-danger">
+            <p className="mt-2 text-sm text-destructive">
               Area foto terlalu kecil. Perbesar sampai minimal 20x20 piksel pada ukuran frame
               aslinya.
             </p>
           )}
         </section>
 
-        <aside className="flex flex-col gap-4 rounded-card border border-border bg-surface p-5">
+        <aside className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5">
           <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Nama kampanye
             </span>
             <input
@@ -166,12 +168,12 @@ function EditPage() {
               onChange={(event) => setName(event.target.value)}
               required
               maxLength={80}
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
+              className="w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary"
             />
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Deskripsi <span className="normal-case tracking-normal">opsional</span>
             </span>
             <textarea
@@ -179,11 +181,11 @@ function EditPage() {
               onChange={(event) => setDescription(event.target.value)}
               maxLength={500}
               rows={3}
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
+              className="w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary"
             />
           </label>
 
-          <label className="flex items-start gap-2 text-sm text-muted">
+          <label className="flex items-start gap-2 text-sm text-muted-foreground">
             <input
               type="checkbox"
               checked={isPublic}
@@ -196,7 +198,7 @@ function EditPage() {
           <button
             type="submit"
             disabled={!bisaSimpan}
-            className="w-full rounded-pill bg-brand py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
+            className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>

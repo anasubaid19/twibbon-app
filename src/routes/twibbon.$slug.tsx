@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Footer } from '@/components/footer'
 import { Navbar } from '@/components/navbar'
 import { type ModeIsi, SlotFiller } from '@/components/slot-filler/slot-filler'
 import { renderComposite, type SlotFill } from '@/lib/composite'
@@ -36,12 +37,15 @@ export const Route = createFileRoute('/twibbon/$slug')({
       <Navbar />
       <main className="mx-auto max-w-md p-6 text-center">
         <p className="mb-3 mt-16 text-5xl">😕</p>
-        <h1 className="mb-2 font-display text-2xl">Kampanye tidak ditemukan</h1>
-        <p className="mb-6 text-muted">Mungkin tautannya salah, atau kampanyenya sudah privat.</p>
-        <Link to="/" search={{ q: '', hal: 1 }} className="text-brand hover:underline">
+        <h1 className="mb-2 font-heading text-2xl">Kampanye tidak ditemukan</h1>
+        <p className="mb-6 text-muted-foreground">
+          Mungkin tautannya salah, atau kampanyenya sudah privat.
+        </p>
+        <Link to="/" search={{ q: '', hal: 1 }} className="text-primary hover:underline">
           Kembali ke beranda
         </Link>
       </main>
+      <Footer />
     </>
   ),
   component: TwibbonPage,
@@ -148,21 +152,23 @@ function TwibbonPage() {
   return (
     <>
       <Navbar />
-      <main className="atmosfer mx-auto flex max-w-3xl flex-col items-center px-6 py-10">
-        <h1 className="fade-up text-center font-display text-3xl tracking-[-0.02em]">
+      <main className="mx-auto flex max-w-3xl flex-col items-center px-6 py-10">
+        <h1 className="fade-up text-center font-heading text-3xl tracking-[-0.02em]">
           {campaign.name}
         </h1>
         {campaign.description && (
-          <p className="fade-up mt-2 max-w-md text-center text-muted">{campaign.description}</p>
+          <p className="fade-up mt-2 max-w-md text-center text-muted-foreground">
+            {campaign.description}
+          </p>
         )}
-        <p className="fade-up mb-7 mt-2 text-sm text-muted">
+        <p className="fade-up mb-7 mt-2 text-sm text-muted-foreground">
           {campaign.slots.length} area foto · oleh <strong>@{campaign.username}</strong>
         </p>
 
         {error && (
           <p
             role="alert"
-            className="mb-4 rounded-sm border border-danger/30 bg-danger/10 p-3 text-sm text-danger"
+            className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
           >
             {error}
           </p>
@@ -184,11 +190,11 @@ function TwibbonPage() {
           />
 
           {mode === 'satu' && (
-            <label className="w-full max-w-md cursor-pointer rounded-base border-2 border-dashed border-border bg-surface2 p-5 text-center transition-colors hover:border-brand">
+            <label className="w-full max-w-md cursor-pointer rounded-lg border-2 border-dashed border-border bg-muted p-5 text-center transition-colors hover:border-primary">
               <span className="font-semibold">
                 {photo ? '🔄 Ganti foto' : '📸 Pilih foto kamu'}
               </span>
-              <span className="mt-1 block text-xs text-muted">
+              <span className="mt-1 block text-xs text-muted-foreground">
                 Maksimal 15MB · fotonya diproses di browser, tidak dikirim ke mana pun
               </span>
               <input
@@ -201,6 +207,7 @@ function TwibbonPage() {
           )}
         </div>
       </main>
+      <Footer />
     </>
   )
 }

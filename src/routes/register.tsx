@@ -61,31 +61,31 @@ function RegisterPage() {
   if (recoveryCode) {
     return (
       <main className="flex min-h-screen items-center justify-center p-6">
-        <div className="w-full max-w-md rounded-card border border-border bg-surface p-9">
+        <div className="w-full max-w-md rounded-xl border border-border bg-card p-9">
           <h1
             ref={recoveryHeadingRef}
             tabIndex={-1}
-            className="mb-1 font-display text-2xl outline-none"
+            className="mb-1 font-heading text-2xl outline-none"
           >
             🔑 Simpan Kode
           </h1>
-          <p className="mb-7 text-sm text-muted">
+          <p className="mb-7 text-sm text-muted-foreground">
             Akun berhasil dibuat! Kode ini <strong>hanya muncul sekali</strong> — simpan di tempat
             aman seperti catatan atau password manager.
           </p>
 
-          <output className="mb-5 block rounded-base border-2 border-dashed border-brand bg-surface2 p-5 text-center font-mono tracking-widest text-brand">
+          <output className="mb-5 block rounded-lg border-2 border-dashed border-primary bg-muted p-5 text-center font-mono tracking-widest text-primary">
             {recoveryCode}
           </output>
 
-          <p className="mb-4 rounded-sm border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
+          <p className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             ⚠️ Tanpa kode ini, kamu tidak bisa reset password kalau lupa.
           </p>
 
           {copyError && (
             <p
               role="alert"
-              className="mb-3 rounded-sm border border-danger/30 bg-danger/10 p-3 text-sm text-danger"
+              className="mb-3 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
             >
               {copyError}
             </p>
@@ -94,12 +94,12 @@ function RegisterPage() {
           <button
             type="button"
             onClick={copyCode}
-            className="mb-3 w-full rounded-pill border border-border py-3 font-semibold transition-colors hover:bg-surface2"
+            className="mb-3 w-full rounded-lg border border-border py-3 font-semibold transition-colors hover:bg-muted"
           >
             {copied ? '✅ Tersalin!' : '📋 Salin Recovery Code'}
           </button>
 
-          <label className="mb-3 flex items-start gap-2 text-sm text-muted">
+          <label className="mb-3 flex items-start gap-2 text-sm text-muted-foreground">
             <input
               type="checkbox"
               checked={confirmed}
@@ -113,7 +113,7 @@ function RegisterPage() {
             type="button"
             disabled={!confirmed}
             onClick={() => navigate({ to: '/dashboard' })}
-            className="w-full rounded-pill bg-brand py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
+            className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             Sudah disimpan → Masuk Dashboard
           </button>
@@ -128,18 +128,18 @@ function RegisterPage() {
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-md rounded-card border border-border bg-surface p-9">
-        <h1 className="mb-1 font-display text-2xl">
-          OpenFrame<span className="text-brand">.</span>
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-9">
+        <h1 className="mb-1 font-heading text-2xl">
+          OpenFrame<span className="text-primary">.</span>
         </h1>
-        <p className="mb-7 text-sm text-muted">
+        <p className="mb-7 text-sm text-muted-foreground">
           Buat akun gratis — tanpa email, tanpa nomor telepon
         </p>
 
         {error && (
           <p
             role="alert"
-            className="mb-4 rounded-sm border border-danger/30 bg-danger/10 p-3 text-sm text-danger"
+            className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
           >
             {error}
           </p>
@@ -147,7 +147,7 @@ function RegisterPage() {
 
         <form onSubmit={handleSubmit}>
           <label className="mb-4 block">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Username <span className="normal-case tracking-normal">min. 3 karakter</span>
             </span>
             <input
@@ -157,12 +157,12 @@ function RegisterPage() {
               /* biome-ignore lint/a11y/noAutofocus: field pertama pada halaman khusus pendaftaran */
               autoFocus
               placeholder="pilih username unik"
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
+              className="w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary"
             />
           </label>
 
           <label className="mb-6 block">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Password <span className="normal-case tracking-normal">min. 6 karakter</span>
             </span>
             <input
@@ -171,22 +171,22 @@ function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
-              className="w-full rounded-sm border-[1.5px] border-border bg-surface2 px-3.5 py-2.5 outline-none transition-colors focus:border-brand"
+              className="w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary"
             />
           </label>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-pill bg-brand py-3 font-semibold text-bg transition-transform hover:-translate-y-px disabled:opacity-45"
+            className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-transform hover:-translate-y-px disabled:opacity-45"
           >
             {loading ? 'Membuat akun...' : 'Daftar Sekarang →'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-muted">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           Sudah punya akun?{' '}
-          <Link to="/login" className="text-brand hover:underline">
+          <Link to="/login" className="text-primary hover:underline">
             Masuk
           </Link>
         </p>
