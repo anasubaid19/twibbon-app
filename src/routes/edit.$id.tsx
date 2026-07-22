@@ -1,10 +1,10 @@
-import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { AreaEditor, type SlotEditor } from '@/components/area-editor/area-editor'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { isValidSlot } from '@/lib/geometry'
 import { pesanError } from '@/lib/pesan-error'
-import { getCampaignForEdit, updateCampaign } from '@/server/campaigns'
+import { getCampaignForEdit, replaceFrame, updateCampaign } from '@/server/campaigns'
 import { getSession } from '@/server/session'
 
 export const Route = createFileRoute('/edit/$id')({
@@ -33,6 +33,7 @@ function EditPage() {
   const campaign = Route.useLoaderData()
   const { id } = Route.useParams()
   const navigate = useNavigate()
+  const router = useRouter()
 
   const [slots, setSlots] = useState<SlotEditor[]>(campaign.slots)
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -41,6 +42,26 @@ function EditPage() {
   const [isPublic, setIsPublic] = useState(campaign.isPublic)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [sedangGanti, setSedangGanti] = useState(false)
+
+  async function gantiFrame(berkas: File | undefined) {
+    if (!berkas) return
+    setError('')
+    setSedangGanti(true)
+    try {
+      const form = new FormData()
+      form.set('id', id)
+      form.set('frame', berkas)
+      await replaceFrame({ data: form })
+      // Muat ulang route: dimensi frame berubah, dan validitas slot dihitung
+      // terhadap dimensi itu.
+      await router.invalidate()
+    } catch (err) {
+      setError(pesanError(err))
+    } finally {
+      setSedangGanti(false)
+    }
+  }
 
   const frameSize = { width: campaign.frameWidth, height: campaign.frameHeight }
   const areaValid = slots.every((slot) => isValidSlot(slot, frameSize))
@@ -110,6 +131,23 @@ function EditPage() {
           <p className="mt-3 text-sm text-muted">
             Geser kotaknya untuk memindahkan area foto, tarik pegangannya untuk mengubah ukuran.
           </p>
+          <label className="mt-3 block cursor-pointer rounded-base border-2 border-dashed border-border bg-surface2 p-4 text-center text-sm transition-colors hover:border-brand">
+            <span className="font-semibold">
+              {sedangGanti ? 'Mengganti frame…' : '🖼 Ganti frame PNG'}
+            </span>
+            <span className="mt-1 block text-xs text-muted">
+              Area foto tetap di posisi yang sama — koordinatnya persen, jadi ikut menyesuaikan
+              ukuran frame baru
+            </span>
+            <input
+              type="file"
+              accept="image/png"
+              className="sr-only"
+              disabled={sedangGanti}
+              onChange={(event) => gantiFrame(event.target.files?.[0])}
+            />
+          </label>
+
           {!areaValid && (
             <p className="mt-2 text-sm text-danger">
               Area foto terlalu kecil. Perbesar sampai minimal 20x20 piksel pada ukuran frame

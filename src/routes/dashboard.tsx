@@ -1,9 +1,12 @@
-import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { Badge } from '@/components/ui/badge'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { authClient } from '@/lib/auth-client'
 import { pesanError } from '@/lib/pesan-error'
-import { listMyCampaigns } from '@/server/campaigns'
+import { deleteCampaign, listMyCampaigns } from '@/server/campaigns'
 import { getSession } from '@/server/session'
 
 export const Route = createFileRoute('/dashboard')({
@@ -25,7 +28,32 @@ function DashboardPage() {
   const { username } = Route.useRouteContext()
   const campaigns = Route.useLoaderData()
   const navigate = useNavigate()
+  const router = useRouter()
   const [logoutError, setLogoutError] = useState('')
+  const [tersalin, setTersalin] = useState('')
+
+  async function salin(slug: string) {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/twibbon/${slug}`)
+      setTersalin(slug)
+      setTimeout(() => setTersalin(''), 2000)
+    } catch {
+      // Izin clipboard bisa ditolak. Jangan diam — pengguna akan mengira
+      // tautannya sudah tersalin padahal tidak.
+      setLogoutError('Gagal menyalin. Buka halaman kampanyenya lalu salin dari bilah alamat.')
+    }
+  }
+
+  async function hapus(id: string, nama: string) {
+    // ponytail: confirm() bawaan, sama seperti hapus area di Fase 2 delta.
+    if (!confirm(`Hapus kampanye "${nama}"? Tindakan ini tidak bisa dibatalkan.`)) return
+    try {
+      await deleteCampaign({ data: { id } })
+      await router.invalidate()
+    } catch (err) {
+      setLogoutError(pesanError(err))
+    }
+  }
 
   async function handleLogout() {
     setLogoutError('')
@@ -82,34 +110,51 @@ function DashboardPage() {
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {campaigns.map((campaign) => (
             <li key={campaign.id}>
-              <Link
-                to="/edit/$id"
-                params={{ id: campaign.id }}
-                className="block overflow-hidden rounded-card border border-border bg-surface transition-colors hover:border-brand"
-              >
-                <img
-                  src={`/api/frame/${campaign.id}`}
-                  alt=""
-                  loading="lazy"
-                  className="aspect-square w-full bg-surface2 object-contain"
-                />
-                <div className="p-4">
-                  <h2 className="mb-1 truncate font-display text-base">{campaign.name}</h2>
-                  <p className="flex flex-wrap gap-2 text-xs text-muted">
-                    {/* Aplikasi lama menampilkan badge rasio di sini. Jumlah
-                        slot lebih berguna di produk multi-slot (spec bagian 8). */}
-                    <span className="rounded-pill bg-surface2 px-2 py-0.5">
-                      {campaign.slotCount} area
-                    </span>
-                    <span className="rounded-pill bg-surface2 px-2 py-0.5">
-                      {campaign.isPublic ? 'Publik' : 'Privat'}
-                    </span>
-                    <span className="rounded-pill bg-surface2 px-2 py-0.5">
-                      {campaign.useCount}x dipakai
-                    </span>
-                  </p>
+              {/* Tombol sengaja DI LUAR <Link> pembungkus: <a> bersarang di
+                  dalam <a> bukan HTML yang sah, dan perilaku kliknya jadi tak
+                  terduga. */}
+              <Card className="overflow-hidden transition-all hover:-translate-y-[3px] hover:border-brand">
+                <Link to="/edit/$id" params={{ id: campaign.id }} className="block">
+                  <img
+                    src={`/api/frame/${campaign.id}`}
+                    alt=""
+                    loading="lazy"
+                    className="aspect-square w-full bg-surface2 object-contain"
+                  />
+                  <div className="px-4 pt-4">
+                    <h2 className="mb-1.5 truncate font-display text-base">{campaign.name}</h2>
+                    <div className="flex flex-wrap gap-1.5">
+                      {/* Aplikasi lama menampilkan badge rasio di sini. Jumlah
+                          slot lebih berguna di produk multi-slot (spec bagian 8). */}
+                      <Badge variant="netral">{campaign.slotCount} area</Badge>
+                      <Badge variant={campaign.isPublic ? 'publik' : 'privat'}>
+                        {campaign.isPublic ? 'Publik' : 'Privat'}
+                      </Badge>
+                      <Badge variant="netral">{campaign.useCount}x dipakai</Badge>
+                    </div>
+                  </div>
+                </Link>
+
+                <div className="flex flex-wrap gap-1.5 p-4">
+                  <Link
+                    to="/twibbon/$slug"
+                    params={{ slug: campaign.slug }}
+                    className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                  >
+                    Lihat
+                  </Link>
+                  <Button variant="outline" size="sm" onClick={() => salin(campaign.slug)}>
+                    {tersalin === campaign.slug ? 'Tersalin!' : 'Salin tautan'}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => hapus(campaign.id, campaign.name)}
+                  >
+                    Hapus
+                  </Button>
                 </div>
-              </Link>
+              </Card>
             </li>
           ))}
         </ul>
