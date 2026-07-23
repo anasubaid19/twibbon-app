@@ -4,6 +4,7 @@ import { AreaEditor, type SlotEditor } from '@/components/area-editor/area-edito
 import { ThemeToggle } from '@/components/theme-toggle'
 import { type FrameSize, isValidSlot, type SlotRect } from '@/lib/geometry'
 import { pesanError } from '@/lib/pesan-error'
+import { slugify } from '@/lib/slug'
 import { createCampaign } from '@/server/campaigns'
 import { getSession } from '@/server/session'
 
@@ -30,8 +31,24 @@ function BuatPage() {
   const [slots, setSlots] = useState<SlotEditor[]>([SLOT_AWAL])
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [name, setName] = useState('')
+  const [slug, setSlug] = useState('')
+  // Selama creator belum menyentuh kolom link, slug mengikuti nama. Begitu ia
+  // mengetiknya sendiri, kaitan itu putus dan nama tidak lagi menimpanya.
+  const [slugDiedit, setSlugDiedit] = useState(false)
   const [description, setDescription] = useState('')
   const [isPublic, setIsPublic] = useState(true)
+
+  function ubahNama(nilai: string) {
+    setName(nilai)
+    if (!slugDiedit) setSlug(slugify(nilai))
+  }
+
+  function ubahSlug(nilai: string) {
+    setSlugDiedit(true)
+    // Sama seperti yang diterima server: huruf kecil, hanya a-z 0-9 dan tanda
+    // hubung. Dibersihkan saat diketik supaya preview-nya jujur.
+    setSlug(nilai.toLowerCase().replace(/[^a-z0-9-]/g, ''))
+  }
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -85,6 +102,7 @@ function BuatPage() {
       const form = new FormData()
       form.set('frame', file)
       form.set('name', name)
+      form.set('slug', slug)
       form.set('description', description)
       form.set('isPublic', String(isPublic))
       form.set('slots', JSON.stringify(slots))
@@ -168,13 +186,40 @@ function BuatPage() {
             </span>
             <input
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => ubahNama(event.target.value)}
               required
               maxLength={80}
               placeholder="HUT RI 80"
               className="w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary"
             />
           </label>
+
+          <div className="block">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Link kampanye <span className="normal-case tracking-normal">opsional</span>
+            </span>
+            <div className="flex items-center overflow-hidden rounded-sm border-[1.5px] border-border bg-muted transition-colors focus-within:border-primary">
+              <span className="whitespace-nowrap border-r border-border px-3 py-2.5 text-sm text-muted-foreground">
+                /twibbon/
+              </span>
+              <input
+                value={slug}
+                onChange={(event) => ubahSlug(event.target.value)}
+                maxLength={60}
+                placeholder="nama-kampanye-kamu"
+                className="min-w-0 flex-1 bg-transparent px-3 py-2.5 outline-none"
+              />
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {slug ? (
+                <>
+                  Tautannya: <span className="text-primary">/twibbon/{slug}</span>
+                </>
+              ) : (
+                'Kosongkan untuk dibuatkan otomatis dari nama.'
+              )}
+            </p>
+          </div>
 
           <label className="block">
             <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
