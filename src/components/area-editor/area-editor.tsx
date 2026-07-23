@@ -1,3 +1,4 @@
+import { ArrowDown, ArrowUp } from '@phosphor-icons/react'
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
@@ -206,7 +207,7 @@ export function AreaEditor({
           aria-label="Naikkan urutan area"
           onClick={() => pindah(-1)}
         >
-          ↑
+          <ArrowUp aria-hidden />
         </Button>
         <Button
           type="button"
@@ -216,7 +217,7 @@ export function AreaEditor({
           aria-label="Turunkan urutan area"
           onClick={() => pindah(1)}
         >
-          ↓
+          <ArrowDown aria-hidden />
         </Button>
         {/* Mati saat tersisa satu: campaign tanpa area akan ditolak server
             (slots.min(1)), jadi lebih baik dicegah di sini daripada membiarkan

@@ -1,3 +1,4 @@
+import { Moon, Sun } from '@phosphor-icons/react'
 import { useLoaderData } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -29,9 +30,9 @@ export function ThemeToggle() {
       size="icon"
       aria-label={theme === 'dark' ? 'Ganti ke tema terang' : 'Ganti ke tema gelap'}
       onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-      className="bg-muted text-base"
+      className="bg-muted"
     >
-      {theme === 'dark' ? '☀️' : '🌙'}
+      {theme === 'dark' ? <Sun aria-hidden /> : <Moon aria-hidden />}
     </Button>
   )
 }
