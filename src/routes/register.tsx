@@ -1,6 +1,13 @@
+import { ArrowRight, Check, Copy, Key, Warning } from '@phosphor-icons/react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { pesanError } from '@/lib/pesan-error'
 import { registerUser } from '@/server/auth'
 
@@ -61,13 +68,13 @@ function RegisterPage() {
   if (recoveryCode) {
     return (
       <main className="flex min-h-screen items-center justify-center p-6">
-        <div className="w-full max-w-md rounded-xl border border-border bg-card p-9">
+        <Card className="w-full max-w-md p-9">
           <h1
             ref={recoveryHeadingRef}
             tabIndex={-1}
-            className="mb-1 font-heading text-2xl outline-none"
+            className="mb-1 flex items-center gap-2 font-heading text-2xl outline-none"
           >
-            🔑 Simpan Kode
+            <Key aria-hidden /> Simpan Kode
           </h1>
           <p className="mb-7 text-sm text-muted-foreground">
             Akun berhasil dibuat! Kode ini <strong>hanya muncul sekali</strong> — simpan di tempat
@@ -78,46 +85,46 @@ function RegisterPage() {
             {recoveryCode}
           </output>
 
-          <p className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-            ⚠️ Tanpa kode ini, kamu tidak bisa reset password kalau lupa.
-          </p>
+          <Alert variant="destructive" className="mb-4">
+            <Warning aria-hidden /> Tanpa kode ini, kamu tidak bisa reset password kalau lupa.
+          </Alert>
 
           {copyError && (
-            <p
-              role="alert"
-              className="mb-3 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-            >
+            <Alert variant="destructive" role="alert" className="mb-3">
               {copyError}
-            </p>
+            </Alert>
           )}
 
-          <button
-            type="button"
-            onClick={copyCode}
-            className="mb-3 w-full rounded-lg border border-border py-3 font-semibold transition-colors hover:bg-muted"
-          >
-            {copied ? '✅ Tersalin!' : '📋 Salin Recovery Code'}
-          </button>
+          <Button type="button" variant="outline" size="blok" onClick={copyCode} className="mb-3">
+            {copied ? (
+              <>
+                <Check aria-hidden /> Tersalin!
+              </>
+            ) : (
+              <>
+                <Copy aria-hidden /> Salin Recovery Code
+              </>
+            )}
+          </Button>
 
-          <label className="mb-3 flex items-start gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
+          <Label className="mb-3 flex items-start gap-2 text-sm font-normal text-muted-foreground">
+            <Checkbox
               checked={confirmed}
-              onChange={(e) => setConfirmed(e.target.checked)}
+              onCheckedChange={(v) => setConfirmed(v === true)}
               className="mt-0.5"
             />
             Saya sudah menyimpan recovery code ini di tempat aman
-          </label>
+          </Label>
 
-          <button
+          <Button
             type="button"
+            size="blok"
             disabled={!confirmed}
             onClick={() => navigate({ to: '/dashboard' })}
-            className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-transform hover:-translate-y-px disabled:opacity-45"
           >
-            Sudah disimpan → Masuk Dashboard
-          </button>
-        </div>
+            Sudah disimpan <ArrowRight aria-hidden />
+          </Button>
+        </Card>
       </main>
     )
   }
@@ -128,7 +135,7 @@ function RegisterPage() {
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-9">
+      <Card className="w-full max-w-md p-9">
         <h1 className="mb-1 font-heading text-2xl">
           OpenFrame<span className="text-primary">.</span>
         </h1>
@@ -137,51 +144,56 @@ function RegisterPage() {
         </p>
 
         {error && (
-          <p
-            role="alert"
-            className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-          >
+          <Alert variant="destructive" role="alert" className="mb-4">
             {error}
-          </p>
+          </Alert>
         )}
 
         <form onSubmit={handleSubmit}>
-          <label className="mb-4 block">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="mb-4">
+            <Label
+              htmlFor="username"
+              className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Username <span className="normal-case tracking-normal">min. 3 karakter</span>
-            </span>
-            <input
+            </Label>
+            <Input
+              id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
               /* biome-ignore lint/a11y/noAutofocus: field pertama pada halaman khusus pendaftaran */
               autoFocus
               placeholder="pilih username unik"
-              className="w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary"
             />
-          </label>
+          </div>
 
-          <label className="mb-6 block">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="mb-6">
+            <Label
+              htmlFor="password"
+              className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Password <span className="normal-case tracking-normal">min. 6 karakter</span>
-            </span>
-            <input
+            </Label>
+            <Input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
-              className="w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary"
             />
-          </label>
+          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-transform hover:-translate-y-px disabled:opacity-45"
-          >
-            {loading ? 'Membuat akun...' : 'Daftar Sekarang →'}
-          </button>
+          <Button type="submit" size="blok" disabled={loading}>
+            {loading ? (
+              'Membuat akun...'
+            ) : (
+              <>
+                Daftar Sekarang <ArrowRight aria-hidden />
+              </>
+            )}
+          </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
@@ -190,7 +202,7 @@ function RegisterPage() {
             Masuk
           </Link>
         </p>
-      </div>
+      </Card>
     </main>
   )
 }
