@@ -2,6 +2,13 @@ import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-ro
 import { useEffect, useState } from 'react'
 import { AreaEditor, type SlotEditor } from '@/components/area-editor/area-editor'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { Alert } from '@/components/ui/alert'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { type FrameSize, isValidSlot, type SlotRect } from '@/lib/geometry'
 import { pesanError } from '@/lib/pesan-error'
 import { slugify } from '@/lib/slug'
@@ -122,22 +129,16 @@ function BuatPage() {
         <h1 className="font-heading text-2xl">Bikin Kampanye</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link
-            to="/dashboard"
-            className="rounded-lg border border-border px-4 py-1.5 text-sm transition-colors hover:bg-muted"
-          >
+          <Link to="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
             Batal
           </Link>
         </div>
       </header>
 
       {error && (
-        <p
-          role="alert"
-          className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-        >
+        <Alert variant="destructive" role="alert" className="mb-4">
           {error}
-        </p>
+        </Alert>
       )}
 
       <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-[1fr_20rem]">
@@ -180,34 +181,44 @@ function BuatPage() {
         </section>
 
         <aside className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5">
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div>
+            <Label
+              htmlFor="nama"
+              className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Nama kampanye
-            </span>
-            <input
+            </Label>
+            <Input
+              id="nama"
               value={name}
               onChange={(event) => ubahNama(event.target.value)}
               required
               maxLength={80}
               placeholder="HUT RI 80"
-              className="w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary"
             />
-          </label>
+          </div>
 
-          <div className="block">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div>
+            <Label
+              htmlFor="slug"
+              className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Link kampanye <span className="normal-case tracking-normal">opsional</span>
-            </span>
-            <div className="flex items-center overflow-hidden rounded-sm border-[1.5px] border-border bg-muted transition-colors focus-within:border-primary">
-              <span className="whitespace-nowrap border-r border-border px-3 py-2.5 text-sm text-muted-foreground">
+            </Label>
+            {/* Grup input: prefiks tetap + bagian yang diketik. Border ada di
+                pembungkus, jadi Input di dalamnya dibuat transparan tanpa border
+                sendiri supaya tidak dobel. */}
+            <div className="flex items-center overflow-hidden rounded-md border border-border bg-muted transition-colors focus-within:border-primary focus-within:ring-[3px] focus-within:ring-ring/25">
+              <span className="whitespace-nowrap border-r border-border px-3 py-2 text-sm text-muted-foreground">
                 /twibbon/
               </span>
-              <input
+              <Input
+                id="slug"
                 value={slug}
                 onChange={(event) => ubahSlug(event.target.value)}
                 maxLength={60}
                 placeholder="nama-kampanye-kamu"
-                className="min-w-0 flex-1 bg-transparent px-3 py-2.5 outline-none"
+                className="min-w-0 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0"
               />
             </div>
             <p className="mt-1.5 text-xs text-muted-foreground">
@@ -221,37 +232,35 @@ function BuatPage() {
             </p>
           </div>
 
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div>
+            <Label
+              htmlFor="deskripsi"
+              className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Deskripsi <span className="normal-case tracking-normal">opsional</span>
-            </span>
-            <textarea
+            </Label>
+            <Textarea
+              id="deskripsi"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               maxLength={500}
               rows={3}
               placeholder="Ceritakan sedikit soal kampanye ini"
-              className="w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary"
             />
-          </label>
+          </div>
 
-          <label className="flex items-start gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
+          <Label className="flex items-start gap-2 text-sm font-normal text-muted-foreground">
+            <Checkbox
               checked={isPublic}
-              onChange={(event) => setIsPublic(event.target.checked)}
+              onCheckedChange={(v) => setIsPublic(v === true)}
               className="mt-0.5"
             />
             Tampilkan di galeri publik
-          </label>
+          </Label>
 
-          <button
-            type="submit"
-            disabled={!bisaSimpan}
-            className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-transform hover:-translate-y-px disabled:opacity-45"
-          >
+          <Button type="submit" size="blok" disabled={!bisaSimpan}>
             {saving ? 'Menyimpan...' : 'Simpan Kampanye'}
-          </button>
+          </Button>
         </aside>
       </form>
     </main>
