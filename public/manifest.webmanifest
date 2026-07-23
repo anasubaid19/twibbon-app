@@ -1,0 +1,13 @@
+{
+  "name": "OpenFrame",
+  "short_name": "OpenFrame",
+  "description": "Bikin twibbon multi-slot. Gratis, tanpa email, tanpa nomor telepon.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0b0d",
+  "theme_color": "#0b0b0d",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

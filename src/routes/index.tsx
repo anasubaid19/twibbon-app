@@ -1,8 +1,8 @@
 import { ArrowRight, CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
-import heroPng from '@/assets/hero.png'
 import { Footer } from '@/components/footer'
+import { Logo } from '@/components/logo'
 import { Navbar } from '@/components/navbar'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -38,7 +38,7 @@ function Beranda() {
 
       <section className="flex flex-col items-center gap-4 px-6 py-14 text-center">
         {/* Dekoratif: judul di bawahnya sudah menyampaikan isinya. */}
-        <img src={heroPng} alt="" width={120} height={120} className="fade-up" />
+        <Logo className="fade-up h-24 w-24" />
         <h1 className="fade-up font-heading text-4xl tracking-[-0.02em] sm:text-5xl">
           Bikin twibbon <span className="text-primary">multi-slot</span>
         </h1>
