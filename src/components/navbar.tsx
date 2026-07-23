@@ -1,6 +1,7 @@
 import { Coffee, User } from '@phosphor-icons/react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { Logo } from '@/components/logo'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { authClient } from '@/lib/auth-client'
@@ -35,8 +36,9 @@ export function Navbar({ username }: Props) {
       <nav className="mx-auto flex h-[58px] max-w-[1140px] items-center justify-between px-6">
         <Link
           to={username ? '/dashboard' : '/'}
-          className="font-heading text-[1.15rem] font-extrabold tracking-[-0.5px] text-foreground no-underline"
+          className="flex items-center gap-2 font-heading text-[1.15rem] font-extrabold tracking-[-0.5px] text-foreground no-underline"
         >
+          <Logo className="h-7 w-7" />
           OpenFrame
         </Link>
 

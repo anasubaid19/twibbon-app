@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { Logo } from '@/components/logo'
 
 /** Tautan dukungan dipertahankan dari aplikasi lama (spec bagian 7). */
 const TRAKTEER = 'https://trakteer.id/m_anas_ubaidillah/gift'
@@ -15,7 +16,10 @@ export function Footer() {
     <footer className="mt-section border-t border-border">
       <div className="mx-auto flex max-w-[1140px] flex-col gap-6 px-6 py-10 sm:flex-row sm:items-start sm:justify-between">
         <div className="max-w-sm">
-          <p className="font-heading text-lg font-bold tracking-[-0.02em]">OpenFrame</p>
+          <p className="flex items-center gap-2 font-heading text-lg font-bold tracking-[-0.02em]">
+            <Logo className="h-6 w-6" />
+            OpenFrame
+          </p>
           <p className="mt-1.5 text-sm text-muted-foreground">
             Bikin twibbon multi-slot. Gratis, tanpa email, tanpa nomor telepon. Foto kamu diproses
             di browser dan tidak pernah dikirim ke mana pun.
