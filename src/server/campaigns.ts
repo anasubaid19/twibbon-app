@@ -92,6 +92,14 @@ function parseCreateInput(input: unknown) {
 
   return {
     frame,
+    // Slug custom opsional. Dibatasi panjangnya di sini; penyeragaman bentuknya
+    // (huruf kecil, ganti karakter tak sah) diserahkan ke slugify di handler,
+    // supaya klien dan server memakai aturan yang sama.
+    slug: z
+      .string()
+      .max(200)
+      .default('')
+      .parse(String(input.get('slug') ?? '')),
     ...detailSchema.parse({
       name: String(input.get('name') ?? ''),
       description: String(input.get('description') ?? ''),
@@ -110,7 +118,10 @@ export const createCampaign = createServerFn({ method: 'POST' })
     const frame = await validateFrame(bytes)
     assertSlotsFit(data.slots, frame)
 
-    const base = slugify(data.name)
+    // Slug custom yang diketik creator jadi basisnya; kalau kosong, diturunkan
+    // dari nama seperti sebelumnya. slugify menyeragamkan keduanya, jadi
+    // "HUT RI 80!!" maupun nama apa pun berakhir sebagai slug yang sah.
+    const base = slugify(data.slug || data.name)
     const mirip = await db
       .select({ slug: campaigns.slug })
       .from(campaigns)
