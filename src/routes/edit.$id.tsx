@@ -1,7 +1,14 @@
+import { Image as ImageIcon } from '@phosphor-icons/react'
 import { createFileRoute, Link, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { AreaEditor, type SlotEditor } from '@/components/area-editor/area-editor'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { Alert } from '@/components/ui/alert'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { isValidSlot } from '@/lib/geometry'
 import { pesanError } from '@/lib/pesan-error'
 import { getCampaignForEdit, replaceFrame, updateCampaign } from '@/server/campaigns'
@@ -102,22 +109,16 @@ function EditPage() {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link
-            to="/dashboard"
-            className="rounded-lg border border-border px-4 py-1.5 text-sm transition-colors hover:bg-muted"
-          >
+          <Link to="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
             Batal
           </Link>
         </div>
       </header>
 
       {error && (
-        <p
-          role="alert"
-          className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-        >
+        <Alert variant="destructive" role="alert" className="mb-4">
           {error}
-        </p>
+        </Alert>
       )}
 
       <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-[1fr_20rem]">
@@ -134,8 +135,14 @@ function EditPage() {
             Geser kotaknya untuk memindahkan area foto, tarik pegangannya untuk mengubah ukuran.
           </p>
           <label className="mt-3 block cursor-pointer rounded-lg border-2 border-dashed border-border bg-muted p-4 text-center text-sm transition-colors hover:border-primary">
-            <span className="font-semibold">
-              {sedangGanti ? 'Mengganti frame…' : '🖼 Ganti frame PNG'}
+            <span className="flex items-center justify-center gap-1.5 font-semibold">
+              {sedangGanti ? (
+                'Mengganti frame…'
+              ) : (
+                <>
+                  <ImageIcon aria-hidden /> Ganti frame PNG
+                </>
+              )}
             </span>
             <span className="mt-1 block text-xs text-muted-foreground">
               Area foto tetap di posisi yang sama — koordinatnya persen, jadi ikut menyesuaikan
@@ -159,49 +166,50 @@ function EditPage() {
         </section>
 
         <aside className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5">
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div>
+            <Label
+              htmlFor="nama"
+              className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Nama kampanye
-            </span>
-            <input
+            </Label>
+            <Input
+              id="nama"
               value={name}
               onChange={(event) => setName(event.target.value)}
               required
               maxLength={80}
-              className="w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary"
             />
-          </label>
+          </div>
 
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div>
+            <Label
+              htmlFor="deskripsi"
+              className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Deskripsi <span className="normal-case tracking-normal">opsional</span>
-            </span>
-            <textarea
+            </Label>
+            <Textarea
+              id="deskripsi"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               maxLength={500}
               rows={3}
-              className="w-full rounded-sm border-[1.5px] border-border bg-muted px-3.5 py-2.5 outline-none transition-colors focus:border-primary"
             />
-          </label>
+          </div>
 
-          <label className="flex items-start gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
+          <Label className="flex items-start gap-2 text-sm font-normal text-muted-foreground">
+            <Checkbox
               checked={isPublic}
-              onChange={(event) => setIsPublic(event.target.checked)}
+              onCheckedChange={(v) => setIsPublic(v === true)}
               className="mt-0.5"
             />
             Tampilkan di galeri publik
-          </label>
+          </Label>
 
-          <button
-            type="submit"
-            disabled={!bisaSimpan}
-            className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-transform hover:-translate-y-px disabled:opacity-45"
-          >
+          <Button type="submit" size="blok" disabled={!bisaSimpan}>
             {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
-          </button>
+          </Button>
         </aside>
       </form>
     </main>

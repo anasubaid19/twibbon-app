@@ -1,3 +1,4 @@
+import { ArrowsClockwise, Camera, SmileyMeh } from '@phosphor-icons/react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Footer } from '@/components/footer'
@@ -36,7 +37,7 @@ export const Route = createFileRoute('/twibbon/$slug')({
     <>
       <Navbar />
       <main className="mx-auto max-w-md p-6 text-center">
-        <p className="mb-3 mt-16 text-5xl">😕</p>
+        <SmileyMeh aria-hidden className="mx-auto mb-3 mt-16 text-6xl text-muted-foreground" />
         <h1 className="mb-2 font-heading text-2xl">Kampanye tidak ditemukan</h1>
         <p className="mb-6 text-muted-foreground">
           Mungkin tautannya salah, atau kampanyenya sudah privat.
@@ -191,8 +192,16 @@ function TwibbonPage() {
 
           {mode === 'satu' && (
             <label className="w-full max-w-md cursor-pointer rounded-lg border-2 border-dashed border-border bg-muted p-5 text-center transition-colors hover:border-primary">
-              <span className="font-semibold">
-                {photo ? '🔄 Ganti foto' : '📸 Pilih foto kamu'}
+              <span className="flex items-center justify-center gap-1.5 font-semibold">
+                {photo ? (
+                  <>
+                    <ArrowsClockwise aria-hidden /> Ganti foto
+                  </>
+                ) : (
+                  <>
+                    <Camera aria-hidden /> Pilih foto kamu
+                  </>
+                )}
               </span>
               <span className="mt-1 block text-xs text-muted-foreground">
                 Maksimal 15MB · fotonya diproses di browser, tidak dikirim ke mana pun

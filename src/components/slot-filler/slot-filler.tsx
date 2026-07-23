@@ -1,3 +1,4 @@
+import { ArrowCounterClockwise } from '@phosphor-icons/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useElementSize } from '@/components/area-editor/use-element-size'
 import { Button } from '@/components/ui/button'
@@ -254,9 +255,9 @@ export function SlotFiller({
             <button
               type="button"
               onClick={t.reset}
-              className="mt-2 w-full text-xs text-muted-foreground transition-colors hover:text-foreground"
+              className="mt-2 flex w-full items-center justify-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
-              ↺ Reset posisi
+              <ArrowCounterClockwise aria-hidden /> Reset posisi
             </button>
           </div>
 

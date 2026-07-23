@@ -1,6 +1,8 @@
+import { Plus, User } from '@phosphor-icons/react'
 import { createFileRoute, Link, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { Alert } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -73,33 +75,23 @@ function DashboardPage() {
         <h1 className="font-heading text-2xl">Kampanye Saya</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <span className="rounded-lg border border-border bg-muted px-3 py-1 text-sm text-muted-foreground">
-            👤 {username}
+          <span className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-1 text-sm text-muted-foreground">
+            <User aria-hidden /> {username}
           </span>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-lg border border-border px-4 py-1.5 text-sm transition-colors hover:bg-muted"
-          >
+          <Button type="button" variant="outline" size="sm" onClick={handleLogout}>
             Keluar
-          </button>
+          </Button>
         </div>
       </header>
 
       {logoutError && (
-        <p
-          role="alert"
-          className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-        >
+        <Alert variant="destructive" role="alert" className="mb-4">
           {logoutError}
-        </p>
+        </Alert>
       )}
 
-      <Link
-        to="/buat"
-        className="mb-6 inline-block rounded-lg bg-primary px-6 py-2.5 font-semibold text-primary-foreground transition-transform hover:-translate-y-px"
-      >
-        + Bikin Kampanye
+      <Link to="/buat" className={`mb-6 ${buttonVariants({})}`}>
+        <Plus aria-hidden /> Bikin Kampanye
       </Link>
 
       {campaigns.length === 0 ? (

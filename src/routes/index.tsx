@@ -1,3 +1,4 @@
+import { ArrowRight, CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import heroPng from '@/assets/hero.png'
@@ -46,7 +47,7 @@ function Beranda() {
           nomor telepon.
         </p>
         <Link to="/buat" className={`fade-up-3 ${buttonVariants({})} px-8`}>
-          Bikin punyamu →
+          Bikin punyamu <ArrowRight aria-hidden />
         </Link>
       </section>
 
@@ -131,10 +132,12 @@ function Beranda() {
                 search={{ q: search.q, hal: data.hal - 1 }}
                 className={buttonVariants({ variant: 'outline', size: 'sm' })}
               >
-                ← Sebelumnya
+                <CaretLeft aria-hidden /> Sebelumnya
               </Link>
             ) : (
-              <span className="text-sm text-muted-foreground opacity-45">← Sebelumnya</span>
+              <span className="flex items-center gap-1 text-sm text-muted-foreground opacity-45">
+                <CaretLeft aria-hidden /> Sebelumnya
+              </span>
             )}
 
             <span className="text-sm text-muted-foreground">
@@ -147,10 +150,12 @@ function Beranda() {
                 search={{ q: search.q, hal: data.hal + 1 }}
                 className={buttonVariants({ variant: 'outline', size: 'sm' })}
               >
-                Berikutnya →
+                Berikutnya <CaretRight aria-hidden />
               </Link>
             ) : (
-              <span className="text-sm text-muted-foreground opacity-45">Berikutnya →</span>
+              <span className="flex items-center gap-1 text-sm text-muted-foreground opacity-45">
+                Berikutnya <CaretRight aria-hidden />
+              </span>
             )}
           </nav>
         )}

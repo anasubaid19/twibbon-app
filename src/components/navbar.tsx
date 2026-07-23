@@ -1,3 +1,4 @@
+import { Coffee, User } from '@phosphor-icons/react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -50,7 +51,7 @@ export function Navbar({ username }: Props) {
             title="Traktir kopi"
             className={buttonVariants({ variant: 'outline', size: 'sm', className: 'bg-muted' })}
           >
-            ☕ <span className="hidden sm:inline">Support</span>
+            <Coffee aria-hidden /> <span className="hidden sm:inline">Support</span>
           </a>
 
           <ThemeToggle />
@@ -58,7 +59,7 @@ export function Navbar({ username }: Props) {
           {username && (
             <>
               <span className="hidden rounded-lg border border-border bg-muted px-2.5 py-1 text-[0.82rem] text-muted-foreground sm:inline">
-                👤 {username}
+                <User aria-hidden className="inline align-[-2px]" /> {username}
               </span>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 Keluar

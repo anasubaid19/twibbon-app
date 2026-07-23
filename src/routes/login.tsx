@@ -1,3 +1,4 @@
+import { ArrowRight } from '@phosphor-icons/react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -102,7 +103,13 @@ function LoginPage() {
           </div>
 
           <Button type="submit" size="blok" disabled={loading}>
-            {loading ? 'Memproses...' : 'Masuk →'}
+            {loading ? (
+              'Memproses...'
+            ) : (
+              <>
+                Masuk <ArrowRight aria-hidden />
+              </>
+            )}
           </Button>
         </form>
 
