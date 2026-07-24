@@ -1,14 +1,15 @@
-import { Coffee, User } from '@phosphor-icons/react'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
-import { Logo } from '@/components/logo'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { Button, buttonVariants } from '@/components/ui/button'
-import { authClient } from '@/lib/auth-client'
-import { pesanError } from '@/lib/pesan-error'
+import { Coffee01Icon, UserIcon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Link, useNavigate } from "@tanstack/react-router"
+import { useState } from "react"
+import { Logo } from "@/components/logo"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { authClient } from "@/lib/auth-client"
+import { pesanError } from "@/lib/pesan-error"
 
 /** Tautan dukungan dipertahankan dari aplikasi lama (spec bagian 7). */
-const TRAKTEER = 'https://trakteer.id/m_anas_ubaidillah/gift'
+const TRAKTEER = "https://trakteer.id/m_anas_ubaidillah/gift"
 
 type Props = {
   /** Kalau ada, navbar menampilkan chip user dan tombol keluar. */
@@ -17,13 +18,13 @@ type Props = {
 
 export function Navbar({ username }: Props) {
   const navigate = useNavigate()
-  const [logoutError, setLogoutError] = useState('')
+  const [logoutError, setLogoutError] = useState("")
 
   async function handleLogout() {
-    setLogoutError('')
+    setLogoutError("")
     try {
       await authClient.signOut()
-      navigate({ to: '/login' })
+      navigate({ to: "/login" })
     } catch (err) {
       // signOut bisa MELEMPAR saat jaringan putus — tanpa ini tombolnya
       // tidak melakukan apa pun yang terlihat.
@@ -35,7 +36,7 @@ export function Navbar({ username }: Props) {
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
       <nav className="mx-auto flex h-[58px] max-w-[1140px] items-center justify-between px-6">
         <Link
-          to={username ? '/dashboard' : '/'}
+          to={username ? "/dashboard" : "/"}
           className="flex items-center gap-2 font-heading text-[1.15rem] font-extrabold tracking-[-0.5px] text-foreground no-underline"
         >
           <Logo className="h-7 w-7" />
@@ -51,9 +52,10 @@ export function Navbar({ username }: Props) {
             target="_blank"
             rel="noopener noreferrer"
             title="Traktir kopi"
-            className={buttonVariants({ variant: 'outline', size: 'sm', className: 'bg-muted' })}
+            className={buttonVariants({ variant: "outline", className: "bg-muted" })}
           >
-            <Coffee aria-hidden /> <span className="hidden sm:inline">Support</span>
+            <HugeiconsIcon icon={Coffee01Icon} aria-hidden />{" "}
+            <span className="hidden sm:inline">Support</span>
           </a>
 
           <ThemeToggle />
@@ -61,7 +63,8 @@ export function Navbar({ username }: Props) {
           {username && (
             <>
               <span className="hidden rounded-lg border border-border bg-muted px-2.5 py-1 text-[0.82rem] text-muted-foreground sm:inline">
-                <User aria-hidden className="inline align-[-2px]" /> {username}
+                <HugeiconsIcon icon={UserIcon} aria-hidden className="inline align-[-2px]" />{" "}
+                {username}
               </span>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 Keluar

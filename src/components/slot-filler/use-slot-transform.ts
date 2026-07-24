@@ -1,13 +1,13 @@
-import { animate, type MotionValue, useMotionValue } from 'motion/react'
-import { type PointerEvent as ReactPointerEvent, useCallback, useRef, useState } from 'react'
-import { panBounds, rubberBand, slotAt, type Transform } from '@/lib/composite'
-import type { FrameSize, SlotRect } from '@/lib/geometry'
+import { animate, type MotionValue, useMotionValue } from "motion/react"
+import { type PointerEvent as ReactPointerEvent, useCallback, useRef, useState } from "react"
+import { panBounds, rubberBand, slotAt, type Transform } from "@/lib/composite"
+import type { FrameSize, SlotRect } from "@/lib/geometry"
 
 /** Aturan 24: critically damped — ini gerakan menetap, bukan lemparan. */
-const PEGAS = { type: 'spring', damping: 1, bounce: 0, duration: 0.35 } as const
+const PEGAS = { type: "spring", damping: 1, bounce: 0, duration: 0.35 } as const
 
-/** Zoom minimum 1 = tepat menutup slot. Di bawah itu celah kosong muncul. */
-const ZOOM_MIN = 1
+/** Zoom minimum 0.25 — foto bisa diperkecil, celah kosong wajar. */
+const ZOOM_MIN = 0.25
 const ZOOM_MAKS = 3
 
 type Params = {
@@ -168,7 +168,7 @@ function kembalikanKe(nilai: MotionValue<number>, tujuan: number) {
   if (tujuan === nilai.get()) return
 
   // Aturan 30: yang meminta gerakan minim langsung dilompatkan ke nilai akhir.
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     nilai.set(tujuan)
     return
   }

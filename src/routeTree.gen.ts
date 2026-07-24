@@ -18,6 +18,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as EditIdRouteImport } from './routes/edit.$id'
 import { Route as TwibbonSlugRouteImport } from './routes/twibbon.$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiAvatarIdRouteImport } from './routes/api/avatar.$id'
 import { Route as ApiFrameIdRouteImport } from './routes/api/frame.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -65,6 +66,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAvatarIdRoute = ApiAvatarIdRouteImport.update({
+  id: '/api/avatar/$id',
+  path: '/api/avatar/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiFrameIdRoute = ApiFrameIdRouteImport.update({
   id: '/api/frame/$id',
   path: '/api/frame/$id',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/edit/$id': typeof EditIdRoute
   '/twibbon/$slug': typeof TwibbonSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/avatar/$id': typeof ApiAvatarIdRoute
   '/api/frame/$id': typeof ApiFrameIdRoute
 }
 export interface FileRoutesByTo {
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/edit/$id': typeof EditIdRoute
   '/twibbon/$slug': typeof TwibbonSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/avatar/$id': typeof ApiAvatarIdRoute
   '/api/frame/$id': typeof ApiFrameIdRoute
 }
 export interface FileRoutesById {
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/edit/$id': typeof EditIdRoute
   '/twibbon/$slug': typeof TwibbonSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/avatar/$id': typeof ApiAvatarIdRoute
   '/api/frame/$id': typeof ApiFrameIdRoute
 }
 export interface FileRouteTypes {
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/edit/$id'
     | '/twibbon/$slug'
     | '/api/auth/$'
+    | '/api/avatar/$id'
     | '/api/frame/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/edit/$id'
     | '/twibbon/$slug'
     | '/api/auth/$'
+    | '/api/avatar/$id'
     | '/api/frame/$id'
   id:
     | '__root__'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/edit/$id'
     | '/twibbon/$slug'
     | '/api/auth/$'
+    | '/api/avatar/$id'
     | '/api/frame/$id'
   fileRoutesById: FileRoutesById
 }
@@ -157,6 +169,7 @@ export interface RootRouteChildren {
   EditIdRoute: typeof EditIdRoute
   TwibbonSlugRoute: typeof TwibbonSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiAvatarIdRoute: typeof ApiAvatarIdRoute
   ApiFrameIdRoute: typeof ApiFrameIdRoute
 }
 
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/avatar/$id': {
+      id: '/api/avatar/$id'
+      path: '/api/avatar/$id'
+      fullPath: '/api/avatar/$id'
+      preLoaderRoute: typeof ApiAvatarIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/frame/$id': {
       id: '/api/frame/$id'
       path: '/api/frame/$id'
@@ -245,6 +265,7 @@ const rootRouteChildren: RootRouteChildren = {
   EditIdRoute: EditIdRoute,
   TwibbonSlugRoute: TwibbonSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiAvatarIdRoute: ApiAvatarIdRoute,
   ApiFrameIdRoute: ApiFrameIdRoute,
 }
 export const routeTree = rootRouteImport

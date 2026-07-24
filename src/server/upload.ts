@@ -1,7 +1,7 @@
-import { randomBytes } from 'node:crypto'
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { dirname, resolve, sep } from 'node:path'
-import sharp, { type Metadata } from 'sharp'
+import { randomBytes } from "node:crypto"
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
+import { dirname, resolve, sep } from "node:path"
+import sharp, { type Metadata } from "sharp"
 
 /** PRD US-02. Diperiksa sebelum Sharp supaya berkas raksasa tidak sempat di-parse. */
 export const MAX_FRAME_BYTES = 10 * 1024 * 1024
@@ -14,12 +14,12 @@ const MAX_FRAME_PX = 6000
  * Berkas disimpan di luar webroot dan hanya bisa dijangkau lewat route
  * `/api/frame/$id`, sehingga direktori ini tidak pernah bisa dijelajahi.
  */
-const UPLOAD_ROOT = resolve(process.env.UPLOAD_DIR ?? 'uploads')
+const UPLOAD_ROOT = resolve(process.env.UPLOAD_DIR ?? "uploads")
 
-const DITOLAK = 'Frame harus berkas PNG yang valid'
+const DITOLAK = "Frame harus berkas PNG yang valid"
 
 export async function validateFrame(bytes: Buffer): Promise<{ width: number; height: number }> {
-  if (bytes.byteLength > MAX_FRAME_BYTES) throw new Error('Ukuran frame maksimal 10MB')
+  if (bytes.byteLength > MAX_FRAME_BYTES) throw new Error("Ukuran frame maksimal 10MB")
 
   let metadata: Metadata
   try {
@@ -31,7 +31,7 @@ export async function validateFrame(bytes: Buffer): Promise<{ width: number; hei
     throw new Error(DITOLAK)
   }
 
-  if (metadata.format !== 'png') throw new Error(DITOLAK)
+  if (metadata.format !== "png") throw new Error(DITOLAK)
 
   const { width, height } = metadata
   if (!width || !height) throw new Error(DITOLAK)
@@ -53,7 +53,7 @@ export async function validateFrame(bytes: Buffer): Promise<{ width: number; hei
  */
 export function frameAbsolutePath(relativePath: string): string {
   const absolute = resolve(UPLOAD_ROOT, relativePath)
-  if (!absolute.startsWith(`${UPLOAD_ROOT}${sep}`)) throw new Error('Jalur berkas tidak sah')
+  if (!absolute.startsWith(`${UPLOAD_ROOT}${sep}`)) throw new Error("Jalur berkas tidak sah")
   return absolute
 }
 
@@ -63,7 +63,7 @@ export function frameAbsolutePath(relativePath: string): string {
  * tidak menyajikan gambar lama dari cache.
  */
 export async function saveFrame(campaignId: string, bytes: Buffer): Promise<string> {
-  const relativePath = `frames/${campaignId}/${randomBytes(4).toString('hex')}.png`
+  const relativePath = `frames/${campaignId}/${randomBytes(4).toString("hex")}.png`
   const absolute = frameAbsolutePath(relativePath)
   await mkdir(dirname(absolute), { recursive: true })
   // Ditulis apa adanya, tanpa re-encode: itulah yang menjaga alpha channel

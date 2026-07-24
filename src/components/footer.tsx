@@ -1,9 +1,9 @@
-import { Link } from '@tanstack/react-router'
-import { Logo } from '@/components/logo'
+import { Link } from "@tanstack/react-router"
+import { Logo } from "@/components/logo"
 
 /** Tautan dukungan dipertahankan dari aplikasi lama (spec bagian 7). */
-const TRAKTEER = 'https://trakteer.id/m_anas_ubaidillah/gift'
-const INSTAGRAM = 'https://www.instagram.com/_anasubaid/'
+const TRAKTEER = "https://trakteer.id/m_anas_ubaidillah/gift"
+const INSTAGRAM = "https://www.instagram.com/_anasubaid/"
 
 /*
  * ponytail: struktur footer uikit dipinjam, isinya tidak. Kit itu punya lima
@@ -29,7 +29,7 @@ export function Footer() {
         <nav className="flex flex-col gap-2 text-sm" aria-label="Tautan footer">
           <Link
             to="/"
-            search={{ q: '', hal: 1 }}
+            search={{ q: "", hal: 1 }}
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
             Galeri

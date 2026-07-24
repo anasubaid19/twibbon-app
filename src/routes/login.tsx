@@ -1,36 +1,37 @@
-import { ArrowRight } from '@phosphor-icons/react'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { Alert } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { authClient } from '@/lib/auth-client'
-import { pesanError } from '@/lib/pesan-error'
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { useState } from "react"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Alert } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { authClient } from "@/lib/auth-client"
+import { pesanError } from "@/lib/pesan-error"
 
-export const Route = createFileRoute('/login')({ component: LoginPage })
+export const Route = createFileRoute("/login")({ component: LoginPage })
 
 function LoginPage() {
   const navigate = useNavigate()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    setError('')
+    setError("")
     setLoading(true)
     try {
       const { error: authError } = await authClient.signIn.username({ username, password })
       if (authError) {
         // Pesan seragam: jangan bocorkan username mana yang terdaftar.
-        setError('Username atau password salah')
+        setError("Username atau password salah")
         return
       }
-      navigate({ to: '/dashboard' })
+      navigate({ to: "/dashboard" })
     } catch (err) {
       // authClient MELEMPAR saat jaringan putus — @better-fetch/fetch tidak
       // membungkus fetch() dengan try/catch. Tanpa blok ini tombolnya
@@ -73,7 +74,6 @@ function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              /* biome-ignore lint/a11y/noAutofocus: field pertama pada halaman khusus masuk */
               autoFocus
               placeholder="username kamu"
             />
@@ -102,19 +102,19 @@ function LoginPage() {
             </Link>
           </div>
 
-          <Button type="submit" size="blok" disabled={loading}>
+          <Button type="submit" disabled={loading}>
             {loading ? (
-              'Memproses...'
+              "Memproses..."
             ) : (
               <>
-                Masuk <ArrowRight aria-hidden />
+                Masuk <HugeiconsIcon icon={ArrowRight01Icon} aria-hidden />
               </>
             )}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Belum punya akun?{' '}
+          Belum punya akun?{" "}
           <Link to="/register" className="text-primary hover:underline">
             Daftar gratis
           </Link>

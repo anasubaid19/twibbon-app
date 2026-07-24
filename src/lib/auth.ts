@@ -1,14 +1,14 @@
-import { drizzleAdapter } from '@better-auth/drizzle-adapter'
-import { betterAuth } from 'better-auth'
-import { username } from 'better-auth/plugins'
-import { tanstackStartCookies } from 'better-auth/tanstack-start'
-import { eq } from 'drizzle-orm'
-import { db } from '@/db'
-import * as schema from '@/db/schema'
-import { rateLimit as tabelBatas } from '@/db/schema'
+import { drizzleAdapter } from "@better-auth/drizzle-adapter"
+import { betterAuth } from "better-auth"
+import { username } from "better-auth/plugins"
+import { tanstackStartCookies } from "better-auth/tanstack-start"
+import { eq } from "drizzle-orm"
+import { db } from "@/db"
+import * as schema from "@/db/schema"
+import { rateLimit as tabelBatas } from "@/db/schema"
 
 export const auth = betterAuth({
-  database: drizzleAdapter(db, { provider: 'pg', schema }),
+  database: drizzleAdapter(db, { provider: "pg", schema }),
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL,
 
@@ -22,7 +22,7 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       recoveryCodeHash: {
-        type: 'string',
+        type: "string",
         required: false,
         // input: false — klien tidak boleh menentukan hash-nya sendiri.
         input: false,

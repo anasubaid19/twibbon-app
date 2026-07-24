@@ -1,19 +1,25 @@
-import { ArrowRight, Check, CheckCircle, Copy, Warning } from '@phosphor-icons/react'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { Alert } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { pesanError } from '@/lib/pesan-error'
-import { resetPassword } from '@/server/auth'
+import {
+  ArrowRight01Icon,
+  CheckmarkCircle01Icon,
+  CopyLinkIcon,
+  SecurityWarningIcon,
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { useEffect, useRef, useState } from "react"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Alert } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { pesanError } from "@/lib/pesan-error"
+import { resetPassword } from "@/server/auth"
 
-export const Route = createFileRoute('/lupa-password')({ component: LupaPasswordPage })
+export const Route = createFileRoute("/lupa-password")({ component: LupaPasswordPage })
 
-const labelClass = 'mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground'
+const labelClass = "mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
 
 /**
  * Pesan seragam untuk "username tidak ada" maupun "recovery code salah" —
@@ -21,27 +27,27 @@ const labelClass = 'mb-1.5 text-xs font-semibold uppercase tracking-wider text-m
  * pesanError) karena ini bukan pesan asing pihak ketiga, melainkan pesan
  * keamanan yang sengaja ditulis identik untuk mencegah enumerasi username.
  */
-const PESAN_RESET_GAGAL = 'Username atau recovery code salah'
+const PESAN_RESET_GAGAL = "Username atau recovery code salah"
 
 function LupaPasswordPage() {
   const navigate = useNavigate()
-  const [username, setUsername] = useState('')
-  const [recoveryCode, setRecoveryCode] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [error, setError] = useState('')
+  const [username, setUsername] = useState("")
+  const [recoveryCode, setRecoveryCode] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirm, setConfirm] = useState("")
+  const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [nextCode, setNextCode] = useState('')
+  const [nextCode, setNextCode] = useState("")
   const [copied, setCopied] = useState(false)
-  const [copyError, setCopyError] = useState('')
+  const [copyError, setCopyError] = useState("")
   const [confirmed, setConfirmed] = useState(false)
   const successHeadingRef = useRef<HTMLHeadingElement>(null)
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    setError('')
+    setError("")
     if (newPassword !== confirm) {
-      setError('Password baru dan konfirmasi tidak cocok')
+      setError("Password baru dan konfirmasi tidak cocok")
       return
     }
     setLoading(true)
@@ -60,12 +66,12 @@ function LupaPasswordPage() {
   async function copyCode() {
     try {
       await navigator.clipboard.writeText(nextCode)
-      setCopyError('')
+      setCopyError("")
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
       setCopied(false)
-      setCopyError('Gagal menyalin otomatis. Salin kode di atas secara manual.')
+      setCopyError("Gagal menyalin otomatis. Salin kode di atas secara manual.")
     }
   }
 
@@ -79,8 +85,8 @@ function LupaPasswordPage() {
     function handleBeforeUnload(event: BeforeUnloadEvent) {
       event.preventDefault()
     }
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
   }, [nextCode, confirmed])
 
   if (nextCode) {
@@ -92,7 +98,8 @@ function LupaPasswordPage() {
             tabIndex={-1}
             className="mb-1 flex items-center gap-2 font-heading text-2xl outline-none"
           >
-            <CheckCircle aria-hidden className="text-primary" /> Reset Berhasil
+            <HugeiconsIcon icon={CheckmarkCircle01Icon} aria-hidden className="text-primary" />{" "}
+            Reset Berhasil
           </h1>
           <p className="mb-7 text-sm text-muted-foreground">
             Password berhasil diperbarui. Recovery code lama sudah tidak berlaku — simpan yang baru
@@ -104,8 +111,8 @@ function LupaPasswordPage() {
           </output>
 
           <Alert variant="destructive" className="mb-4">
-            <Warning aria-hidden /> Ini recovery code barumu. Simpan sekarang sebelum menutup
-            halaman.
+            <HugeiconsIcon icon={SecurityWarningIcon} aria-hidden /> Ini recovery code barumu.
+            Simpan sekarang sebelum menutup halaman.
           </Alert>
 
           {copyError && (
@@ -114,14 +121,14 @@ function LupaPasswordPage() {
             </Alert>
           )}
 
-          <Button type="button" variant="outline" size="blok" onClick={copyCode} className="mb-3">
+          <Button type="button" variant="outline" onClick={copyCode} className="mb-3">
             {copied ? (
               <>
-                <Check aria-hidden /> Tersalin!
+                <HugeiconsIcon icon={CheckmarkCircle01Icon} aria-hidden /> Tersalin!
               </>
             ) : (
               <>
-                <Copy aria-hidden /> Salin Recovery Code Baru
+                <HugeiconsIcon icon={CopyLinkIcon} aria-hidden /> Salin Recovery Code Baru
               </>
             )}
           </Button>
@@ -135,13 +142,8 @@ function LupaPasswordPage() {
             Saya sudah menyimpan recovery code ini di tempat aman
           </Label>
 
-          <Button
-            type="button"
-            size="blok"
-            disabled={!confirmed}
-            onClick={() => navigate({ to: '/login' })}
-          >
-            Lanjut ke Halaman Masuk <ArrowRight aria-hidden />
+          <Button type="button" disabled={!confirmed} onClick={() => navigate({ to: "/login" })}>
+            Lanjut ke Halaman Masuk <HugeiconsIcon icon={ArrowRight01Icon} aria-hidden />
           </Button>
         </Card>
       </main>
@@ -176,7 +178,6 @@ function LupaPasswordPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              /* biome-ignore lint/a11y/noAutofocus: field pertama pada halaman khusus reset */
               autoFocus
               placeholder="username kamu"
             />
@@ -224,19 +225,19 @@ function LupaPasswordPage() {
             />
           </div>
 
-          <Button type="submit" size="blok" disabled={loading}>
+          <Button type="submit" disabled={loading}>
             {loading ? (
-              'Memproses...'
+              "Memproses..."
             ) : (
               <>
-                Reset Password <ArrowRight aria-hidden />
+                Reset Password <HugeiconsIcon icon={ArrowRight01Icon} aria-hidden />
               </>
             )}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Ingat password?{' '}
+          Ingat password?{" "}
           <Link to="/login" className="text-primary hover:underline">
             Masuk
           </Link>

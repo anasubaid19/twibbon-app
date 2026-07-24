@@ -1,8 +1,8 @@
-import { createServerFn } from '@tanstack/react-start'
-import { getRequestHeaders } from '@tanstack/react-start/server'
-import { auth } from '@/lib/auth'
+import { createServerFn } from "@tanstack/react-start"
+import { getRequestHeaders } from "@tanstack/react-start/server"
+import { auth } from "@/lib/auth"
 
-export const getSession = createServerFn({ method: 'GET' }).handler(async () => {
+export const getSession = createServerFn({ method: "GET" }).handler(async () => {
   const session = await auth.api.getSession({ headers: getRequestHeaders() })
   if (!session) return null
 
@@ -13,7 +13,9 @@ export const getSession = createServerFn({ method: 'GET' }).handler(async () => 
    * email sintetis <username>@openframe.local yang pengguna tidak boleh
    * tahu ada. Kembalikan hanya field aman yang memang dipakai — sekaligus
    * menetapkan bentuk aman untuk Fase 2 saat role/data campaign menempel. */
-  return { user: { username: session.user.username ?? session.user.name } }
+  return {
+    user: { username: session.user.username ?? session.user.name, image: session.user.image },
+  }
 })
 
 /* `requireUserId` sengaja TIDAK tinggal di sini, melainkan di

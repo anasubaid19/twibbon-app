@@ -1,19 +1,20 @@
-import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import { AreaEditor, type SlotEditor } from '@/components/area-editor/area-editor'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { Alert } from '@/components/ui/alert'
-import { Button, buttonVariants } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { type FrameSize, isValidSlot, type SlotRect } from '@/lib/geometry'
-import { pesanError } from '@/lib/pesan-error'
-import { slugify } from '@/lib/slug'
-import { createCampaign } from '@/server/campaigns'
-import { getSession } from '@/server/session'
+import { Image01Icon, Image02Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
+import { AreaEditor, type SlotEditor } from "@/components/area-editor/area-editor"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Alert } from "@/components/ui/alert"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { type FrameSize, isValidSlot, type SlotRect } from "@/lib/geometry"
+import { pesanError } from "@/lib/pesan-error"
+import { slugify } from "@/lib/slug"
+import { createCampaign } from "@/server/campaigns"
+import { getSession } from "@/server/session"
 
 /** Cermin dari MAX_FRAME_BYTES di server — di sini hanya supaya pesannya cepat muncul. */
 const MAX_BYTES = 10 * 1024 * 1024
@@ -21,10 +22,10 @@ const MAX_BYTES = 10 * 1024 * 1024
 /** Area awal: kotak di tengah frame, cukup besar untuk langsung terlihat. */
 const SLOT_AWAL: SlotRect = { x: 20, y: 20, width: 60, height: 60 }
 
-export const Route = createFileRoute('/buat')({
+export const Route = createFileRoute("/buat")({
   beforeLoad: async () => {
     const session = await getSession()
-    if (!session) throw redirect({ to: '/login' })
+    if (!session) throw redirect({ to: "/login" })
     return { username: session.user.username }
   },
   component: BuatPage,
@@ -32,17 +33,18 @@ export const Route = createFileRoute('/buat')({
 
 function BuatPage() {
   const navigate = useNavigate()
+  const [modeSlot, setModeSlot] = useState<"tunggal" | "multi" | null>(null)
   const [file, setFile] = useState<File | null>(null)
-  const [frameSrc, setFrameSrc] = useState('')
+  const [frameSrc, setFrameSrc] = useState("")
   const [frameSize, setFrameSize] = useState<FrameSize>({ width: 0, height: 0 })
   const [slots, setSlots] = useState<SlotEditor[]>([SLOT_AWAL])
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const [name, setName] = useState('')
-  const [slug, setSlug] = useState('')
+  const [name, setName] = useState("")
+  const [slug, setSlug] = useState("")
   // Selama creator belum menyentuh kolom link, slug mengikuti nama. Begitu ia
   // mengetiknya sendiri, kaitan itu putus dan nama tidak lagi menimpanya.
   const [slugDiedit, setSlugDiedit] = useState(false)
-  const [description, setDescription] = useState('')
+  const [description, setDescription] = useState("")
   const [isPublic, setIsPublic] = useState(true)
 
   function ubahNama(nilai: string) {
@@ -54,9 +56,9 @@ function BuatPage() {
     setSlugDiedit(true)
     // Sama seperti yang diterima server: huruf kecil, hanya a-z 0-9 dan tanda
     // hubung. Dibersihkan saat diketik supaya preview-nya jujur.
-    setSlug(nilai.toLowerCase().replace(/[^a-z0-9-]/g, ''))
+    setSlug(nilai.toLowerCase().replace(/[^a-z0-9-]/g, ""))
   }
-  const [error, setError] = useState('')
+  const [error, setError] = useState("")
   const [saving, setSaving] = useState(false)
 
   // Object URL memegang berkasnya di memori sampai dicabut. Tanpa ini, memilih
@@ -66,18 +68,25 @@ function BuatPage() {
     return () => URL.revokeObjectURL(frameSrc)
   }, [frameSrc])
 
+  function pilihMode(mode: "tunggal" | "multi") {
+    setModeSlot(mode)
+    if (frameSrc) {
+      setSlots(mode === "tunggal" ? [{ x: 0, y: 0, width: 100, height: 100 }] : [SLOT_AWAL])
+    }
+  }
+
   function handleFile(chosen: File | undefined) {
     if (!chosen) return
-    setError('')
+    setError("")
 
     if (chosen.size > MAX_BYTES) {
-      setError('Ukuran frame maksimal 10MB')
+      setError("Ukuran frame maksimal 10MB")
       return
     }
-    if (chosen.type !== 'image/png') {
+    if (chosen.type !== "image/png") {
       // Pemeriksaan cepat supaya pengguna tidak menunggu unggahan sia-sia.
       // Penentu sesungguhnya tetap Sharp di server (spec 9.2).
-      setError('Frame harus berkas PNG')
+      setError("Frame harus berkas PNG")
       return
     }
 
@@ -87,11 +96,11 @@ function BuatPage() {
       setFrameSize({ width: probe.naturalWidth, height: probe.naturalHeight })
       setFrameSrc(url)
       setFile(chosen)
-      setSlots([SLOT_AWAL])
+      setSlots(modeSlot === "tunggal" ? [{ x: 0, y: 0, width: 100, height: 100 }] : [SLOT_AWAL])
     }
     probe.onerror = () => {
       URL.revokeObjectURL(url)
-      setError('Frame harus berkas PNG yang valid')
+      setError("Frame harus berkas PNG yang valid")
     }
     probe.src = url
   }
@@ -103,19 +112,19 @@ function BuatPage() {
     event.preventDefault()
     if (!file) return
 
-    setError('')
+    setError("")
     setSaving(true)
     try {
       const form = new FormData()
-      form.set('frame', file)
-      form.set('name', name)
-      form.set('slug', slug)
-      form.set('description', description)
-      form.set('isPublic', String(isPublic))
-      form.set('slots', JSON.stringify(slots))
+      form.set("frame", file)
+      form.set("name", name)
+      form.set("slug", slug)
+      form.set("description", description)
+      form.set("isPublic", String(isPublic))
+      form.set("slots", JSON.stringify(slots))
 
       await createCampaign({ data: form })
-      navigate({ to: '/dashboard' })
+      navigate({ to: "/dashboard" })
     } catch (err) {
       setError(pesanError(err))
     } finally {
@@ -129,7 +138,7 @@ function BuatPage() {
         <h1 className="font-heading text-2xl">Bikin Kampanye</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link to="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+          <Link to="/dashboard" className={buttonVariants({ variant: "outline", size: "sm" })}>
             Batal
           </Link>
         </div>
@@ -143,26 +152,97 @@ function BuatPage() {
 
       <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-[1fr_20rem]">
         <section>
-          {frameSrc ? (
+          {!modeSlot ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => pilihMode("tunggal")}
+                className="group flex flex-col items-start gap-3 rounded-xl border-2 border-border bg-card p-6 text-left transition-colors hover:border-primary"
+              >
+                <HugeiconsIcon
+                  icon={Image01Icon}
+                  aria-hidden
+                  className="text-2xl text-muted-foreground transition-colors group-hover:text-primary"
+                />
+                <div>
+                  <h3 className="font-heading text-base">Single Slot</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Satu area yang menutupi seluruh frame. Partisipan tinggal upload foto, posisi
+                    dan zoom bisa disesuaikan.
+                  </p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => pilihMode("multi")}
+                className="group flex flex-col items-start gap-3 rounded-xl border-2 border-border bg-card p-6 text-left transition-colors hover:border-primary"
+              >
+                <HugeiconsIcon
+                  icon={Image02Icon}
+                  aria-hidden
+                  className="text-2xl text-muted-foreground transition-colors group-hover:text-primary"
+                />
+                <div>
+                  <h3 className="font-heading text-base">Multi Slot</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Beberapa area foto yang bisa kamu atur posisi dan ukurannya. Cocok untuk frame
+                    kolase atau grup.
+                  </p>
+                </div>
+              </button>
+            </div>
+          ) : frameSrc ? (
             <>
-              <AreaEditor
-                frameSrc={frameSrc}
-                frameSize={frameSize}
-                slots={slots}
-                onChange={setSlots}
-                selectedIndex={selectedIndex}
-                onSelect={setSelectedIndex}
-              />
-              <p className="mt-3 text-sm text-muted-foreground">
-                Geser kotaknya untuk memindahkan area foto, tarik pegangannya untuk mengubah ukuran.
-                Bisa juga pakai panah keyboard setelah kotaknya dipilih.
-              </p>
+              {modeSlot === "tunggal" ? (
+                <div className="overflow-hidden rounded-xl border border-border bg-muted">
+                  <img
+                    src={frameSrc}
+                    alt=""
+                    draggable={false}
+                    className="block w-full"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(45deg, var(--color-border) 25%, transparent 25%), linear-gradient(-45deg, var(--color-border) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--color-border) 75%), linear-gradient(-45deg, transparent 75%, var(--color-border) 75%)",
+                      backgroundSize: "16px 16px",
+                      backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0",
+                    }}
+                  />
+                  <p className="px-4 py-3 text-sm text-muted-foreground">
+                    Area menutupi seluruh frame — tidak perlu disesuaikan.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <AreaEditor
+                    frameSrc={frameSrc}
+                    frameSize={frameSize}
+                    slots={slots}
+                    onChange={setSlots}
+                    selectedIndex={selectedIndex}
+                    onSelect={setSelectedIndex}
+                  />
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Geser kotaknya untuk memindahkan area foto, tarik pegangannya untuk mengubah
+                    ukuran. Bisa juga pakai panah keyboard setelah kotaknya dipilih.
+                  </p>
+                </>
+              )}
               {!areaValid && (
                 <p className="mt-2 text-sm text-destructive">
                   Area foto terlalu kecil. Perbesar sampai minimal 20x20 piksel pada ukuran frame
                   aslinya.
                 </p>
               )}
+              <button
+                type="button"
+                onClick={() => {
+                  setModeSlot(null)
+                  setSlots([SLOT_AWAL])
+                }}
+                className="mt-3 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Ganti mode
+              </button>
             </>
           ) : (
             <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted p-10 text-center transition-colors hover:border-primary">
@@ -227,7 +307,7 @@ function BuatPage() {
                   Tautannya: <span className="text-primary">/twibbon/{slug}</span>
                 </>
               ) : (
-                'Kosongkan untuk dibuatkan otomatis dari nama.'
+                "Kosongkan untuk dibuatkan otomatis dari nama."
               )}
             </p>
           </div>
@@ -258,8 +338,8 @@ function BuatPage() {
             Tampilkan di galeri publik
           </Label>
 
-          <Button type="submit" size="blok" disabled={!bisaSimpan}>
-            {saving ? 'Menyimpan...' : 'Simpan Kampanye'}
+          <Button type="submit" disabled={!bisaSimpan}>
+            {saving ? "Menyimpan..." : "Simpan Kampanye"}
           </Button>
         </aside>
       </form>

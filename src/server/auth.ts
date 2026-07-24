@@ -1,12 +1,18 @@
-import { createServerFn } from '@tanstack/react-start'
-import { getRequestHeaders } from '@tanstack/react-start/server'
-import { eq } from 'drizzle-orm'
-import { z } from 'zod'
-import { db } from '@/db'
-import { user } from '@/db/schema'
-import { auth } from '@/lib/auth'
-import { generateRecoveryCode, hashRecoveryCode, verifyRecoveryCode } from '@/lib/recovery-code'
-import { batasiLaju, kunciDariPermintaan } from '@/server/batas-laju'
+import { randomBytes } from "node:crypto"
+import { mkdir, writeFile } from "node:fs/promises"
+import { dirname, resolve } from "node:path"
+import { createServerFn } from "@tanstack/react-start"
+import { getRequestHeaders } from "@tanstack/react-start/server"
+import { eq } from "drizzle-orm"
+import { z } from "zod"
+import { db } from "@/db"
+import { user } from "@/db/schema"
+import { auth } from "@/lib/auth"
+import { generateRecoveryCode, hashRecoveryCode, verifyRecoveryCode } from "@/lib/recovery-code"
+import { batasiLaju, kunciDariPermintaan } from "@/server/batas-laju"
+import { requireUserId } from "@/server/require-user"
+
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024
 
 /**
  * Better Auth mewajibkan kolom email. OpenFrame tidak pernah memintanya
@@ -19,25 +25,25 @@ export function syntheticEmail(username: string): string {
 
 const usernameSchema = z
   .string()
-  .min(3, 'Username minimal 3 karakter')
-  .max(30, 'Username maksimal 30 karakter')
-  .regex(/^[a-zA-Z0-9_]+$/, 'Username hanya boleh huruf, angka, dan garis bawah')
+  .min(3, "Username minimal 3 karakter")
+  .max(30, "Username maksimal 30 karakter")
+  .regex(/^[a-zA-Z0-9_]+$/, "Username hanya boleh huruf, angka, dan garis bawah")
 
-const passwordSchema = z.string().min(6, 'Password minimal 6 karakter')
+const passwordSchema = z.string().min(6, "Password minimal 6 karakter")
 
 const registerSchema = z.object({
   username: usernameSchema,
   password: passwordSchema,
 })
 
-export const registerUser = createServerFn({ method: 'POST' })
+export const registerUser = createServerFn({ method: "POST" })
   .validator((input: unknown) => registerSchema.parse(input))
   .handler(async ({ data }) => {
     // Pendaftaran adalah titik terlemah: rate limiter Better Auth hanya
     // menutupi route auth.handler, sedangkan ini server function yang
     // memanggil auth.api secara langsung. Dipanggil paling awal supaya
     // percobaan yang ditolak tidak sempat memakan CPU untuk scrypt.
-    await batasiLaju(kunciDariPermintaan('daftar'), 5, 600)
+    await batasiLaju(kunciDariPermintaan("daftar"), 5, 600)
 
     const recoveryCode = generateRecoveryCode()
     const recoveryCodeHash = await hashRecoveryCode(recoveryCode)
@@ -70,8 +76,8 @@ export const registerUser = createServerFn({ method: 'POST' })
       await db.delete(user).where(eq(user.id, result.user.id))
       /* biome-ignore lint/suspicious/noConsole: kegagalan ini menghapus akun
          yang baru saja dibuat — harus meninggalkan jejak untuk diselidiki. */
-      console.error('Gagal menyimpan recovery code, pendaftaran dibatalkan:', error)
-      throw new Error('Pendaftaran gagal, silakan coba lagi')
+      console.error("Gagal menyimpan recovery code, pendaftaran dibatalkan:", error)
+      throw new Error("Pendaftaran gagal, silakan coba lagi")
     }
 
     // Satu-satunya kesempatan kode ini terlihat.
@@ -87,16 +93,16 @@ const DUMMY_HASH = await hashRecoveryCode(generateRecoveryCode())
 
 const resetSchema = z.object({
   username: usernameSchema,
-  recoveryCode: z.string().min(1, 'Recovery code wajib diisi'),
+  recoveryCode: z.string().min(1, "Recovery code wajib diisi"),
   newPassword: passwordSchema,
 })
 
-export const resetPassword = createServerFn({ method: 'POST' })
+export const resetPassword = createServerFn({ method: "POST" })
   .validator((input: unknown) => resetSchema.parse(input))
   .handler(async ({ data }) => {
     // Lebih ketat daripada pendaftaran: jalur ini menebak recovery code, dan
     // itu satu-satunya kunci pemulihan yang dipunya akun tanpa email.
-    await batasiLaju(kunciDariPermintaan('reset'), 5, 900)
+    await batasiLaju(kunciDariPermintaan("reset"), 5, 900)
 
     const [found] = await db
       .select()
@@ -106,7 +112,7 @@ export const resetPassword = createServerFn({ method: 'POST' })
 
     // Pesan yang sama untuk username tidak ada maupun kode salah, supaya
     // tidak bisa dipakai menebak username mana yang terdaftar.
-    const invalid = new Error('Username atau recovery code salah')
+    const invalid = new Error("Username atau recovery code salah")
     if (!found?.recoveryCodeHash) {
       // Pesan seragam saja tidak cukup: tanpa baris ini, "username tidak ada"
       // balas dalam ~3ms sementara "kode salah" butuh ~40ms karena menjalankan
@@ -131,4 +137,64 @@ export const resetPassword = createServerFn({ method: 'POST' })
       .where(eq(user.id, found.id))
 
     return { recoveryCode: nextCode }
+  })
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Password saat ini wajib diisi"),
+  newPassword: passwordSchema,
+})
+
+export const changePassword = createServerFn({ method: "POST" })
+  .validator((input: unknown) => changePasswordSchema.parse(input))
+  .handler(async ({ data }) => {
+    const result = await auth.api.changePassword({
+      body: {
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      },
+      headers: getRequestHeaders(),
+    })
+    return result
+  })
+
+const uploadAvatarSchema = z.object({
+  data: z.string().min(1, "Data gambar wajib diisi"),
+  ext: z.enum(["png", "jpg", "jpeg", "webp"]),
+})
+
+export const uploadAvatar = createServerFn({ method: "POST" })
+  .validator((input: unknown) => uploadAvatarSchema.parse(input))
+  .handler(async ({ data }) => {
+    const userId = await requireUserId()
+    const match = data.data.match(/^data:image\/\w+;base64,(.+)$/)
+    if (!match) throw new Error("Format gambar tidak valid")
+
+    const buffer = Buffer.from(match[1], "base64")
+    if (buffer.byteLength > MAX_AVATAR_BYTES) throw new Error("Ukuran gambar maksimal 5MB")
+
+    const ext = data.ext === "jpeg" ? "jpg" : data.ext
+    const relativePath = `avatars/${userId}/${randomBytes(4).toString("hex")}.${ext}`
+    const absolute = resolve(process.env.UPLOAD_DIR ?? "uploads", relativePath)
+    await mkdir(dirname(absolute), { recursive: true })
+    await writeFile(absolute, buffer)
+
+    // Delete old avatar if exists
+    const [existing] = await db.select({ image: user.image }).from(user).where(eq(user.id, userId))
+    if (existing?.image?.startsWith("/api/avatar/")) {
+      const oldAbsolute = resolve(
+        process.env.UPLOAD_DIR ?? "uploads",
+        existing.image.replace("/api/avatar/", ""),
+      )
+      try {
+        const { rm } = await import("node:fs/promises")
+        await rm(oldAbsolute, { force: true })
+      } catch {}
+    }
+
+    const imagePath = `/api/avatar/${relativePath.replace("avatars/", "")}`
+    await auth.api.updateUser({
+      body: { image: imagePath },
+      headers: getRequestHeaders(),
+    })
+    return { image: imagePath }
   })

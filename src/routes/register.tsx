@@ -1,33 +1,40 @@
-import { ArrowRight, Check, Copy, Key, Warning } from '@phosphor-icons/react'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { Alert } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { pesanError } from '@/lib/pesan-error'
-import { registerUser } from '@/server/auth'
+import {
+  ArrowRight01Icon,
+  CheckmarkCircle01Icon,
+  CopyLinkIcon,
+  Key01Icon,
+  SecurityWarningIcon,
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { useEffect, useRef, useState } from "react"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Alert } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { pesanError } from "@/lib/pesan-error"
+import { registerUser } from "@/server/auth"
 
-export const Route = createFileRoute('/register')({ component: RegisterPage })
+export const Route = createFileRoute("/register")({ component: RegisterPage })
 
 function RegisterPage() {
   const navigate = useNavigate()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [recoveryCode, setRecoveryCode] = useState('')
+  const [recoveryCode, setRecoveryCode] = useState("")
   const [copied, setCopied] = useState(false)
-  const [copyError, setCopyError] = useState('')
+  const [copyError, setCopyError] = useState("")
   const [confirmed, setConfirmed] = useState(false)
   const recoveryHeadingRef = useRef<HTMLHeadingElement>(null)
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    setError('')
+    setError("")
     setLoading(true)
     try {
       const result = await registerUser({ data: { username, password } })
@@ -42,12 +49,12 @@ function RegisterPage() {
   async function copyCode() {
     try {
       await navigator.clipboard.writeText(recoveryCode)
-      setCopyError('')
+      setCopyError("")
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
       setCopied(false)
-      setCopyError('Gagal menyalin otomatis. Salin kode di atas secara manual.')
+      setCopyError("Gagal menyalin otomatis. Salin kode di atas secara manual.")
     }
   }
 
@@ -61,8 +68,8 @@ function RegisterPage() {
     function handleBeforeUnload(event: BeforeUnloadEvent) {
       event.preventDefault()
     }
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
   }, [recoveryCode, confirmed])
 
   if (recoveryCode) {
@@ -74,7 +81,7 @@ function RegisterPage() {
             tabIndex={-1}
             className="mb-1 flex items-center gap-2 font-heading text-2xl outline-none"
           >
-            <Key aria-hidden /> Simpan Kode
+            <HugeiconsIcon icon={Key01Icon} aria-hidden /> Simpan Kode
           </h1>
           <p className="mb-7 text-sm text-muted-foreground">
             Akun berhasil dibuat! Kode ini <strong>hanya muncul sekali</strong> — simpan di tempat
@@ -86,7 +93,8 @@ function RegisterPage() {
           </output>
 
           <Alert variant="destructive" className="mb-4">
-            <Warning aria-hidden /> Tanpa kode ini, kamu tidak bisa reset password kalau lupa.
+            <HugeiconsIcon icon={SecurityWarningIcon} aria-hidden /> Tanpa kode ini, kamu tidak bisa
+            reset password kalau lupa.
           </Alert>
 
           {copyError && (
@@ -95,14 +103,14 @@ function RegisterPage() {
             </Alert>
           )}
 
-          <Button type="button" variant="outline" size="blok" onClick={copyCode} className="mb-3">
+          <Button type="button" variant="outline" onClick={copyCode} className="mb-3">
             {copied ? (
               <>
-                <Check aria-hidden /> Tersalin!
+                <HugeiconsIcon icon={CheckmarkCircle01Icon} aria-hidden /> Tersalin!
               </>
             ) : (
               <>
-                <Copy aria-hidden /> Salin Recovery Code
+                <HugeiconsIcon icon={CopyLinkIcon} aria-hidden /> Salin Recovery Code
               </>
             )}
           </Button>
@@ -118,11 +126,10 @@ function RegisterPage() {
 
           <Button
             type="button"
-            size="blok"
             disabled={!confirmed}
-            onClick={() => navigate({ to: '/dashboard' })}
+            onClick={() => navigate({ to: "/dashboard" })}
           >
-            Sudah disimpan <ArrowRight aria-hidden />
+            Sudah disimpan <HugeiconsIcon icon={ArrowRight01Icon} aria-hidden />
           </Button>
         </Card>
       </main>
@@ -162,7 +169,6 @@ function RegisterPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              /* biome-ignore lint/a11y/noAutofocus: field pertama pada halaman khusus pendaftaran */
               autoFocus
               placeholder="pilih username unik"
             />
@@ -185,19 +191,19 @@ function RegisterPage() {
             />
           </div>
 
-          <Button type="submit" size="blok" disabled={loading}>
+          <Button type="submit" disabled={loading}>
             {loading ? (
-              'Membuat akun...'
+              "Membuat akun..."
             ) : (
               <>
-                Daftar Sekarang <ArrowRight aria-hidden />
+                Daftar Sekarang <HugeiconsIcon icon={ArrowRight01Icon} aria-hidden />
               </>
             )}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Sudah punya akun?{' '}
+          Sudah punya akun?{" "}
           <Link to="/login" className="text-primary hover:underline">
             Masuk
           </Link>

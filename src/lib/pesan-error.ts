@@ -1,15 +1,15 @@
 /** Padanan Indonesia untuk pesan yang datang dari pustaka pihak ketiga. */
 const PADANAN: ReadonlyArray<readonly [RegExp, string]> = [
-  [/already taken|already exists/i, 'Username ini sudah dipakai. Coba yang lain.'],
+  [/already taken|already exists/i, "Username ini sudah dipakai. Coba yang lain."],
   [
     /failed to fetch|networkerror|load failed/i,
-    'Gagal terhubung ke server. Cek koneksi kamu, lalu coba lagi.',
+    "Gagal terhubung ke server. Cek koneksi kamu, lalu coba lagi.",
   ],
-  [/invalid username or password/i, 'Username atau password salah.'],
-  [/password too short|minPasswordLength/i, 'Password minimal 6 karakter.'],
+  [/invalid username or password/i, "Username atau password salah."],
+  [/password too short|minPasswordLength/i, "Password minimal 6 karakter."],
 ]
 
-const UMUM = 'Terjadi kesalahan. Coba lagi sebentar lagi.'
+const UMUM = "Terjadi kesalahan. Coba lagi sebentar lagi."
 
 /**
  * Zod yang dilempar dari server function tiba sebagai JSON array of issues
@@ -21,9 +21,9 @@ function pesanZod(message: string): string | null {
     const parsed: unknown = JSON.parse(message)
     if (!Array.isArray(parsed)) return null
     const pertama = parsed[0]
-    if (pertama && typeof pertama === 'object' && 'message' in pertama) {
+    if (pertama && typeof pertama === "object" && "message" in pertama) {
       const m = (pertama as { message: unknown }).message
-      if (typeof m === 'string' && m.length > 0) return m
+      if (typeof m === "string" && m.length > 0) return m
     }
     return null
   } catch {

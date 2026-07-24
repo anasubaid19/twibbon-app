@@ -1,4 +1,4 @@
-import { type FrameSize, type PixelRect, type SlotRect, toPixels } from '@/lib/geometry'
+import { type FrameSize, type PixelRect, type SlotRect, toPixels } from "@/lib/geometry"
 
 /**
  * Posisi foto di dalam satu slot.
@@ -48,8 +48,8 @@ export function panBounds(
   const luberX = image.width * s - slot.width
   const luberY = image.height * s - slot.height
   return {
-    x: slot.width > 0 ? Math.max(0, luberX / 2 / slot.width) : 0,
-    y: slot.height > 0 ? Math.max(0, luberY / 2 / slot.height) : 0,
+    x: slot.width > 0 ? Math.abs(luberX) / 2 / slot.width : 0,
+    y: slot.height > 0 ? Math.abs(luberY) / 2 / slot.height : 0,
   }
 }
 
@@ -128,11 +128,11 @@ export function renderComposite({
   getFill,
   scale,
 }: RenderOpts): HTMLCanvasElement {
-  const canvas = document.createElement('canvas')
+  const canvas = document.createElement("canvas")
   canvas.width = Math.round(frameSize.width * scale)
   canvas.height = Math.round(frameSize.height * scale)
 
-  const ctx = canvas.getContext('2d')
+  const ctx = canvas.getContext("2d")
   if (!ctx) return canvas
 
   const kanvasSize = { width: canvas.width, height: canvas.height }

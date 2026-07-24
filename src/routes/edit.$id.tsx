@@ -1,23 +1,24 @@
-import { Image as ImageIcon } from '@phosphor-icons/react'
-import { createFileRoute, Link, redirect, useNavigate, useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
-import { AreaEditor, type SlotEditor } from '@/components/area-editor/area-editor'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { Alert } from '@/components/ui/alert'
-import { Button, buttonVariants } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { isValidSlot } from '@/lib/geometry'
-import { pesanError } from '@/lib/pesan-error'
-import { getCampaignForEdit, replaceFrame, updateCampaign } from '@/server/campaigns'
-import { getSession } from '@/server/session'
+import { Image01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router"
+import { useState } from "react"
+import { AreaEditor, type SlotEditor } from "@/components/area-editor/area-editor"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Alert } from "@/components/ui/alert"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { isValidSlot } from "@/lib/geometry"
+import { pesanError } from "@/lib/pesan-error"
+import { getCampaignForEdit, replaceFrame, updateCampaign } from "@/server/campaigns"
+import { getSession } from "@/server/session"
 
-export const Route = createFileRoute('/edit/$id')({
+export const Route = createFileRoute("/edit/$id")({
   beforeLoad: async () => {
     const session = await getSession()
-    if (!session) throw redirect({ to: '/login' })
+    if (!session) throw redirect({ to: "/login" })
     return { username: session.user.username }
   },
   // getCampaignForEdit sudah memfilter berdasarkan pemilik, jadi kampanye
@@ -49,18 +50,18 @@ function EditPage() {
   const [name, setName] = useState(campaign.name)
   const [description, setDescription] = useState(campaign.description)
   const [isPublic, setIsPublic] = useState(campaign.isPublic)
-  const [error, setError] = useState('')
+  const [error, setError] = useState("")
   const [saving, setSaving] = useState(false)
   const [sedangGanti, setSedangGanti] = useState(false)
 
   async function gantiFrame(berkas: File | undefined) {
     if (!berkas) return
-    setError('')
+    setError("")
     setSedangGanti(true)
     try {
       const form = new FormData()
-      form.set('id', id)
-      form.set('frame', berkas)
+      form.set("id", id)
+      form.set("frame", berkas)
       await replaceFrame({ data: form })
       // Muat ulang route: dimensi frame berubah, dan validitas slot dihitung
       // terhadap dimensi itu.
@@ -78,7 +79,7 @@ function EditPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    setError('')
+    setError("")
     setSaving(true)
     try {
       await updateCampaign({
@@ -87,10 +88,10 @@ function EditPage() {
           name,
           description,
           isPublic,
-          slots: slots.map((slot) => ({ ...slot, label: slot.label ?? '' })),
+          slots: slots.map((slot) => ({ ...slot, label: slot.label ?? "" })),
         },
       })
-      navigate({ to: '/dashboard' })
+      navigate({ to: "/dashboard" })
     } catch (err) {
       setError(pesanError(err))
     } finally {
@@ -109,7 +110,7 @@ function EditPage() {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link to="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+          <Link to="/dashboard" className={buttonVariants({ variant: "outline", size: "sm" })}>
             Batal
           </Link>
         </div>
@@ -137,10 +138,10 @@ function EditPage() {
           <label className="mt-3 block cursor-pointer rounded-lg border-2 border-dashed border-border bg-muted p-4 text-center text-sm transition-colors hover:border-primary">
             <span className="flex items-center justify-center gap-1.5 font-semibold">
               {sedangGanti ? (
-                'Mengganti frame…'
+                "Mengganti frame…"
               ) : (
                 <>
-                  <ImageIcon aria-hidden /> Ganti frame PNG
+                  <HugeiconsIcon icon={Image01Icon} aria-hidden /> Ganti frame PNG
                 </>
               )}
             </span>
@@ -207,8 +208,8 @@ function EditPage() {
             Tampilkan di galeri publik
           </Label>
 
-          <Button type="submit" size="blok" disabled={!bisaSimpan}>
-            {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+          <Button type="submit" disabled={!bisaSimpan}>
+            {saving ? "Menyimpan..." : "Simpan Perubahan"}
           </Button>
         </aside>
       </form>

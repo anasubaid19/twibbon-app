@@ -1,6 +1,6 @@
-import { getRequestHeaders } from '@tanstack/react-start/server'
-import { sql } from 'drizzle-orm'
-import { db } from '@/db'
+import { getRequestHeaders } from "@tanstack/react-start/server"
+import { sql } from "drizzle-orm"
+import { db } from "@/db"
 
 /**
  * Apakah `sekarang` sudah melewati jendela yang dimulai pada `mulai`.
@@ -24,12 +24,12 @@ export function jendelaBaru(mulai: Date, jendelaDetik: number, sekarang: Date): 
 export function kunciDariPermintaan(prefiks: string): string {
   const h = getRequestHeaders()
   const ip =
-    h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip')?.trim() || 'tanpa-ip'
+    h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip")?.trim() || "tanpa-ip"
   return `${prefiks}:${ip}`
 }
 
 /** Pesan seragam: tidak menyebut username, jadi tidak bisa dipakai menebak akun. */
-const TERLALU_SERING = 'Terlalu banyak percobaan. Tunggu sebentar, lalu coba lagi.'
+const TERLALU_SERING = "Terlalu banyak percobaan. Tunggu sebentar, lalu coba lagi."
 
 /**
  * Menaikkan penghitung dan melempar bila kuotanya habis.

@@ -1,9 +1,10 @@
-import { Moon, Sun } from '@phosphor-icons/react'
-import { useLoaderData } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { Moon02Icon, Sun01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { useLoaderData } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
 
-type Theme = 'dark' | 'light'
+type Theme = "dark" | "light"
 
 export function ThemeToggle() {
   // Ambil tema dari loader root, BUKAN dari `document`. Saat SSR `document`
@@ -11,7 +12,7 @@ export function ThemeToggle() {
   // dirender dalam keadaan gelap meski cookie bilang terang — ikon dan
   // aria-label-nya keliru sampai JS termuat. Loader root sudah tahu tema
   // sebenarnya dari cookie, jadi server dan klien sepakat sejak awal.
-  const initialTheme = useLoaderData({ from: '__root__' }) as Theme
+  const initialTheme = useLoaderData({ from: "__root__" }) as Theme
   const [theme, setTheme] = useState<Theme>(initialTheme)
 
   useEffect(() => {
@@ -28,11 +29,15 @@ export function ThemeToggle() {
       type="button"
       variant="outline"
       size="icon"
-      aria-label={theme === 'dark' ? 'Ganti ke tema terang' : 'Ganti ke tema gelap'}
-      onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+      aria-label={theme === "dark" ? "Ganti ke tema terang" : "Ganti ke tema gelap"}
+      onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
       className="bg-muted"
     >
-      {theme === 'dark' ? <Sun aria-hidden /> : <Moon aria-hidden />}
+      {theme === "dark" ? (
+        <HugeiconsIcon icon={Sun01Icon} aria-hidden />
+      ) : (
+        <HugeiconsIcon icon={Moon02Icon} aria-hidden />
+      )}
     </Button>
   )
 }

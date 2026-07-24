@@ -17,7 +17,7 @@ export type PixelRect = { x: number; y: number; width: number; height: number }
 export type FrameSize = { width: number; height: number }
 
 /** Arah tarikan: `move` menggeser seluruh kotak, sisanya menggerakkan sisi/sudut. */
-export type DragMode = 'move' | 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'
+export type DragMode = "move" | "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w"
 
 /** Sisi terpendek slot yang masih masuk akal, dalam piksel asli frame. Spec bagian 10. */
 export const MIN_SLOT_PX = 20
@@ -108,21 +108,21 @@ function clampEdges(rect: SlotRect): SlotRect {
  * mengingat aturan mana yang berlaku untuk mode mana.
  */
 export function applyDrag(rect: SlotRect, mode: DragMode, dx: number, dy: number): SlotRect {
-  if (mode === 'move') {
+  if (mode === "move") {
     return clampToFrame({ ...rect, x: rect.x + dx, y: rect.y + dy })
   }
 
   let { x, y, width, height } = rect
-  if (mode.includes('w')) {
+  if (mode.includes("w")) {
     x = rect.x + dx
     width = rect.width - dx
   }
-  if (mode.includes('e')) width = rect.width + dx
-  if (mode.includes('n')) {
+  if (mode.includes("e")) width = rect.width + dx
+  if (mode.includes("n")) {
     y = rect.y + dy
     height = rect.height - dy
   }
-  if (mode.includes('s')) height = rect.height + dy
+  if (mode.includes("s")) height = rect.height + dy
 
   // Tarikan yang melewati sisi seberang membalik kotaknya. Normalkan supaya
   // width/height tidak pernah negatif — nilai negatif lolos ke database

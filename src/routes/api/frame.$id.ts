@@ -1,16 +1,16 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { eq } from 'drizzle-orm'
-import { db } from '@/db'
-import { campaigns } from '@/db/schema'
-import { readFrame } from '@/server/upload'
+import { createFileRoute } from "@tanstack/react-router"
+import { eq } from "drizzle-orm"
+import { db } from "@/db"
+import { campaigns } from "@/db/schema"
+import { readFrame } from "@/server/upload"
 
 /* Fungsi, bukan satu objek Response yang dipakai ulang: badan Response hanya
    bisa dibaca sekali, jadi objek modul-level akan gagal pada permintaan kedua. */
 function tidakDitemukan(): Response {
-  return new Response('Tidak ditemukan', { status: 404 })
+  return new Response("Tidak ditemukan", { status: 404 })
 }
 
-export const Route = createFileRoute('/api/frame/$id')({
+export const Route = createFileRoute("/api/frame/$id")({
   server: {
     handlers: {
       GET: async ({ params, request }: { params: { id: string }; request: Request }) => {
@@ -29,7 +29,7 @@ export const Route = createFileRoute('/api/frame/$id')({
         // penanda versi. Tanpa ini, `max-age` apa pun akan menyajikan gambar
         // lama setelah frame diganti karena URL-nya tetap sama.
         const etag = `"${row.framePath}"`
-        if (request.headers.get('if-none-match') === etag) {
+        if (request.headers.get("if-none-match") === etag) {
           return new Response(null, { status: 304 })
         }
 
@@ -43,8 +43,8 @@ export const Route = createFileRoute('/api/frame/$id')({
 
         return new Response(bytes, {
           headers: {
-            'Content-Type': 'image/png',
-            'Cache-Control': 'public, max-age=60, must-revalidate',
+            "Content-Type": "image/png",
+            "Cache-Control": "public, max-age=60, must-revalidate",
             ETag: etag,
           },
         })

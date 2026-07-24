@@ -1,23 +1,24 @@
-import { ArrowRight, CaretLeft, CaretRight } from '@phosphor-icons/react'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { z } from 'zod'
-import { Footer } from '@/components/footer'
-import { Logo } from '@/components/logo'
-import { Navbar } from '@/components/navbar'
-import { Badge } from '@/components/ui/badge'
-import { Button, buttonVariants } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { listPublic } from '@/server/campaigns'
+import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { z } from "zod"
+import { Footer } from "@/components/footer"
+import { Logo } from "@/components/logo"
+import { Navbar } from "@/components/navbar"
+import { Badge } from "@/components/ui/badge"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { listPublic } from "@/server/campaigns"
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   /*
    * `.catch()` dipakai, bukan `.default()`: search param datang dari URL yang
    * bisa diketik siapa saja. `?hal=abc` harus jatuh ke halaman 1, bukan
    * menjatuhkan seluruh halaman.
    */
   validateSearch: z.object({
-    q: z.string().catch(''),
+    q: z.string().catch(""),
     hal: z.number().int().min(1).catch(1),
   }),
   loaderDeps: ({ search }) => ({ q: search.q, hal: search.hal }),
@@ -47,7 +48,7 @@ function Beranda() {
           nomor telepon.
         </p>
         <Link to="/buat" className={`fade-up-3 ${buttonVariants({})} px-8`}>
-          Bikin punyamu <ArrowRight aria-hidden />
+          Bikin punyamu <HugeiconsIcon icon={ArrowRight01Icon} aria-hidden />
         </Link>
       </section>
 
@@ -60,8 +61,8 @@ function Beranda() {
         <form
           onSubmit={(event) => {
             event.preventDefault()
-            const q = new FormData(event.currentTarget).get('q')?.toString() ?? ''
-            navigate({ to: '/', search: { q, hal: 1 } })
+            const q = new FormData(event.currentTarget).get("q")?.toString() ?? ""
+            navigate({ to: "/", search: { q, hal: 1 } })
           }}
           className="mx-auto mb-6 flex max-w-md gap-2"
         >
@@ -75,8 +76,8 @@ function Beranda() {
           {adaPencarian && (
             <Link
               to="/"
-              search={{ q: '', hal: 1 }}
-              className={buttonVariants({ variant: 'outline' })}
+              search={{ q: "", hal: 1 }}
+              className={buttonVariants({ variant: "outline" })}
             >
               Hapus
             </Link>
@@ -90,7 +91,7 @@ function Beranda() {
                 Tidak ada kampanye yang cocok dengan <strong>{search.q}</strong>. Coba kata lain.
               </>
             ) : (
-              'Belum ada kampanye publik. Jadilah yang pertama!'
+              "Belum ada kampanye publik. Jadilah yang pertama!"
             )}
           </p>
         ) : (
@@ -130,13 +131,13 @@ function Beranda() {
               <Link
                 to="/"
                 search={{ q: search.q, hal: data.hal - 1 }}
-                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
               >
-                <CaretLeft aria-hidden /> Sebelumnya
+                <HugeiconsIcon icon={ArrowLeft01Icon} aria-hidden /> Sebelumnya
               </Link>
             ) : (
               <span className="flex items-center gap-1 text-sm text-muted-foreground opacity-45">
-                <CaretLeft aria-hidden /> Sebelumnya
+                <HugeiconsIcon icon={ArrowLeft01Icon} aria-hidden /> Sebelumnya
               </span>
             )}
 
@@ -148,13 +149,13 @@ function Beranda() {
               <Link
                 to="/"
                 search={{ q: search.q, hal: data.hal + 1 }}
-                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
               >
-                Berikutnya <CaretRight aria-hidden />
+                Berikutnya <HugeiconsIcon icon={ArrowRight01Icon} aria-hidden />
               </Link>
             ) : (
               <span className="flex items-center gap-1 text-sm text-muted-foreground opacity-45">
-                Berikutnya <CaretRight aria-hidden />
+                Berikutnya <HugeiconsIcon icon={ArrowRight01Icon} aria-hidden />
               </span>
             )}
           </nav>

@@ -1,13 +1,13 @@
-import { randomUUID } from 'node:crypto'
-import { createServerFn } from '@tanstack/react-start'
-import { and, count, desc, eq, ilike, like, or, sql } from 'drizzle-orm'
-import { z } from 'zod'
-import { db } from '@/db'
-import { campaigns, frameSlots, user } from '@/db/schema'
-import { isValidSlot } from '@/lib/geometry'
-import { resolveSlug, SLUG_PATTERN, slugify } from '@/lib/slug'
-import { requireUserId } from '@/server/require-user'
-import { deleteFrameDir, hapusBerkas, saveFrame, validateFrame } from '@/server/upload'
+import { randomUUID } from "node:crypto"
+import { createServerFn } from "@tanstack/react-start"
+import { and, count, desc, eq, ilike, like, or, sql } from "drizzle-orm"
+import { z } from "zod"
+import { db } from "@/db"
+import { campaignEvents, campaigns, frameSlots, user } from "@/db/schema"
+import { isValidSlot } from "@/lib/geometry"
+import { resolveSlug, SLUG_PATTERN, slugify } from "@/lib/slug"
+import { requireUserId } from "@/server/require-user"
+import { deleteFrameDir, hapusBerkas, saveFrame, validateFrame } from "@/server/upload"
 
 /* --- Skema bersama ------------------------------------------------------ */
 
@@ -17,7 +17,7 @@ const idSchema = z
   .string()
   .regex(
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-    'Kampanye tidak ditemukan',
+    "Kampanye tidak ditemukan",
   )
 
 const slotSchema = z.object({
@@ -25,28 +25,28 @@ const slotSchema = z.object({
   y: z.number(),
   width: z.number(),
   height: z.number(),
-  label: z.string().max(40, 'Label area maksimal 40 karakter').default(''),
+  label: z.string().max(40, "Label area maksimal 40 karakter").default(""),
 })
 
 const detailSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(3, 'Nama kampanye minimal 3 karakter')
-    .max(80, 'Nama kampanye maksimal 80 karakter'),
-  description: z.string().trim().max(500, 'Deskripsi maksimal 500 karakter').default(''),
+    .min(3, "Nama kampanye minimal 3 karakter")
+    .max(80, "Nama kampanye maksimal 80 karakter"),
+  description: z.string().trim().max(500, "Deskripsi maksimal 500 karakter").default(""),
   isPublic: z.boolean(),
   // Fase 2 hanya membuat satu slot lewat UI, tapi bentuk datanya memang array
   // (tabel frame_slots). Batas 20 mengikuti PRD US-02.
   slots: z
     .array(slotSchema)
-    .min(1, 'Tentukan minimal satu area foto')
-    .max(20, 'Maksimal 20 area foto'),
+    .min(1, "Tentukan minimal satu area foto")
+    .max(20, "Maksimal 20 area foto"),
 })
 
 /** Pesan yang sama untuk "tidak ada" dan "bukan milikmu" — keberadaan campaign orang lain tidak bocor. */
-const TIDAK_DITEMUKAN = 'Kampanye tidak ditemukan'
-const AREA_TIDAK_SAH = 'Area foto harus berada di dalam frame dan minimal 20x20 piksel'
+const TIDAK_DITEMUKAN = "Kampanye tidak ditemukan"
+const AREA_TIDAK_SAH = "Area foto harus berada di dalam frame dan minimal 20x20 piksel"
 
 function assertSlotsFit(
   slots: readonly { x: number; y: number; width: number; height: number }[],
@@ -59,7 +59,7 @@ function assertSlotsFit(
   }
 }
 
-function slotRows(campaignId: string, slots: z.infer<typeof detailSchema>['slots']) {
+function slotRows(campaignId: string, slots: z.infer<typeof detailSchema>["slots"]) {
   return slots.map((slot, i) => ({
     id: randomUUID(),
     campaignId,
@@ -78,16 +78,16 @@ function parseCreateInput(input: unknown) {
   // Berkas dan field menyatu dalam satu FormData supaya penyimpanannya satu
   // langkah. Tidak ada endpoint unggah terpisah, jadi tidak ada berkas yatim
   // yang perlu dibersihkan kalau creator kabur di tengah jalan.
-  if (!(input instanceof FormData)) throw new Error('Kiriman tidak sah')
+  if (!(input instanceof FormData)) throw new Error("Kiriman tidak sah")
 
-  const frame = input.get('frame')
-  if (!(frame instanceof File) || frame.size === 0) throw new Error('Frame PNG wajib diunggah')
+  const frame = input.get("frame")
+  if (!(frame instanceof File) || frame.size === 0) throw new Error("Frame PNG wajib diunggah")
 
   let slots: unknown
   try {
-    slots = JSON.parse(String(input.get('slots') ?? '[]'))
+    slots = JSON.parse(String(input.get("slots") ?? "[]"))
   } catch {
-    throw new Error('Data area foto rusak, coba muat ulang halaman')
+    throw new Error("Data area foto rusak, coba muat ulang halaman")
   }
 
   return {
@@ -98,18 +98,18 @@ function parseCreateInput(input: unknown) {
     slug: z
       .string()
       .max(200)
-      .default('')
-      .parse(String(input.get('slug') ?? '')),
+      .default("")
+      .parse(String(input.get("slug") ?? "")),
     ...detailSchema.parse({
-      name: String(input.get('name') ?? ''),
-      description: String(input.get('description') ?? ''),
-      isPublic: input.get('isPublic') === 'true',
+      name: String(input.get("name") ?? ""),
+      description: String(input.get("description") ?? ""),
+      isPublic: input.get("isPublic") === "true",
       slots,
     }),
   }
 }
 
-export const createCampaign = createServerFn({ method: 'POST' })
+export const createCampaign = createServerFn({ method: "POST" })
   .validator(parseCreateInput)
   .handler(async ({ data }) => {
     const userId = await requireUserId()
@@ -158,8 +158,8 @@ export const createCampaign = createServerFn({ method: 'POST' })
       // Celah antara SELECT slug di atas dan INSERT ini: dua permintaan dengan
       // nama sama bisa sama-sama lolos pemeriksaan lalu bertabrakan di
       // constraint. Jarang, dan pengguna bisa langsung mencoba lagi.
-      if (error instanceof Error && error.message.includes('campaigns_slug_unique')) {
-        throw new Error('Nama itu barusan dipakai orang lain. Ganti sedikit, lalu simpan lagi.')
+      if (error instanceof Error && error.message.includes("campaigns_slug_unique")) {
+        throw new Error("Nama itu barusan dipakai orang lain. Ganti sedikit, lalu simpan lagi.")
       }
       throw error
     }
@@ -169,7 +169,7 @@ export const createCampaign = createServerFn({ method: 'POST' })
 
 /* --- listMyCampaigns ---------------------------------------------------- */
 
-export const listMyCampaigns = createServerFn({ method: 'GET' }).handler(async () => {
+export const listMyCampaigns = createServerFn({ method: "GET" }).handler(async () => {
   const userId = await requireUserId()
 
   const rows = await db
@@ -181,9 +181,18 @@ export const listMyCampaigns = createServerFn({ method: 'GET' }).handler(async (
       useCount: campaigns.useCount,
       createdAt: campaigns.createdAt,
       slotCount: count(frameSlots.id),
+      viewCount:
+        sql<number>`COALESCE(SUM(CASE WHEN ${campaignEvents.eventType} = 'view' THEN 1 ELSE 0 END), 0)`.as(
+          "view_count",
+        ),
+      shareCount:
+        sql<number>`COALESCE(SUM(CASE WHEN ${campaignEvents.eventType} = 'share' THEN 1 ELSE 0 END), 0)`.as(
+          "share_count",
+        ),
     })
     .from(campaigns)
     .leftJoin(frameSlots, eq(frameSlots.campaignId, campaigns.id))
+    .leftJoin(campaignEvents, eq(campaignEvents.campaignId, campaigns.id))
     .where(eq(campaigns.userId, userId))
     .groupBy(campaigns.id)
     .orderBy(desc(campaigns.createdAt))
@@ -195,7 +204,7 @@ export const listMyCampaigns = createServerFn({ method: 'GET' }).handler(async (
 
 /* --- getCampaignForEdit ------------------------------------------------- */
 
-export const getCampaignForEdit = createServerFn({ method: 'GET' })
+export const getCampaignForEdit = createServerFn({ method: "GET" })
   .validator((input: unknown) => z.object({ id: idSchema }).parse(input))
   .handler(async ({ data }) => {
     const userId = await requireUserId()
@@ -237,7 +246,7 @@ export const getCampaignForEdit = createServerFn({ method: 'GET' })
 
 /* --- updateCampaign ----------------------------------------------------- */
 
-export const updateCampaign = createServerFn({ method: 'POST' })
+export const updateCampaign = createServerFn({ method: "POST" })
   .validator((input: unknown) => detailSchema.extend({ id: idSchema }).parse(input))
   .handler(async ({ data }) => {
     const userId = await requireUserId()
@@ -277,7 +286,7 @@ export const updateCampaign = createServerFn({ method: 'POST' })
 
 /* --- getCampaignBySlug --------------------------------------------------- */
 
-export const getCampaignBySlug = createServerFn({ method: 'GET' })
+export const getCampaignBySlug = createServerFn({ method: "GET" })
   .validator((input: unknown) =>
     z.object({ slug: z.string().regex(SLUG_PATTERN, TIDAK_DITEMUKAN) }).parse(input),
   )
@@ -324,7 +333,7 @@ export const getCampaignBySlug = createServerFn({ method: 'GET' })
     const { ownerName, username, ...campaign } = row
     // Open Graph mengabaikan URL relatif, dan hanya server yang tahu alamat
     // kanonik aplikasi.
-    const asal = process.env.BETTER_AUTH_URL ?? ''
+    const asal = process.env.BETTER_AUTH_URL ?? ""
     return {
       ...campaign,
       username: username ?? ownerName,
@@ -336,7 +345,7 @@ export const getCampaignBySlug = createServerFn({ method: 'GET' })
 
 /* --- incrementUse -------------------------------------------------------- */
 
-export const incrementUse = createServerFn({ method: 'POST' })
+export const incrementUse = createServerFn({ method: "POST" })
   .validator((input: unknown) => z.object({ id: idSchema }).parse(input))
   .handler(async ({ data }) => {
     // Tanpa sesi: partisipan memang anonim. Dinaikkan lewat ekspresi SQL,
@@ -350,6 +359,94 @@ export const incrementUse = createServerFn({ method: 'POST' })
 
     return { ok: true as const }
   })
+
+/* --- trackEvent ---------------------------------------------------------- */
+
+export const trackEvent = createServerFn({ method: "POST" })
+  .validator((input: unknown) =>
+    z
+      .object({
+        id: idSchema,
+        type: z.enum(["view", "download", "share"]),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await db.insert(campaignEvents).values({
+      id: randomUUID(),
+      campaignId: data.id,
+      eventType: data.type,
+    })
+    return { ok: true as const }
+  })
+
+/* --- getDailyAnalytics --------------------------------------------------- */
+
+export const getDailyAnalytics = createServerFn({ method: "GET" })
+  .validator((input: unknown) => z.object({ id: idSchema }).parse(input))
+  .handler(async ({ data }) => {
+    const userId = await requireUserId()
+
+    const [own] = await db
+      .select({ id: campaigns.id })
+      .from(campaigns)
+      .where(and(eq(campaigns.id, data.id), eq(campaigns.userId, userId)))
+      .limit(1)
+
+    if (!own) throw new Error(TIDAK_DITEMUKAN)
+
+    const rows = await db
+      .select({
+        date: sql<string>`DATE(${campaignEvents.createdAt})`.as("date"),
+        views: sql<number>`COUNT(*) FILTER (WHERE ${campaignEvents.eventType} = 'view')`.as(
+          "views",
+        ),
+        downloads: sql<number>`COUNT(*) FILTER (WHERE ${campaignEvents.eventType} = 'download')`.as(
+          "downloads",
+        ),
+        shares: sql<number>`COUNT(*) FILTER (WHERE ${campaignEvents.eventType} = 'share')`.as(
+          "shares",
+        ),
+      })
+      .from(campaignEvents)
+      .where(
+        and(
+          eq(campaignEvents.campaignId, data.id),
+          sql`${campaignEvents.createdAt} >= NOW() - INTERVAL '7 days'`,
+        ),
+      )
+      .groupBy(sql`DATE(${campaignEvents.createdAt})`)
+      .orderBy(sql`DATE(${campaignEvents.createdAt})`)
+
+    return rows
+  })
+
+/* --- getDashboardAnalytics ----------------------------------------------- */
+
+export const getDashboardAnalytics = createServerFn({ method: "GET" }).handler(async () => {
+  const userId = await requireUserId()
+
+  const rows = await db
+    .select({
+      campaignId: campaignEvents.campaignId,
+      viewCount: sql<number>`COUNT(*) FILTER (WHERE ${campaignEvents.eventType} = 'view')`.as(
+        "view_count",
+      ),
+      downloadCount:
+        sql<number>`COUNT(*) FILTER (WHERE ${campaignEvents.eventType} = 'download')`.as(
+          "download_count",
+        ),
+      shareCount: sql<number>`COUNT(*) FILTER (WHERE ${campaignEvents.eventType} = 'share')`.as(
+        "share_count",
+      ),
+    })
+    .from(campaignEvents)
+    .innerJoin(campaigns, eq(campaignEvents.campaignId, campaigns.id))
+    .where(eq(campaigns.userId, userId))
+    .groupBy(campaignEvents.campaignId)
+
+  return rows
+})
 
 /* --- listPublic ---------------------------------------------------------- */
 
@@ -368,16 +465,16 @@ export function bersihkanKataKunci(q: string): string {
   return q
     .trim()
     .slice(0, MAKS_KATA_KUNCI)
-    .replace(/\\/g, '\\\\')
-    .replace(/%/g, '\\%')
-    .replace(/_/g, '\\_')
+    .replace(/\\/g, "\\\\")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_")
 }
 
-export const listPublic = createServerFn({ method: 'GET' })
+export const listPublic = createServerFn({ method: "GET" })
   .validator((input: unknown) =>
     z
       .object({
-        q: z.string().max(MAKS_KATA_KUNCI).default(''),
+        q: z.string().max(MAKS_KATA_KUNCI).default(""),
         hal: z.number().int().min(1).default(1),
       })
       .parse(input ?? {}),
@@ -421,7 +518,7 @@ export const listPublic = createServerFn({ method: 'GET' })
 
 /* --- deleteCampaign ------------------------------------------------------ */
 
-export const deleteCampaign = createServerFn({ method: 'POST' })
+export const deleteCampaign = createServerFn({ method: "POST" })
   .validator((input: unknown) => z.object({ id: idSchema }).parse(input))
   .handler(async ({ data }) => {
     const userId = await requireUserId()
@@ -448,13 +545,13 @@ export const deleteCampaign = createServerFn({ method: 'POST' })
 /* --- replaceFrame -------------------------------------------------------- */
 
 function parseReplaceInput(input: unknown) {
-  if (!(input instanceof FormData)) throw new Error('Kiriman tidak sah')
-  const frame = input.get('frame')
-  if (!(frame instanceof File) || frame.size === 0) throw new Error('Frame PNG wajib diunggah')
-  return { id: idSchema.parse(String(input.get('id') ?? '')), frame }
+  if (!(input instanceof FormData)) throw new Error("Kiriman tidak sah")
+  const frame = input.get("frame")
+  if (!(frame instanceof File) || frame.size === 0) throw new Error("Frame PNG wajib diunggah")
+  return { id: idSchema.parse(String(input.get("id") ?? "")), frame }
 }
 
-export const replaceFrame = createServerFn({ method: 'POST' })
+export const replaceFrame = createServerFn({ method: "POST" })
   .validator(parseReplaceInput)
   .handler(async ({ data }) => {
     const userId = await requireUserId()

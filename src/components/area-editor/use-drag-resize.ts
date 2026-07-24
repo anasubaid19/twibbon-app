@@ -1,11 +1,11 @@
-import { type PointerEvent as ReactPointerEvent, useRef } from 'react'
+import { type PointerEvent as ReactPointerEvent, useRef } from "react"
 import {
   applyDrag,
   type DragMode,
   deltaToPercent,
   type FrameSize,
   type SlotRect,
-} from '@/lib/geometry'
+} from "@/lib/geometry"
 
 type Params = {
   slots: readonly SlotRect[]

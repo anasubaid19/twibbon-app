@@ -1,12 +1,13 @@
-import { ArrowDown, ArrowUp } from '@phosphor-icons/react'
+import { ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   useRef,
   useState,
-} from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+} from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   clampToFrame,
   type FrameSize,
@@ -14,10 +15,10 @@ import {
   type SlotRect as Rect,
   toPercent,
   toPixels,
-} from '@/lib/geometry'
-import { SlotRect } from './slot-rect'
-import { useDragResize } from './use-drag-resize'
-import { useElementSize } from './use-element-size'
+} from "@/lib/geometry"
+import { SlotRect } from "./slot-rect"
+import { useDragResize } from "./use-drag-resize"
+import { useElementSize } from "./use-element-size"
 
 /** Satu tekan panah menggeser sebesar ini, dalam persen. */
 const NUDGE = 1
@@ -71,7 +72,7 @@ export function AreaEditor({
     event.preventDefault()
     // Shift menahan sudut kiri-atas dan menggerakkan sudut kanan-bawah,
     // sehingga panah yang sama bisa dipakai untuk mengubah ukuran.
-    drag.nudge(index, event.shiftKey ? 'se' : 'move', langkah[0], langkah[1])
+    drag.nudge(index, event.shiftKey ? "se" : "move", langkah[0], langkah[1])
   }
 
   const [modeTambah, setModeTambah] = useState(false)
@@ -149,9 +150,9 @@ export function AreaEditor({
           // bukan sebagai putih atau hitam.
           style={{
             backgroundImage:
-              'linear-gradient(45deg, var(--color-border) 25%, transparent 25%), linear-gradient(-45deg, var(--color-border) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--color-border) 75%), linear-gradient(-45deg, transparent 75%, var(--color-border) 75%)',
-            backgroundSize: '16px 16px',
-            backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0',
+              "linear-gradient(45deg, var(--color-border) 25%, transparent 25%), linear-gradient(-45deg, var(--color-border) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--color-border) 75%), linear-gradient(-45deg, transparent 75%, var(--color-border) 75%)",
+            backgroundSize: "16px 16px",
+            backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0",
           }}
         />
 
@@ -160,7 +161,7 @@ export function AreaEditor({
           width={display.width}
           height={display.height}
           viewBox={`0 0 ${display.width || 1} ${display.height || 1}`}
-          style={{ touchAction: 'none', cursor: modeTambah ? 'crosshair' : undefined }}
+          style={{ touchAction: "none", cursor: modeTambah ? "crosshair" : undefined }}
           onPointerDown={handleBackgroundPointerDown}
           onPointerMove={drag.move}
           onPointerUp={drag.end}
@@ -191,12 +192,12 @@ export function AreaEditor({
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2">
         <Button
           type="button"
-          variant={modeTambah ? 'default' : 'outline'}
+          variant={modeTambah ? "default" : "outline"}
           size="sm"
           disabled={penuh}
           onClick={() => setModeTambah((m) => !m)}
         >
-          {modeTambah ? 'Klik di frame…' : '+ Tambah Area'}
+          {modeTambah ? "Klik di frame…" : "+ Tambah Area"}
         </Button>
 
         <Button
@@ -207,7 +208,7 @@ export function AreaEditor({
           aria-label="Naikkan urutan area"
           onClick={() => pindah(-1)}
         >
-          <ArrowUp aria-hidden />
+          <HugeiconsIcon icon={ArrowUp01Icon} aria-hidden />
         </Button>
         <Button
           type="button"
@@ -217,7 +218,7 @@ export function AreaEditor({
           aria-label="Turunkan urutan area"
           onClick={() => pindah(1)}
         >
-          <ArrowDown aria-hidden />
+          <HugeiconsIcon icon={ArrowDown01Icon} aria-hidden />
         </Button>
         {/* Mati saat tersisa satu: campaign tanpa area akan ditolak server
             (slots.min(1)), jadi lebih baik dicegah di sini daripada membiarkan
@@ -233,7 +234,7 @@ export function AreaEditor({
         </Button>
 
         <Input
-          value={terpilih?.label ?? ''}
+          value={terpilih?.label ?? ""}
           maxLength={40}
           placeholder={`Label area ${selectedIndex + 1} (opsional)`}
           disabled={!terpilih}
@@ -248,8 +249,8 @@ export function AreaEditor({
         />
 
         <span className="px-1 text-sm text-muted-foreground">
-          {slots.length} area{terpilih ? ` · area ${selectedIndex + 1} terpilih` : ''}
-          {penuh ? ' · maksimal' : ''}
+          {slots.length} area{terpilih ? ` · area ${selectedIndex + 1} terpilih` : ""}
+          {penuh ? " · maksimal" : ""}
         </span>
       </div>
     </div>

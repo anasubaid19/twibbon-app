@@ -1,15 +1,16 @@
-import { ArrowCounterClockwise } from '@phosphor-icons/react'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useElementSize } from '@/components/area-editor/use-element-size'
-import { Button } from '@/components/ui/button'
-import { IDENTITAS, renderComposite, type SlotFill, type Transform } from '@/lib/composite'
-import type { FrameSize, SlotRect } from '@/lib/geometry'
-import { useSlotTransform } from './use-slot-transform'
+import { RotateLeft01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { useElementSize } from "@/components/area-editor/use-element-size"
+import { Button } from "@/components/ui/button"
+import { IDENTITAS, renderComposite, type SlotFill, type Transform } from "@/lib/composite"
+import type { FrameSize, SlotRect } from "@/lib/geometry"
+import { useSlotTransform } from "./use-slot-transform"
 
 /** Sisi terpanjang kanvas preview di layar. */
 const PREVIEW_MAKS = 460
 
-export type ModeIsi = 'satu' | 'perSlot'
+export type ModeIsi = "satu" | "perSlot"
 
 /**
  * Slot seperti yang diterima halaman partisipan: koordinat plus label.
@@ -56,7 +57,7 @@ export function SlotFiller({
 
   useEffect(() => {
     const img = new Image()
-    img.crossOrigin = 'anonymous'
+    img.crossOrigin = "anonymous"
     img.onload = () => setFrame(img)
     img.src = frameSrc
   }, [frameSrc])
@@ -75,12 +76,12 @@ export function SlotFiller({
   const kanvasSize = useElementSize(kanvasRef)
 
   const t = useSlotTransform({
-    image: mode === 'satu' ? photo : (fotoPerSlot[slotAktif] ?? null),
+    image: mode === "satu" ? photo : (fotoPerSlot[slotAktif] ?? null),
     slots,
     canvas: kanvasSize,
     // Mode satu foto: semua slot bergerak bersamaan, jadi tidak ada slot yang
     // "aktif" dan tarikan di slot mana pun diterima.
-    slotAktif: mode === 'satu' ? -1 : slotAktif,
+    slotAktif: mode === "satu" ? -1 : slotAktif,
   })
 
   /*
@@ -90,7 +91,7 @@ export function SlotFiller({
    */
   const getFill = useCallback(
     (index: number): SlotFill | undefined => {
-      if (mode === 'satu') {
+      if (mode === "satu") {
         return photo ? { image: photo, transform: t.bacaTransform() } : undefined
       }
       const img = fotoPerSlot[index]
@@ -135,19 +136,19 @@ export function SlotFiller({
 
       kanvas.width = hasil.width
       kanvas.height = hasil.height
-      kanvas.getContext('2d')?.drawImage(hasil, 0, 0)
+      kanvas.getContext("2d")?.drawImage(hasil, 0, 0)
     }
 
     gambar()
-    const lepasX = t.offsetX.on('change', gambar)
-    const lepasY = t.offsetY.on('change', gambar)
+    const lepasX = t.offsetX.on("change", gambar)
+    const lepasY = t.offsetY.on("change", gambar)
     return () => {
       lepasX()
       lepasY()
     }
   }, [frame, frameSize, slots, lebarPreview, getFill, t.offsetX, t.offsetY])
 
-  const adaIsi = mode === 'satu' ? Boolean(photo) : Object.keys(fotoPerSlot).length > 0
+  const adaIsi = mode === "satu" ? Boolean(photo) : Object.keys(fotoPerSlot).length > 0
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -156,33 +157,32 @@ export function SlotFiller({
       <div className="flex gap-2">
         <Button
           type="button"
-          variant={mode === 'satu' ? 'default' : 'outline'}
+          variant={mode === "satu" ? "default" : "outline"}
           size="sm"
-          onClick={() => onMode('satu')}
+          onClick={() => onMode("satu")}
         >
           Satu foto
         </Button>
         <Button
           type="button"
-          variant={mode === 'perSlot' ? 'default' : 'outline'}
+          variant={mode === "perSlot" ? "default" : "outline"}
           size="sm"
-          onClick={() => onMode('perSlot')}
+          onClick={() => onMode("perSlot")}
         >
           Upload per Slot
         </Button>
       </div>
 
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: kanvas komposit memang permukaan gesture dan tidak punya padanan elemen semantik; jalur non-pointer disediakan slider zoom dan tombol reset di bawahnya. */}
       <canvas
         ref={kanvasRef}
         style={{
           // Menyusut mengikuti lebar yang tersedia, tapi tidak pernah lebih
           // besar dari resolusi bitmap-nya.
-          width: '100%',
+          width: "100%",
           maxWidth: lebarPreview,
-          height: 'auto',
-          touchAction: 'none',
-          cursor: adaIsi ? 'grab' : 'default',
+          height: "auto",
+          touchAction: "none",
+          cursor: adaIsi ? "grab" : "default",
         }}
         className="rounded-xl shadow-[0_8px_40px_#00000050]"
         onPointerDown={t.mulai}
@@ -191,19 +191,19 @@ export function SlotFiller({
         onPointerCancel={t.selesai}
       />
 
-      {mode === 'perSlot' && (
+      {mode === "perSlot" && (
         <div className="flex w-full max-w-md flex-col gap-2">
           {slots.map((slot, index) => (
             <div
               // biome-ignore lint/suspicious/noArrayIndexKey: urutan slot adalah identitasnya
               key={index}
               className={`flex items-center gap-2 rounded-lg border p-2 ${
-                index === slotAktif ? 'border-primary bg-muted' : 'border-border bg-card'
+                index === slotAktif ? "border-primary bg-muted" : "border-border bg-card"
               }`}
             >
               <Button
                 type="button"
-                variant={index === slotAktif ? 'default' : 'outline'}
+                variant={index === slotAktif ? "default" : "outline"}
                 size="sm"
                 onClick={() => pilihSlot(index)}
               >
@@ -211,10 +211,10 @@ export function SlotFiller({
               </Button>
               <span className="flex-1 truncate text-sm text-muted-foreground">
                 {slot.label || `Area ${index + 1}`}
-                {!fotoPerSlot[index] && ' · belum ada foto'}
+                {!fotoPerSlot[index] && " · belum ada foto"}
               </span>
               <label className="cursor-pointer rounded-lg border border-border px-3 py-1 text-xs transition-colors hover:bg-muted">
-                {fotoPerSlot[index] ? 'Ganti' : 'Pilih foto'}
+                {fotoPerSlot[index] ? "Ganti" : "Pilih foto"}
                 <input
                   type="file"
                   accept="image/*"
@@ -236,7 +236,7 @@ export function SlotFiller({
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Zoom {mode === 'perSlot' ? `· area ${slotAktif + 1}` : ''}
+                Zoom {mode === "perSlot" ? `· area ${slotAktif + 1}` : ""}
               </span>
               <span className="rounded-lg border border-border bg-muted px-2.5 py-0.5 font-mono text-sm text-primary">
                 {Math.round(t.scale * 100)}%
@@ -244,7 +244,7 @@ export function SlotFiller({
             </div>
             <input
               type="range"
-              min={1}
+              min={0.25}
               max={3}
               step={0.01}
               value={t.scale}
@@ -257,7 +257,7 @@ export function SlotFiller({
               onClick={t.reset}
               className="mt-2 flex w-full items-center justify-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
-              <ArrowCounterClockwise aria-hidden /> Reset posisi
+              <HugeiconsIcon icon={RotateLeft01Icon} aria-hidden /> Reset posisi
             </button>
           </div>
 
@@ -270,11 +270,11 @@ export function SlotFiller({
               <Button
                 key={s}
                 type="button"
-                variant={s === 1 ? 'default' : 'outline'}
+                variant={s === 1 ? "default" : "outline"}
                 disabled={sedangUnduh}
                 onClick={() => onUnduh(s)}
               >
-                {sedangUnduh ? '…' : `Unduh ${s}×`}
+                {sedangUnduh ? "…" : `Unduh ${s}×`}
               </Button>
             ))}
           </div>

@@ -1,5 +1,5 @@
-import { getRequestHeaders } from '@tanstack/react-start/server'
-import { auth } from '@/lib/auth'
+import { getRequestHeaders } from "@tanstack/react-start/server"
+import { auth } from "@/lib/auth"
 
 /**
  * Dipakai DI DALAM handler server function untuk tahu siapa pemilik data.
@@ -17,6 +17,6 @@ import { auth } from '@/lib/auth'
  */
 export async function requireUserId(): Promise<string> {
   const session = await auth.api.getSession({ headers: getRequestHeaders() })
-  if (!session) throw new Error('Kamu harus masuk dulu')
+  if (!session) throw new Error("Kamu harus masuk dulu")
   return session.user.id
 }

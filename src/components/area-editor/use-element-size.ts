@@ -1,5 +1,5 @@
-import { type RefObject, useEffect, useState } from 'react'
-import type { FrameSize } from '@/lib/geometry'
+import { type RefObject, useEffect, useState } from "react"
+import type { FrameSize } from "@/lib/geometry"
 
 /**
  * Ukuran render sebuah elemen dalam piksel CSS.

@@ -1,5 +1,5 @@
-import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
-import type { DragMode, FrameSize, PixelRect } from '@/lib/geometry'
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react"
+import type { DragMode, FrameSize, PixelRect } from "@/lib/geometry"
 
 /** Sisi pegangan resize dalam piksel tampilan. */
 const HANDLE = 10
@@ -15,14 +15,14 @@ const HANDLES: ReadonlyArray<{
   cursor: string
   label: string
 }> = [
-  { mode: 'nw', fx: 0, fy: 0, cursor: 'nwse-resize', label: 'kiri atas' },
-  { mode: 'n', fx: 0.5, fy: 0, cursor: 'ns-resize', label: 'atas' },
-  { mode: 'ne', fx: 1, fy: 0, cursor: 'nesw-resize', label: 'kanan atas' },
-  { mode: 'e', fx: 1, fy: 0.5, cursor: 'ew-resize', label: 'kanan' },
-  { mode: 'se', fx: 1, fy: 1, cursor: 'nwse-resize', label: 'kanan bawah' },
-  { mode: 's', fx: 0.5, fy: 1, cursor: 'ns-resize', label: 'bawah' },
-  { mode: 'sw', fx: 0, fy: 1, cursor: 'nesw-resize', label: 'kiri bawah' },
-  { mode: 'w', fx: 0, fy: 0.5, cursor: 'ew-resize', label: 'kiri' },
+  { mode: "nw", fx: 0, fy: 0, cursor: "nwse-resize", label: "kiri atas" },
+  { mode: "n", fx: 0.5, fy: 0, cursor: "ns-resize", label: "atas" },
+  { mode: "ne", fx: 1, fy: 0, cursor: "nesw-resize", label: "kanan atas" },
+  { mode: "e", fx: 1, fy: 0.5, cursor: "ew-resize", label: "kanan" },
+  { mode: "se", fx: 1, fy: 1, cursor: "nwse-resize", label: "kanan bawah" },
+  { mode: "s", fx: 0.5, fy: 1, cursor: "ns-resize", label: "bawah" },
+  { mode: "sw", fx: 0, fy: 1, cursor: "nesw-resize", label: "kiri bawah" },
+  { mode: "w", fx: 0, fy: 0.5, cursor: "ew-resize", label: "kiri" },
 ]
 
 /**
@@ -64,7 +64,7 @@ export function SlotRect({
   onHandleDown,
   onKeyDown,
 }: Props) {
-  const stroke = isValid ? 'var(--color-primary)' : 'var(--color-destructive)'
+  const stroke = isValid ? "var(--color-primary)" : "var(--color-destructive)"
 
   return (
     <g>
@@ -74,11 +74,11 @@ export function SlotRect({
         y={rect.y}
         width={rect.width}
         height={rect.height}
-        fill={isValid ? 'rgb(202 255 51 / 0.16)' : 'rgb(255 77 77 / 0.16)'}
+        fill={isValid ? "rgb(202 255 51 / 0.16)" : "rgb(255 77 77 / 0.16)"}
         stroke={stroke}
         strokeWidth={2}
-        strokeDasharray={isSelected ? undefined : '6 4'}
-        style={{ cursor: 'move', touchAction: 'none', outline: 'none' }}
+        strokeDasharray={isSelected ? undefined : "6 4"}
+        style={{ cursor: "move", touchAction: "none", outline: "none" }}
         tabIndex={0}
         /* `application`, bukan `button`: menekan Enter tidak melakukan apa pun di
            sini — kotaknya digerakkan panah. Peran ini juga memberi tahu pembaca
@@ -91,7 +91,7 @@ export function SlotRect({
         onFocus={onSelect}
         onPointerDown={(event) => {
           onSelect()
-          onHandleDown('move', event)
+          onHandleDown("move", event)
         }}
         onKeyDown={onKeyDown}
       />
@@ -102,7 +102,7 @@ export function SlotRect({
         fill={stroke}
         fontSize={13}
         fontWeight={700}
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
+        style={{ pointerEvents: "none", userSelect: "none" }}
       >
         {label ? `${index + 1} · ${label}` : index + 1}
       </text>
@@ -119,7 +119,7 @@ export function SlotRect({
             fill="var(--color-background)"
             stroke={stroke}
             strokeWidth={2}
-            style={{ cursor: handle.cursor, touchAction: 'none' }}
+            style={{ cursor: handle.cursor, touchAction: "none" }}
             aria-label={`Ubah ukuran dari ${handle.label}`}
             onPointerDown={(event) => onHandleDown(handle.mode, event)}
           />
