@@ -3,6 +3,8 @@ import type { DragMode, FrameSize, PixelRect } from "@/lib/geometry"
 
 /** Sisi pegangan resize dalam piksel tampilan. */
 const HANDLE = 10
+/** Jarak rotate handle di atas kotak, dalam piksel tampilan. */
+const ROTASI_JARAK = 18
 
 /**
  * Delapan pegangan: 4 sudut + 4 sisi. `fx`/`fy` adalah posisinya sebagai
@@ -42,6 +44,8 @@ type Props = {
   index: number
   /** Kotak dalam piksel tampilan, sudah diterjemahkan lewat geometry.toPixels. */
   rect: PixelRect
+  /** Rotasi derajat di sekitar tengah kotak. */
+  rotation?: number
   /** Label opsional, ditampilkan di samping nomor. */
   label?: string
   /** Ukuran gambar frame di layar — batas supaya pegangan tidak terpotong. */
@@ -56,6 +60,7 @@ type Props = {
 export function SlotRect({
   index,
   rect,
+  rotation,
   label,
   bounds,
   isSelected,
@@ -65,9 +70,14 @@ export function SlotRect({
   onKeyDown,
 }: Props) {
   const stroke = isValid ? "var(--color-primary)" : "var(--color-destructive)"
+  const cx = rect.x + rect.width / 2
+  const cy = rect.y + rect.height / 2
+  const rotasiY = tahanDiDalam(rect.y - ROTASI_JARAK, bounds.height)
 
   return (
-    <g>
+    // Seluruh kotak — rect, label, pegangan — ikut berotasi di sekitar
+    // tengahnya. Pegangan rotate ikut berputar sehingga selalu di atas.
+    <g transform={rotation ? `rotate(${rotation} ${cx} ${cy})` : undefined}>
       {/* biome-ignore lint/a11y/noInteractiveElementToNoninteractiveRole: aturan ini memakai heuristik elemen HTML; <rect> SVG tidak punya semantik interaktif bawaan, jadi `application` di sini menambah peran, bukan menurunkannya. */}
       <rect
         x={rect.x}
@@ -107,23 +117,41 @@ export function SlotRect({
         {label ? `${index + 1} · ${label}` : index + 1}
       </text>
 
-      {isSelected &&
-        HANDLES.map((handle) => (
-          <rect
-            key={handle.mode}
-            x={tahanDiDalam(rect.x + handle.fx * rect.width - HANDLE / 2, bounds.width)}
-            y={tahanDiDalam(rect.y + handle.fy * rect.height - HANDLE / 2, bounds.height)}
-            width={HANDLE}
-            height={HANDLE}
-            rx={2}
+      {isSelected && (
+        <>
+          <line x1={cx} y1={rect.y} x2={cx} y2={rotasiY} stroke={stroke} strokeWidth={2} />
+          <circle
+            cx={cx}
+            cy={rotasiY}
+            r={7}
             fill="var(--color-background)"
             stroke={stroke}
             strokeWidth={2}
-            style={{ cursor: handle.cursor, touchAction: "none" }}
-            aria-label={`Ubah ukuran dari ${handle.label}`}
-            onPointerDown={(event) => onHandleDown(handle.mode, event)}
+            style={{ cursor: "grab", touchAction: "none" }}
+            aria-label={`Putar area ${index + 1}. Geser untuk memutar, Shift menahan kelipatan 15 derajat.`}
+            onPointerDown={(event) => {
+              onSelect()
+              onHandleDown("rotate", event)
+            }}
           />
-        ))}
+          {HANDLES.map((handle) => (
+            <rect
+              key={handle.mode}
+              x={tahanDiDalam(rect.x + handle.fx * rect.width - HANDLE / 2, bounds.width)}
+              y={tahanDiDalam(rect.y + handle.fy * rect.height - HANDLE / 2, bounds.height)}
+              width={HANDLE}
+              height={HANDLE}
+              rx={2}
+              fill="var(--color-background)"
+              stroke={stroke}
+              strokeWidth={2}
+              style={{ cursor: handle.cursor, touchAction: "none" }}
+              aria-label={`Ubah ukuran dari ${handle.label}`}
+              onPointerDown={(event) => onHandleDown(handle.mode, event)}
+            />
+          ))}
+        </>
+      )}
     </g>
   )
 }

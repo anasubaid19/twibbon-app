@@ -1,0 +1,1 @@
+ALTER TABLE "frame_slots" ADD COLUMN "rotation" real DEFAULT 0 NOT NULL;

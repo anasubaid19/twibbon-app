@@ -1,100 +1,113 @@
-import { animate, type MotionValue, useMotionValue } from "motion/react"
 import { type PointerEvent as ReactPointerEvent, useCallback, useRef, useState } from "react"
-import { panBounds, rubberBand, slotAt, type Transform } from "@/lib/composite"
+import { IDENTITAS, panBounds, slotAt, type Transform } from "@/lib/composite"
 import type { FrameSize, SlotRect } from "@/lib/geometry"
-
-/** Aturan 24: critically damped — ini gerakan menetap, bukan lemparan. */
-const PEGAS = { type: "spring", damping: 1, bounce: 0, duration: 0.35 } as const
 
 /** Zoom minimum 0.25 — foto bisa diperkecil, celah kosong wajar. */
 const ZOOM_MIN = 0.25
 const ZOOM_MAKS = 3
 
+type Mode = "satu" | "perSlot"
+
 type Params = {
-  image: HTMLImageElement | null
+  mode: Mode
+  /** Mode `satu`: satu foto untuk semua slot. */
+  photo: HTMLImageElement | null
+  /** Mode `perSlot`: satu foto per indeks slot. */
+  fotoPerSlot: Record<number, HTMLImageElement>
   slots: readonly SlotRect[]
   /** Ukuran kanvas preview dalam piksel. */
   canvas: FrameSize
-  /** Mode per-slot: hanya slot ini yang boleh digeser. -1 = semua slot bersamaan. */
-  slotAktif: number
+  /** Dipanggil setelah tiap tulis transform, supaya preview ikut digambar. */
+  redraw: () => void
 }
 
-export function useSlotTransform({ image, slots, canvas, slotAktif }: Params) {
-  const offsetX = useMotionValue(0)
-  const offsetY = useMotionValue(0)
-  const [scale, setScaleState] = useState(1)
+/**
+ * Transform foto tiap slot (mode `perSlot`) atau foto tunggal (mode `satu`).
+ *
+ * Mode `satu`: semua slot berbagi satu transform — tarikan di slot mana pun
+ * menggerakkan semuanya. Mode `perSlot`: tiap slot punya transform sendiri,
+ * dan foto mana pun bisa digeser langsung tanpa memilih slot lebih dulu.
+ *
+ * Geser dijepit keras ke batas slot (`panBounds`) — tanpa rubber-band dan
+ * tanpa spring. Tidak ada animasi: pointer melepas nilai tepat di tempatnya.
+ */
+export function useSlotTransform({ mode, photo, fotoPerSlot, slots, canvas, redraw }: Params) {
+  // Transform tinggal di ref, bukan state: menggeser tidak perlu re-render
+  // React, cukup gambar ulang kanvas.
+  const satu = useRef<Transform>({ ...IDENTITAS })
+  const perSlot = useRef<Record<number, Transform>>({})
+  /** Ukuran slot acuan tarikan terakhir. Dipakai `setScale` mode `satu`. */
+  const ukuranTerakhir = useRef<FrameSize>({ width: 0, height: 0 })
+
+  // Skala disimpan dobel sebagai state supaya slider zoom ikut re-render.
+  const [skala, setSkalaState] = useState<Record<number, number>>({})
+
+  const redrawRef = useRef(redraw)
+  redrawRef.current = redraw
 
   const drag = useRef<{
     pointerId: number
+    index: number
     startX: number
     startY: number
     awal: Transform
     ukuran: FrameSize
   } | null>(null)
 
-  /**
-   * Ukuran slot acuan tarikan terakhir. Dipakai `setScale` supaya batas geser
-   * dihitung dengan slot yang sama seperti saat digeser, bukan slot lain.
-   */
-  const ukuranTerakhir = useRef<FrameSize>({ width: 0, height: 0 })
+  function baca(index: number): Transform {
+    return mode === "satu" ? satu.current : (perSlot.current[index] ?? IDENTITAS)
+  }
 
-  const batasUntuk = useCallback(
-    (zoom: number, ukuran: FrameSize) => {
-      if (!image || ukuran.width <= 0) return { x: 0, y: 0 }
-      return panBounds({ width: image.naturalWidth, height: image.naturalHeight }, ukuran, zoom)
-    },
-    [image],
-  )
+  function tulis(index: number, t: Transform) {
+    if (mode === "satu") satu.current = t
+    else perSlot.current[index] = t
+  }
 
-  /** Nilai transform saat ini — dibaca renderComposite tiap kali menggambar. */
-  const bacaTransform = useCallback(
-    (): Transform => ({ scale, offsetX: offsetX.get(), offsetY: offsetY.get() }),
-    [scale, offsetX, offsetY],
-  )
+  /** Ukuran slot dalam piksel kanvas; mode `satu` memakai slot yang terakhir disentuh. */
+  function ukuranSlot(index: number): FrameSize {
+    if (mode === "satu") return ukuranTerakhir.current
+    const slot = slots[index]
+    if (!slot) return { width: 0, height: 0 }
+    return {
+      width: (slot.width / 100) * canvas.width,
+      height: (slot.height / 100) * canvas.height,
+    }
+  }
 
-  /** Memuat posisi tersimpan milik slot lain ke motion value. */
-  const muat = useCallback(
-    (t: Transform) => {
-      // jump() memutus kontinuitas dengan sengaja: ini berpindah slot, bukan
-      // melanjutkan gerakan. Tanpa itu velocity slot sebelumnya ikut terbawa.
-      offsetX.jump(t.offsetX)
-      offsetY.jump(t.offsetY)
-      setScaleState(t.scale)
-    },
-    [offsetX, offsetY],
-  )
+  const scaleOf = useCallback((index: number) => skala[index] ?? 1, [skala])
+
+  const bacaTransform = (index: number): Transform => baca(index)
 
   function mulai(event: ReactPointerEvent) {
-    if (!image) return
+    if (mode === "satu" && !photo) return
 
     const box = event.currentTarget.getBoundingClientRect()
     const titik = { x: event.clientX - box.left, y: event.clientY - box.top }
     const kena = slotAt(slots, titik, canvas)
     if (kena < 0) return
-    // Di mode per-slot, menggeser di luar slot yang sedang diedit tidak
-    // melakukan apa-apa — kalau tidak, jari di slot lain diam-diam memindahkan
-    // slot yang aktif.
-    if (slotAktif >= 0 && kena !== slotAktif) return
+    // Mode per-slot: tanpa foto di slot itu, tidak ada yang bisa digeser.
+    const img = mode === "satu" ? photo : fotoPerSlot[kena]
+    if (!img) return
 
     const slot = slots[kena]
     if (!slot) return
-
-    // Aturan 22: laju geser memakai ukuran slot YANG DISENTUH, bukan slot
-    // pertama. Tanpa ini, isi slot berukuran lain bergerak lebih cepat atau
-    // lebih lambat daripada jari.
     const ukuran = {
       width: (slot.width / 100) * canvas.width,
       height: (slot.height / 100) * canvas.height,
     }
-    ukuranTerakhir.current = ukuran
+    if (ukuran.width <= 0) return
 
-    // Aturan 21: umpan balik saat pointer-down, bukan saat klik.
+    // Laju geser memakai ukuran slot yang disentuh, bukan slot lain — tanpa
+    // itu isi slot berukuran lain bergerak lebih cepat atau lebih lambat
+    // daripada jari.
+    ukuranTerakhir.current = ukuran
     event.currentTarget.setPointerCapture(event.pointerId)
     drag.current = {
       pointerId: event.pointerId,
+      index: kena,
       startX: event.clientX,
       startY: event.clientY,
-      awal: bacaTransform(),
+      awal: baca(kena),
       ukuran,
     }
   }
@@ -102,15 +115,25 @@ export function useSlotTransform({ image, slots, canvas, slotAktif }: Params) {
   function geser(event: ReactPointerEvent) {
     const d = drag.current
     if (!d || d.pointerId !== event.pointerId) return
+    const img = mode === "satu" ? photo : fotoPerSlot[d.index]
+    if (!img) return
 
-    // Aturan 22: delta dihitung dari titik awal, bukan bertahap, supaya galat
-    // tidak menumpuk sepanjang tarikan.
-    const b = batasUntuk(scale, d.ukuran)
+    // Delta dihitung dari titik awal, bukan bertahap, supaya galat tidak
+    // menumpuk sepanjang tarikan. Lalu dijepit keras ke batas slot.
+    const b = panBounds(
+      { width: img.naturalWidth, height: img.naturalHeight },
+      d.ukuran,
+      d.awal.scale,
+    )
     const mentahX = d.awal.offsetX + (event.clientX - d.startX) / d.ukuran.width
     const mentahY = d.awal.offsetY + (event.clientY - d.startY) / d.ukuran.height
 
-    offsetX.set(rubberBand(mentahX, b.x))
-    offsetY.set(rubberBand(mentahY, b.y))
+    tulis(d.index, {
+      scale: d.awal.scale,
+      offsetX: Math.min(b.x, Math.max(-b.x, mentahX)),
+      offsetY: Math.min(b.y, Math.max(-b.y, mentahY)),
+    })
+    redrawRef.current()
   }
 
   function selesai(event: ReactPointerEvent) {
@@ -120,57 +143,43 @@ export function useSlotTransform({ image, slots, canvas, slotAktif }: Params) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
     drag.current = null
-
-    // Aturan 25: animate() pada MotionValue mewarisi velocity nilai itu, dan
-    // bisa disela tarikan berikutnya (aturan 23).
-    const b = batasUntuk(scale, d.ukuran)
-    kembalikan(offsetX, b.x)
-    kembalikan(offsetY, b.y)
   }
 
-  function reset() {
-    kembalikanKe(offsetX, 0)
-    kembalikanKe(offsetY, 0)
-    setScaleState(1)
-  }
-
-  function setScale(nilai: number) {
+  function setScale(index: number, nilai: number) {
+    const img = mode === "satu" ? photo : fotoPerSlot[index]
+    if (!img) return
     const berikut = Math.min(ZOOM_MAKS, Math.max(ZOOM_MIN, nilai))
-    setScaleState(berikut)
 
-    // Mengecilkan zoom menyempitkan ruang gerak; tarik offsetnya masuk lagi
+    // Mengecilkan zoom menyempitkan ruang gerak; tarik offset masuk lagi
     // supaya celah kosong tidak muncul di tepi slot.
-    const b = batasUntuk(berikut, ukuranTerakhir.current)
-    kembalikan(offsetX, b.x)
-    kembalikan(offsetY, b.y)
+    const b = panBounds(
+      { width: img.naturalWidth, height: img.naturalHeight },
+      ukuranSlot(index),
+      berikut,
+    )
+    const t = baca(index)
+    tulis(index, {
+      scale: berikut,
+      offsetX: Math.min(b.x, Math.max(-b.x, t.offsetX)),
+      offsetY: Math.min(b.y, Math.max(-b.y, t.offsetY)),
+    })
+    setSkalaState((s) => ({ ...s, [index]: berikut }))
+    redrawRef.current()
+  }
+
+  function reset(index: number) {
+    tulis(index, { ...IDENTITAS })
+    setSkalaState((s) => ({ ...s, [index]: 1 }))
+    redrawRef.current()
   }
 
   return {
-    offsetX,
-    offsetY,
-    scale,
+    bacaTransform,
+    scaleOf,
     setScale,
+    reset,
     mulai,
     geser,
     selesai,
-    reset,
-    muat,
-    bacaTransform,
   }
-}
-
-/** Memantulkan nilai kembali ke dalam batas, kalau ia memang di luar. */
-function kembalikan(nilai: MotionValue<number>, batas: number) {
-  kembalikanKe(nilai, Math.min(batas, Math.max(-batas, nilai.get())))
-}
-
-function kembalikanKe(nilai: MotionValue<number>, tujuan: number) {
-  if (tujuan === nilai.get()) return
-
-  // Aturan 30: yang meminta gerakan minim langsung dilompatkan ke nilai akhir.
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    nilai.set(tujuan)
-    return
-  }
-  animate(nilai, tujuan, PEGAS)
 }

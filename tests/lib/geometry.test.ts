@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test"
 import {
   applyDrag,
-  clampToFrame,
   deltaToPercent,
   isValidSlot,
   MIN_SLOT_PX,
+  normalizeAngle,
+  rotatePoint,
   toPercent,
   toPixels,
 } from "@/lib/geometry"
@@ -82,49 +83,48 @@ describe("deltaToPercent", () => {
   })
 })
 
-describe("clampToFrame", () => {
-  test("membiarkan kotak yang sudah di dalam frame", () => {
-    const rect = { x: 10, y: 10, width: 30, height: 30 }
-    expect(clampToFrame(rect)).toEqual(rect)
+describe("normalizeAngle", () => {
+  test("sudut kecil dibiarkan apa adanya", () => {
+    expect(normalizeAngle(0)).toBe(0)
+    expect(normalizeAngle(45)).toBe(45)
+    expect(normalizeAngle(-45)).toBe(-45)
   })
 
-  test("menggeser masuk tanpa mengubah ukuran saat menembus tepi kanan", () => {
-    expect(clampToFrame({ x: 90, y: 10, width: 30, height: 30 })).toEqual({
-      x: 70,
-      y: 10,
-      width: 30,
-      height: 30,
-    })
+  test("sudut lebih dari 180 dipantulkan ke arah negatif", () => {
+    expect(normalizeAngle(200)).toBe(-160)
+    expect(normalizeAngle(181)).toBe(-179)
   })
 
-  test("menggeser masuk saat koordinat negatif", () => {
-    expect(clampToFrame({ x: -15, y: -5, width: 30, height: 30 })).toEqual({
-      x: 0,
-      y: 0,
-      width: 30,
-      height: 30,
-    })
+  test("sudut negatif di bawah -180 dibawa ke rentang [-180, 180)", () => {
+    expect(normalizeAngle(-200)).toBe(160)
   })
 
-  test("kotak baru yang dipusatkan di pojok tetap masuk frame", () => {
-    // Rectangle tool memusatkan kotak 20x20% di titik klik. Klik di pojok
-    // berarti separuh kotaknya keluar frame sebelum di-clamp.
-    const UKURAN = 20
-    expect(
-      clampToFrame({ x: 0 - UKURAN / 2, y: 0 - UKURAN / 2, width: UKURAN, height: UKURAN }),
-    ).toEqual({ x: 0, y: 0, width: 20, height: 20 })
-    expect(
-      clampToFrame({ x: 100 - UKURAN / 2, y: 100 - UKURAN / 2, width: UKURAN, height: UKURAN }),
-    ).toEqual({ x: 80, y: 80, width: 20, height: 20 })
+  test("putaran penuh kembali ke nol", () => {
+    expect(normalizeAngle(360)).toBe(0)
+    expect(normalizeAngle(720)).toBe(0)
+    expect(normalizeAngle(540)).toBe(180)
+  })
+})
+
+describe("rotatePoint", () => {
+  test("memutar titik di sumbu x ke sumbu y (90 derajat)", () => {
+    const hasil = rotatePoint({ x: 10, y: 0 }, { x: 0, y: 0 }, Math.PI / 2)
+    expect(hasil.x).toBeCloseTo(0, 10)
+    expect(hasil.y).toBeCloseTo(10, 10)
   })
 
-  test("mengecilkan kotak yang lebih besar dari frame", () => {
-    expect(clampToFrame({ x: -10, y: -10, width: 150, height: 150 })).toEqual({
-      x: 0,
-      y: 0,
-      width: 100,
-      height: 100,
-    })
+  test("putaran 180 derajat membalik tanda kedua sumbu", () => {
+    const hasil = rotatePoint({ x: 3, y: 4 }, { x: 0, y: 0 }, Math.PI)
+    expect(hasil.x).toBeCloseTo(-3, 10)
+    expect(hasil.y).toBeCloseTo(-4, 10)
+  })
+
+  test("pusat rotasi bukan titik asal ikut dihitung", () => {
+    // Hasilnya koordinat relatif terhadap pusat: (20,10) di sekitar (10,10)
+    // sama dengan (10,0) di sekitar titik asal.
+    const hasil = rotatePoint({ x: 20, y: 10 }, { x: 10, y: 10 }, Math.PI / 2)
+    expect(hasil.x).toBeCloseTo(0, 10)
+    expect(hasil.y).toBeCloseTo(10, 10)
   })
 })
 
@@ -135,8 +135,11 @@ describe("applyDrag", () => {
     expect(applyDrag(rect, "move", 10, -5)).toEqual({ x: 30, y: 15, width: 40, height: 40 })
   })
 
-  test("mode move berhenti di tepi, tidak mengecil", () => {
-    expect(applyDrag(rect, "move", 90, 0)).toEqual({ x: 60, y: 20, width: 40, height: 40 })
+  test("mode move boleh melewati tepi frame", () => {
+    // Area sengaja tidak di-clamp ke frame (keputusan pengguna), jadi ia bebas
+    // didorong keluar tanpa berhenti di tepi.
+    expect(applyDrag(rect, "move", 90, 0)).toEqual({ x: 110, y: 20, width: 40, height: 40 })
+    expect(applyDrag(rect, "move", -50, 0)).toEqual({ x: -30, y: 20, width: 40, height: 40 })
   })
 
   test("pegangan timur hanya menggerakkan sisi kanan", () => {
@@ -151,11 +154,11 @@ describe("applyDrag", () => {
     expect(applyDrag(rect, "se", 10, 10)).toEqual({ x: 20, y: 20, width: 50, height: 50 })
   })
 
-  test("resize berhenti di tepi frame tanpa menyeret sisi seberangnya", () => {
+  test("resize boleh melewati tepi frame tanpa menyeret sisi seberangnya", () => {
     // Bug yang gampang lolos: kalau resize memakai clamp gaya "geser masuk",
     // sisi kiri ikut bergeser padahal pengguna cuma menarik sisi kanan.
     const hasil = applyDrag(rect, "e", 999, 0)
-    expect(hasil).toEqual({ x: 20, y: 20, width: 80, height: 40 })
+    expect(hasil).toEqual({ x: 20, y: 20, width: 1039, height: 40 })
   })
 
   test("menarik sisi melewati sisi seberang membalik kotak, bukan bikin lebar negatif", () => {
@@ -164,6 +167,28 @@ describe("applyDrag", () => {
     const hasil = applyDrag(rect, "e", -50, 0)
     expect(hasil.width).toBeGreaterThanOrEqual(0)
     expect(hasil).toEqual({ x: 10, y: 20, width: 10, height: 40 })
+  })
+
+  test("mode move mempertahankan rotasi", () => {
+    // Bug lama: clamp membuang field rotation, jadi kotak yang digeser
+    // kembali ke 0 derajat.
+    expect(applyDrag({ ...rect, rotation: 45 }, "move", 10, 0)).toEqual({
+      x: 30,
+      y: 20,
+      width: 40,
+      height: 40,
+      rotation: 45,
+    })
+  })
+
+  test("resize mempertahankan rotasi", () => {
+    expect(applyDrag({ ...rect, rotation: -30 }, "se", 10, 10)).toEqual({
+      x: 20,
+      y: 20,
+      width: 50,
+      height: 50,
+      rotation: -30,
+    })
   })
 })
 
@@ -181,9 +206,11 @@ describe("isValidSlot", () => {
     expect(isValidSlot({ x: 0, y: 0, width: 2, height: 4 }, FRAME)).toBe(true)
   })
 
-  test("menolak slot yang keluar dari frame", () => {
-    expect(isValidSlot({ x: 80, y: 10, width: 30, height: 30 }, FRAME)).toBe(false)
-    expect(isValidSlot({ x: -1, y: 10, width: 30, height: 30 }, FRAME)).toBe(false)
+  test("menerima slot yang melewati frame", () => {
+    // Area sengaja boleh keluar frame (keputusan pengguna), jadi koordinat
+    // di luar 0–100 tetap valid selama ukurannya cukup.
+    expect(isValidSlot({ x: 80, y: 10, width: 30, height: 30 }, FRAME)).toBe(true)
+    expect(isValidSlot({ x: -1, y: 10, width: 30, height: 30 }, FRAME)).toBe(true)
   })
 
   test("memaafkan kelebihan sepersekian akibat pembulatan float", () => {

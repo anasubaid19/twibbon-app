@@ -1,4 +1,10 @@
-import { type FrameSize, type PixelRect, type SlotRect, toPixels } from "@/lib/geometry"
+import {
+  type FrameSize,
+  type PixelRect,
+  rotatePoint,
+  type SlotRect,
+  toPixels,
+} from "@/lib/geometry"
 
 /**
  * Posisi foto di dalam satu slot.
@@ -53,31 +59,15 @@ export function panBounds(
   }
 }
 
-/** Seberapa cepat perlawanan menumpuk di luar batas. Makin kecil, makin berat. */
-const KEKENYALAN = 0.35
-
-/**
- * Menahan gerakan di luar batas alih-alih menghentikannya mendadak (aturan 26).
- *
- * Bentuknya asimptotik, bukan linear: kelebihannya dibagi `1 + kelebihan`
- * sehingga makin jauh ditarik makin berat, dan tidak pernah benar-benar
- * berhenti. Berhenti keras terasa seperti aplikasi macet; ini terasa seperti
- * karet.
- */
-export function rubberBand(offset: number, batas: number): number {
-  const besar = Math.abs(offset)
-  if (besar <= batas) return offset
-
-  const kelebihan = besar - batas
-  const ditahan = batas + (kelebihan * KEKENYALAN) / (1 + kelebihan)
-  return Math.sign(offset) * ditahan
-}
-
 /**
  * Indeks slot yang berada di bawah sebuah titik kanvas, atau -1.
  *
  * Dicari dari belakang: slot bernomor besar digambar paling akhir dan karena
  * itu tampak paling atas, jadi yang terlihat itulah yang harus tersentuh.
+ *
+ * Slot yang dirotasi diuji dalam ruang lokalnya: titik diputar balik ke
+ * ruang itu, lalu dicek kotak axis-aligned-nya (P2 — geometri tidak boleh
+ * punya dua implementasi).
  */
 export function slotAt(
   slots: readonly SlotRect[],
@@ -88,7 +78,14 @@ export function slotAt(
     const slot = slots[i]
     if (!slot) continue
     const kotak = toPixels(slot, canvas)
-    if (
+    const derajat = slot.rotation ?? 0
+    if (derajat) {
+      const rad = (derajat * Math.PI) / 180
+      const lokal = rotatePoint(point, centerOf(kotak), -rad)
+      if (Math.abs(lokal.x) <= kotak.width / 2 && Math.abs(lokal.y) <= kotak.height / 2) {
+        return i
+      }
+    } else if (
       point.x >= kotak.x &&
       point.x <= kotak.x + kotak.width &&
       point.y >= kotak.y &&
@@ -98,6 +95,10 @@ export function slotAt(
     }
   }
   return -1
+}
+
+function centerOf(kotak: PixelRect): { x: number; y: number } {
+  return { x: kotak.x + kotak.width / 2, y: kotak.y + kotak.height / 2 }
 }
 
 /** Isi satu slot: fotonya dan posisinya. */
@@ -142,20 +143,43 @@ export function renderComposite({
     if (!fill) return
 
     const kotak = toPixels(slot, kanvasSize)
+    const derajat = slot.rotation ?? 0
 
     ctx.save()
-    // Foto dipotong tepat di batas slot. Tanpa ini bagian yang meluber akan
-    // menutupi slot tetangga.
-    ctx.beginPath()
-    ctx.rect(kotak.x, kotak.y, kotak.width, kotak.height)
-    ctx.clip()
-
-    const gambar = drawRect(
-      { width: fill.image.naturalWidth, height: fill.image.naturalHeight },
-      kotak,
-      fill.transform,
-    )
-    ctx.drawImage(fill.image, gambar.x, gambar.y, gambar.width, gambar.height)
+    // Slot yang dirotasi digambar dalam ruang lokalnya: diputar lalu foto
+    // dipotong oleh kotak yang masih axis-aligned di ruang itu. Foto ikut
+    // miring bersama slot — hasil yang sama di preview maupun berkas unduhan
+    // (P3), karena keduanya memanggil renderComposite.
+    if (derajat) {
+      const rad = (derajat * Math.PI) / 180
+      ctx.translate(kotak.x + kotak.width / 2, kotak.y + kotak.height / 2)
+      ctx.rotate(rad)
+      const lokal = {
+        x: -kotak.width / 2,
+        y: -kotak.height / 2,
+        width: kotak.width,
+        height: kotak.height,
+      }
+      ctx.beginPath()
+      ctx.rect(lokal.x, lokal.y, lokal.width, lokal.height)
+      ctx.clip()
+      const gambar = drawRect(
+        { width: fill.image.naturalWidth, height: fill.image.naturalHeight },
+        lokal,
+        fill.transform,
+      )
+      ctx.drawImage(fill.image, gambar.x, gambar.y, gambar.width, gambar.height)
+    } else {
+      ctx.beginPath()
+      ctx.rect(kotak.x, kotak.y, kotak.width, kotak.height)
+      ctx.clip()
+      const gambar = drawRect(
+        { width: fill.image.naturalWidth, height: fill.image.naturalHeight },
+        kotak,
+        fill.transform,
+      )
+      ctx.drawImage(fill.image, gambar.x, gambar.y, gambar.width, gambar.height)
+    }
     ctx.restore()
   })
 

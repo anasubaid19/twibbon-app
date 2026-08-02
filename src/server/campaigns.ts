@@ -25,6 +25,9 @@ const slotSchema = z.object({
   y: z.number(),
   width: z.number(),
   height: z.number(),
+  // Sudut rotasi opsional — klien lama yang tidak tahu fitur ini cukup
+  // dianggap 0 derajat.
+  rotation: z.number().min(-360).max(360).default(0),
   label: z.string().max(40, "Label area maksimal 40 karakter").default(""),
 })
 
@@ -68,6 +71,7 @@ function slotRows(campaignId: string, slots: z.infer<typeof detailSchema>["slots
     y: slot.y,
     width: slot.width,
     height: slot.height,
+    rotation: slot.rotation,
     label: slot.label,
   }))
 }
@@ -235,6 +239,7 @@ export const getCampaignForEdit = createServerFn({ method: "GET" })
         y: frameSlots.y,
         width: frameSlots.width,
         height: frameSlots.height,
+        rotation: frameSlots.rotation,
         label: frameSlots.label,
       })
       .from(frameSlots)
@@ -322,6 +327,7 @@ export const getCampaignBySlug = createServerFn({ method: "GET" })
         y: frameSlots.y,
         width: frameSlots.width,
         height: frameSlots.height,
+        rotation: frameSlots.rotation,
         label: frameSlots.label,
       })
       .from(frameSlots)

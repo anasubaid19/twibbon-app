@@ -3,7 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useElementSize } from "@/components/area-editor/use-element-size"
 import { Button } from "@/components/ui/button"
-import { IDENTITAS, renderComposite, type SlotFill, type Transform } from "@/lib/composite"
+import { renderComposite, type SlotFill } from "@/lib/composite"
 import type { FrameSize, SlotRect } from "@/lib/geometry"
 import { useSlotTransform } from "./use-slot-transform"
 
@@ -50,10 +50,6 @@ export function SlotFiller({
 }: Props) {
   const kanvasRef = useRef<HTMLCanvasElement>(null)
   const [frame, setFrame] = useState<HTMLImageElement | null>(null)
-  const [slotAktif, setSlotAktif] = useState(0)
-
-  /** Posisi tersimpan tiap slot di mode perSlot. */
-  const transforms = useRef<Record<number, Transform>>({})
 
   useEffect(() => {
     const img = new Image()
@@ -75,13 +71,18 @@ export function SlotFiller({
    */
   const kanvasSize = useElementSize(kanvasRef)
 
+  // Transform tinggal di ref (di dalam hook), jadi gambar() selalu lewat
+  // ref ini agar memakai fungsi terbaru tanpa menandai dependensi.
+  const gambarRef = useRef<() => void>(() => {})
+  const redraw = useCallback(() => gambarRef.current(), [])
+
   const t = useSlotTransform({
-    image: mode === "satu" ? photo : (fotoPerSlot[slotAktif] ?? null),
+    mode,
+    photo,
+    fotoPerSlot,
     slots,
     canvas: kanvasSize,
-    // Mode satu foto: semua slot bergerak bersamaan, jadi tidak ada slot yang
-    // "aktif" dan tarikan di slot mana pun diterima.
-    slotAktif: mode === "satu" ? -1 : slotAktif,
+    redraw,
   })
 
   /*
@@ -92,61 +93,42 @@ export function SlotFiller({
   const getFill = useCallback(
     (index: number): SlotFill | undefined => {
       if (mode === "satu") {
-        return photo ? { image: photo, transform: t.bacaTransform() } : undefined
+        return photo ? { image: photo, transform: t.bacaTransform(0) } : undefined
       }
       const img = fotoPerSlot[index]
       if (!img) return undefined
-      // Slot yang sedang digeser membaca motion value; sisanya membaca posisi
-      // tersimpannya masing-masing.
-      return {
-        image: img,
-        transform:
-          index === slotAktif ? t.bacaTransform() : (transforms.current[index] ?? IDENTITAS),
-      }
+      return { image: img, transform: t.bacaTransform(index) }
     },
-    [mode, photo, fotoPerSlot, slotAktif, t.bacaTransform],
+    [mode, photo, fotoPerSlot, t.bacaTransform],
   )
+
+  const gambar = useCallback(() => {
+    const kanvas = kanvasRef.current
+    if (!kanvas || !frame) return
+
+    const hasil = renderComposite({
+      frame,
+      frameSize,
+      slots,
+      getFill,
+      scale: lebarPreview / frameSize.width,
+    })
+
+    kanvas.width = hasil.width
+    kanvas.height = hasil.height
+    kanvas.getContext("2d")?.drawImage(hasil, 0, 0)
+  }, [frame, frameSize, slots, lebarPreview, getFill])
+
+  gambarRef.current = gambar
+
+  // Gambar ulang saat apa pun berubah — frame termuat, slot, mode, foto baru.
+  useEffect(() => {
+    gambar()
+  }, [gambar])
 
   useEffect(() => {
     onGetFill(getFill)
   }, [onGetFill, getFill])
-
-  function pilihSlot(index: number) {
-    if (index === slotAktif) return
-    transforms.current[slotAktif] = t.bacaTransform()
-    setSlotAktif(index)
-    t.muat(transforms.current[index] ?? IDENTITAS)
-  }
-
-  // Gambar ulang tiap kali apa pun berubah — termasuk tiap frame animasi
-  // spring, lewat langganan MotionValue. Tidak ada state React yang berubah
-  // saat menggeser, jadi tidak ada re-render per frame.
-  useEffect(() => {
-    function gambar() {
-      const kanvas = kanvasRef.current
-      if (!kanvas || !frame) return
-
-      const hasil = renderComposite({
-        frame,
-        frameSize,
-        slots,
-        getFill,
-        scale: lebarPreview / frameSize.width,
-      })
-
-      kanvas.width = hasil.width
-      kanvas.height = hasil.height
-      kanvas.getContext("2d")?.drawImage(hasil, 0, 0)
-    }
-
-    gambar()
-    const lepasX = t.offsetX.on("change", gambar)
-    const lepasY = t.offsetY.on("change", gambar)
-    return () => {
-      lepasX()
-      lepasY()
-    }
-  }, [frame, frameSize, slots, lebarPreview, getFill, t.offsetX, t.offsetY])
 
   const adaIsi = mode === "satu" ? Boolean(photo) : Object.keys(fotoPerSlot).length > 0
 
@@ -197,18 +179,11 @@ export function SlotFiller({
             <div
               // biome-ignore lint/suspicious/noArrayIndexKey: urutan slot adalah identitasnya
               key={index}
-              className={`flex items-center gap-2 rounded-lg border p-2 ${
-                index === slotAktif ? "border-primary bg-muted" : "border-border bg-card"
-              }`}
+              className="flex items-center gap-2 rounded-lg border border-border bg-card p-2"
             >
-              <Button
-                type="button"
-                variant={index === slotAktif ? "default" : "outline"}
-                size="sm"
-                onClick={() => pilihSlot(index)}
-              >
+              <span className="w-6 text-center text-sm font-semibold text-muted-foreground">
                 {index + 1}
-              </Button>
+              </span>
               <span className="flex-1 truncate text-sm text-muted-foreground">
                 {slot.label || `Area ${index + 1}`}
                 {!fotoPerSlot[index] && " · belum ada foto"}
@@ -221,7 +196,6 @@ export function SlotFiller({
                   className="sr-only"
                   onChange={(e) => {
                     onPilihFotoSlot(index, e.target.files?.[0])
-                    pilihSlot(index)
                   }}
                 />
               </label>
@@ -233,33 +207,72 @@ export function SlotFiller({
 
       {adaIsi && (
         <div className="flex w-full max-w-md flex-col gap-3">
-          <div className="rounded-lg border border-border bg-card p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Zoom {mode === "perSlot" ? `· area ${slotAktif + 1}` : ""}
-              </span>
-              <span className="rounded-lg border border-border bg-muted px-2.5 py-0.5 font-mono text-sm text-primary">
-                {Math.round(t.scale * 100)}%
-              </span>
+          {mode === "perSlot" ? (
+            slots.map(
+              (_slot, index) =>
+                fotoPerSlot[index] && (
+                  <div
+                    // biome-ignore lint/suspicious/noArrayIndexKey: urutan slot adalah identitasnya
+                    key={index}
+                    className="rounded-lg border border-border bg-card p-4"
+                  >
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Zoom · area {index + 1}
+                      </span>
+                      <span className="rounded-lg border border-border bg-muted px-2.5 py-0.5 font-mono text-sm text-primary">
+                        {Math.round(t.scaleOf(index) * 100)}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0.25}
+                      max={3}
+                      step={0.01}
+                      value={t.scaleOf(index)}
+                      onChange={(e) => t.setScale(index, Number(e.target.value))}
+                      className="w-full accent-brand"
+                      aria-label={`Zoom foto area ${index + 1}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => t.reset(index)}
+                      className="mt-2 flex w-full items-center justify-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <HugeiconsIcon icon={RotateLeft01Icon} aria-hidden /> Reset posisi
+                    </button>
+                  </div>
+                ),
+            )
+          ) : (
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Zoom
+                </span>
+                <span className="rounded-lg border border-border bg-muted px-2.5 py-0.5 font-mono text-sm text-primary">
+                  {Math.round(t.scaleOf(0) * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0.25}
+                max={3}
+                step={0.01}
+                value={t.scaleOf(0)}
+                onChange={(e) => t.setScale(0, Number(e.target.value))}
+                className="w-full accent-brand"
+                aria-label="Zoom foto"
+              />
+              <button
+                type="button"
+                onClick={() => t.reset(0)}
+                className="mt-2 flex w-full items-center justify-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <HugeiconsIcon icon={RotateLeft01Icon} aria-hidden /> Reset posisi
+              </button>
             </div>
-            <input
-              type="range"
-              min={0.25}
-              max={3}
-              step={0.01}
-              value={t.scale}
-              onChange={(e) => t.setScale(Number(e.target.value))}
-              className="w-full accent-brand"
-              aria-label="Zoom foto"
-            />
-            <button
-              type="button"
-              onClick={t.reset}
-              className="mt-2 flex w-full items-center justify-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <HugeiconsIcon icon={RotateLeft01Icon} aria-hidden /> Reset posisi
-            </button>
-          </div>
+          )}
 
           <p className="text-center text-sm text-muted-foreground">
             Geser fotonya langsung di gambar untuk mengatur posisi.

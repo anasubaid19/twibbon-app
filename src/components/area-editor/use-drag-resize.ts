@@ -4,6 +4,7 @@ import {
   type DragMode,
   deltaToPercent,
   type FrameSize,
+  normalizeAngle,
   type SlotRect,
 } from "@/lib/geometry"
 
@@ -22,6 +23,9 @@ type DragState = {
   startY: number
   /** Kotak saat tarikan dimulai. Delta selalu dihitung dari sini, bukan bertahap. */
   start: SlotRect
+  /** Mode rotate: tengah kotak dan sudut awal pointer, dalam koordinat klien. */
+  center?: { x: number; y: number }
+  startAngle?: number
 }
 
 export function useDragResize({ slots, display, onChange }: Params) {
@@ -44,6 +48,29 @@ export function useDragResize({ slots, display, onChange }: Params) {
     // "lepas" di tengah jalan.
     event.currentTarget.setPointerCapture(event.pointerId)
 
+    if (mode === "rotate") {
+      // Sudut dihitung dari tengah kotak ke pointer, dalam koordinat klien.
+      // Tengah diambil dari SVG tempat pegangan berada — pegangan sendiri
+      // sedang ikut berputar, jadi jangan dijadikan acuan.
+      const svg = (event.currentTarget as SVGElement).ownerSVGElement
+      const rectSvg = svg?.getBoundingClientRect()
+      const center = {
+        x: (rectSvg?.left ?? 0) + ((slot.x + slot.width / 2) / 100) * display.width,
+        y: (rectSvg?.top ?? 0) + ((slot.y + slot.height / 2) / 100) * display.height,
+      }
+      dragRef.current = {
+        index,
+        mode,
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        start: slot,
+        center,
+        startAngle: Math.atan2(event.clientY - center.y, event.clientX - center.x),
+      }
+      return
+    }
+
     dragRef.current = {
       index,
       mode,
@@ -57,6 +84,21 @@ export function useDragResize({ slots, display, onChange }: Params) {
   function move(event: ReactPointerEvent) {
     const drag = dragRef.current
     if (!drag || drag.pointerId !== event.pointerId) return
+
+    // Rotasi tidak pakai delta persen: sudut baru dihitung dari arah pointer
+    // terhadap tengah kotak, lalu selisihnya ditambah ke rotasi awal.
+    if (drag.mode === "rotate" && drag.center && drag.startAngle !== undefined) {
+      const sudut = Math.atan2(event.clientY - drag.center.y, event.clientX - drag.center.x)
+      let delta = ((sudut - drag.startAngle) * 180) / Math.PI
+      // Shift menahan kelipatan 15° — snap yang seragam dan bisa ditebak,
+      // bukan snap ke 90° saja yang terlalu kasar untuk dipakai umum.
+      if (event.shiftKey) delta = Math.round(delta / 15) * 15
+      replace(drag.index, {
+        ...drag.start,
+        rotation: normalizeAngle((drag.start.rotation ?? 0) + delta),
+      })
+      return
+    }
 
     // Selalu dari posisi awal, bukan dari frame sebelumnya. Akumulasi delta
     // per-frame akan menumpuk galat pembulatan sepanjang tarikan.

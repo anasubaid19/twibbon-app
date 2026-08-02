@@ -9,9 +9,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
-  clampToFrame,
   type FrameSize,
   isValidSlot,
+  normalizeAngle,
   type SlotRect as Rect,
   toPercent,
   toPixels,
@@ -82,8 +82,8 @@ export function AreaEditor({
   function handleBackgroundPointerDown(event: ReactPointerEvent<SVGSVGElement>) {
     if (!modeTambah || penuh) return
 
-    // Titik klik diterjemahkan toPercent lalu ditahan clampToFrame — dua-duanya
-    // sudah ada di geometry, jadi tidak ada matematika koordinat baru (P2).
+    // Titik klik diterjemahkan toPercent lalu dipusatkan; dua-duanya sudah ada
+    // di geometry, jadi tidak ada matematika koordinat baru (P2).
     const box = event.currentTarget.getBoundingClientRect()
     const titik = toPercent(
       { x: event.clientX - box.left, y: event.clientY - box.top, width: 0, height: 0 },
@@ -92,12 +92,12 @@ export function AreaEditor({
 
     onChange([
       ...slots,
-      clampToFrame({
+      {
         x: titik.x - UKURAN_BARU / 2,
         y: titik.y - UKURAN_BARU / 2,
         width: UKURAN_BARU,
         height: UKURAN_BARU,
-      }),
+      },
     ])
     onSelect(slots.length)
     setModeTambah(false)
@@ -115,6 +115,17 @@ export function AreaEditor({
     // Pilihan digeser ke area sebelumnya supaya tidak menunjuk indeks yang
     // sudah tidak ada.
     onSelect(Math.max(0, selectedIndex - 1))
+  }
+
+  function duplikatTerpilih() {
+    if (!terpilih || penuh) return
+    // Geser sedikit supaya duplikatnya langsung terlihat, bukan menumpuk persis
+    // di atas aslinya. Spread membawa rotation (dan field lain) ikut tersalin.
+    const duplikat = { ...terpilih, x: terpilih.x + 2, y: terpilih.y + 2 }
+    const berikut = [...slots]
+    berikut.splice(selectedIndex + 1, 0, duplikat)
+    onChange(berikut)
+    onSelect(selectedIndex + 1)
   }
 
   function pindah(arah: -1 | 1) {
@@ -177,6 +188,7 @@ export function AreaEditor({
               key={index}
               index={index}
               rect={toPixels(slot, display)}
+              rotation={slot.rotation}
               bounds={display}
               label={slot.label}
               isSelected={index === selectedIndex}
@@ -220,6 +232,15 @@ export function AreaEditor({
         >
           <HugeiconsIcon icon={ArrowDown01Icon} aria-hidden />
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!terpilih || penuh}
+          onClick={duplikatTerpilih}
+        >
+          Duplikat
+        </Button>
         {/* Mati saat tersisa satu: campaign tanpa area akan ditolak server
             (slots.min(1)), jadi lebih baik dicegah di sini daripada membiarkan
             pengguna menabrak pesan error saat menyimpan. */}
@@ -243,6 +264,46 @@ export function AreaEditor({
             onChange(
               slots.map((slot, i) =>
                 i === selectedIndex ? { ...slot, label: event.target.value } : slot,
+              ),
+            )
+          }
+        />
+
+        <Input
+          type="number"
+          value={terpilih?.rotation ?? 0}
+          min={-180}
+          max={180}
+          step="any"
+          disabled={!terpilih}
+          aria-label={`Rotasi area ${selectedIndex + 1} dalam derajat`}
+          className="h-8 w-20"
+          onChange={(event) =>
+            onChange(
+              slots.map((slot, i) =>
+                i === selectedIndex
+                  ? { ...slot, rotation: normalizeAngle(Number(event.target.value) || 0) }
+                  : slot,
+              ),
+            )
+          }
+        />
+        <span className="text-sm text-muted-foreground">°</span>
+        <input
+          type="range"
+          min={-180}
+          max={180}
+          step={1}
+          value={terpilih?.rotation ?? 0}
+          disabled={!terpilih}
+          aria-label={`Slider rotasi area ${selectedIndex + 1} dalam derajat`}
+          className="w-32"
+          onChange={(event) =>
+            onChange(
+              slots.map((slot, i) =>
+                i === selectedIndex
+                  ? { ...slot, rotation: normalizeAngle(Number(event.target.value) || 0) }
+                  : slot,
               ),
             )
           }

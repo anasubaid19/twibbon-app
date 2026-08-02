@@ -117,6 +117,9 @@ export const frameSlots = pgTable(
     y: real("y").notNull(),
     width: real("width").notNull(),
     height: real("height").notNull(),
+    // Sudut rotasi derajat di sekitar tengah kotak. Bebas resolusi, sama
+    // seperti koordinat persen di atasnya.
+    rotation: real("rotation").notNull().default(0),
     label: text("label").default("").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },

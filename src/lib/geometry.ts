@@ -8,7 +8,14 @@
  */
 
 /** Kotak slot dalam persen 0–100 terhadap dimensi frame. Bentuk yang tersimpan di database. */
-export type SlotRect = { x: number; y: number; width: number; height: number }
+export type SlotRect = {
+  x: number
+  y: number
+  width: number
+  height: number
+  /** Sudut rotasi derajat di sekitar tengah kotak. Absen = 0. */
+  rotation?: number
+}
 
 /** Kotak dalam piksel. Bisa piksel asli frame, bisa piksel elemen yang dirender di layar. */
 export type PixelRect = { x: number; y: number; width: number; height: number }
@@ -16,25 +23,37 @@ export type PixelRect = { x: number; y: number; width: number; height: number }
 /** Ukuran acuan dalam piksel. */
 export type FrameSize = { width: number; height: number }
 
-/** Arah tarikan: `move` menggeser seluruh kotak, sisanya menggerakkan sisi/sudut. */
-export type DragMode = "move" | "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w"
+/** Arah tarikan: `move` menggeser seluruh kotak, `rotate` memutarnya, sisanya menggerakkan sisi/sudut. */
+export type DragMode = "move" | "rotate" | "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w"
 
 /** Sisi terpendek slot yang masih masuk akal, dalam piksel asli frame. Spec bagian 10. */
 export const MIN_SLOT_PX = 20
 
-/**
- * Kelebihan sekecil ini datang dari pembulatan float saat roundtrip
- * persen→piksel→persen, bukan dari slot yang benar-benar keluar frame.
- */
-const EPSILON = 0.001
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max)
-}
-
 /** Frame belum punya ukuran selama gambar masih dimuat; jangan bagi dengan nol. */
 function hasSize(frame: FrameSize): boolean {
   return frame.width > 0 && frame.height > 0
+}
+
+/** Sudut dinormalkan ke rentang [-180, 180). Dipakai saat menyimpan rotasi slot. */
+export function normalizeAngle(sudut: number): number {
+  const s = ((sudut % 360) + 360) % 360
+  return s > 180 ? s - 360 : s
+}
+
+/**
+ * Memutar `point` ke ruang lokal yang diputar `rad` radian di sekitar `center`.
+ * Hasilnya koordinat relatif terhadap `center` (asal ruang lokal).
+ */
+export function rotatePoint(
+  point: { x: number; y: number },
+  center: { x: number; y: number },
+  rad: number,
+): { x: number; y: number } {
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+  const dx = point.x - center.x
+  const dy = point.y - center.y
+  return { x: dx * cos - dy * sin, y: dx * sin + dy * cos }
 }
 
 export function toPixels(rect: SlotRect, frame: FrameSize): PixelRect {
@@ -67,50 +86,20 @@ export function deltaToPercent(
 }
 
 /**
- * Aturan clamp untuk **menggeser**: kotak didorong kembali ke dalam frame dan
- * ukurannya dipertahankan. Kotak yang lebih besar dari frame dikecilkan karena
- * tidak ada posisi yang bisa memuatnya.
- */
-export function clampToFrame(rect: SlotRect): SlotRect {
-  const width = clamp(rect.width, 0, 100)
-  const height = clamp(rect.height, 0, 100)
-  return {
-    x: clamp(rect.x, 0, 100 - width),
-    y: clamp(rect.y, 0, 100 - height),
-    width,
-    height,
-  }
-}
-
-/**
- * Aturan clamp untuk **resize**: tiap sisi berhenti sendiri di tepi frame.
- *
- * Bedanya dengan clampToFrame penting. Kalau resize memakai "geser masuk",
- * menarik sisi kanan sampai tepi akan ikut menyeret sisi kiri — kotaknya
- * berpindah padahal pengguna hanya bermaksud melebarkan.
- */
-function clampEdges(rect: SlotRect): SlotRect {
-  const left = clamp(rect.x, 0, 100)
-  const top = clamp(rect.y, 0, 100)
-  const right = clamp(rect.x + rect.width, 0, 100)
-  const bottom = clamp(rect.y + rect.height, 0, 100)
-  return {
-    x: left,
-    y: top,
-    width: Math.max(0, right - left),
-    height: Math.max(0, bottom - top),
-  }
-}
-
-/**
  * Menerapkan tarikan pointer ke sebuah kotak. `dx`/`dy` dalam persen.
- * Hasilnya selalu sudah ter-clamp ke frame, jadi pemanggil tidak perlu
- * mengingat aturan mana yang berlaku untuk mode mana.
+ *
+ * Area boleh keluar frame (keputusan pengguna), jadi move dan resize tidak
+ * di-clamp ke tepi frame. Yang tersisa: resize dinormalkan supaya width/height
+ * tidak pernah negatif, dan `rotation` dipertahankan (bug lama: clamp
+ * membuangnya dan rotasi kembali ke 0).
  */
 export function applyDrag(rect: SlotRect, mode: DragMode, dx: number, dy: number): SlotRect {
   if (mode === "move") {
-    return clampToFrame({ ...rect, x: rect.x + dx, y: rect.y + dy })
+    return { ...rect, x: rect.x + dx, y: rect.y + dy }
   }
+  // Rotasi ditangani di use-drag-resize (sudut dihitung dari pointer), bukan
+  // lewat delta persen. Guard ini sekadar menjamin tidak jatuh ke cabang resize.
+  if (mode === "rotate") return rect
 
   let { x, y, width, height } = rect
   if (mode.includes("w")) {
@@ -136,7 +125,7 @@ export function applyDrag(rect: SlotRect, mode: DragMode, dx: number, dy: number
     height = -height
   }
 
-  return clampEdges({ x, y, width, height })
+  return { ...rect, x, y, width, height }
 }
 
 /**
@@ -147,9 +136,6 @@ export function applyDrag(rect: SlotRect, mode: DragMode, dx: number, dy: number
 export function isValidSlot(rect: SlotRect, frame: FrameSize): boolean {
   const values = [rect.x, rect.y, rect.width, rect.height]
   if (!values.every((value) => Number.isFinite(value))) return false
-  if (rect.x < -EPSILON || rect.y < -EPSILON) return false
-  if (rect.x + rect.width > 100 + EPSILON) return false
-  if (rect.y + rect.height > 100 + EPSILON) return false
 
   const px = toPixels(rect, frame)
   return px.width >= MIN_SLOT_PX && px.height >= MIN_SLOT_PX

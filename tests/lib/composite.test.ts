@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { coverScale, drawRect, IDENTITAS, panBounds, rubberBand, slotAt } from "@/lib/composite"
+import { coverScale, drawRect, IDENTITAS, panBounds, slotAt } from "@/lib/composite"
 
 const SLOT = { x: 100, y: 50, width: 200, height: 200 }
 
@@ -85,34 +85,6 @@ describe("panBounds", () => {
   })
 })
 
-describe("rubberBand", () => {
-  test("di dalam batas, nilainya lewat apa adanya", () => {
-    expect(rubberBand(0.3, 0.5)).toBe(0.3)
-    expect(rubberBand(-0.5, 0.5)).toBe(-0.5)
-  })
-
-  test("melewati batas, kelebihannya ditahan tapi tetap bergerak", () => {
-    const ditahan = rubberBand(1, 0.5)
-    expect(ditahan).toBeGreaterThan(0.5)
-    expect(ditahan).toBeLessThan(1)
-  })
-
-  test("makin jauh ditarik, makin berat — tidak pernah linear", () => {
-    const a = rubberBand(0.6, 0.5) - rubberBand(0.5, 0.5)
-    const b = rubberBand(1.6, 0.5) - rubberBand(1.5, 0.5)
-    expect(b).toBeLessThan(a)
-  })
-
-  test("simetris untuk arah negatif", () => {
-    expect(rubberBand(-1, 0.5)).toBe(-rubberBand(1, 0.5))
-  })
-
-  test("batas nol tetap memberi perlawanan, bukan mengunci mati", () => {
-    expect(rubberBand(0.4, 0)).toBeGreaterThan(0)
-    expect(rubberBand(0.4, 0)).toBeLessThan(0.4)
-  })
-})
-
 describe("slotAt", () => {
   const KANVAS = { width: 1000, height: 500 }
   const SLOTS = [
@@ -141,5 +113,22 @@ describe("slotAt", () => {
 
   test("daftar kosong tidak melempar", () => {
     expect(slotAt([], { x: 10, y: 10 }, KANVAS)).toBe(-1)
+  })
+
+  test("slot yang dirotasi 90 derajat tetap diuji lewat ruang lokalnya", () => {
+    // Persegi 10% (100px) diputar 90° di sekitar tengahnya (50%,50%).
+    const miring = [{ x: 45, y: 45, width: 10, height: 10, rotation: 90 }]
+    expect(slotAt(miring, { x: 500, y: 250 }, KANVAS)).toBe(0) // tengah
+    expect(slotAt(miring, { x: 500, y: 260 }, KANVAS)).toBe(0) // dalam jari-jari
+    expect(slotAt(miring, { x: 440, y: 250 }, KANVAS)).toBe(-1) // di luar
+  })
+
+  test("rotasi memotong pojok yang di dalam kotak axis-aligned", () => {
+    // Kotak 20% (200px) diputar 45°: pojok kiri-bawah kotak axis-aligned ada
+    // di luar area miring yang sebenarnya.
+    const miring = [{ x: 40, y: 40, width: 20, height: 20, rotation: 45 }]
+    // (450,350) — pojok kiri-bawah kotak 40..60% — berada di luar kotak miring.
+    expect(slotAt(miring, { x: 450, y: 350 }, KANVAS)).toBe(-1)
+    expect(slotAt(miring, { x: 500, y: 250 }, KANVAS)).toBe(0)
   })
 })
