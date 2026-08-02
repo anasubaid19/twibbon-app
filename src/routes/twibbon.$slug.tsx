@@ -1,10 +1,10 @@
-import { Camera01Icon, Refresh01Icon, Sad01Icon } from "@hugeicons/core-free-icons"
+import { Sad01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Footer } from "@/components/footer"
 import { Navbar } from "@/components/navbar"
-import { type ModeIsi, SlotFiller } from "@/components/slot-filler/slot-filler"
+import { SlotFiller } from "@/components/slot-filler/slot-filler"
 import { renderComposite, type SlotFill } from "@/lib/composite"
 import { pesanError } from "@/lib/pesan-error"
 import { getCampaignBySlug, incrementUse, trackEvent } from "@/server/campaigns"
@@ -13,7 +13,6 @@ import { getCampaignBySlug, incrementUse, trackEvent } from "@/server/campaigns"
  * PRD US-04. Divalidasi di klien karena fotonya memang tidak pernah
  * menyeberang ke server (P1).
  */
-const MAKS_SATU = 15 * 1024 * 1024
 const MAKS_PER_SLOT = 5 * 1024 * 1024
 
 export const Route = createFileRoute("/twibbon/$slug")({
@@ -59,10 +58,7 @@ export const Route = createFileRoute("/twibbon/$slug")({
 
 function TwibbonPage() {
   const campaign = Route.useLoaderData()
-  const [mode, setMode] = useState<ModeIsi>("satu")
-  const [photo, setPhoto] = useState<HTMLImageElement | null>(null)
-  const [photoUrl, setPhotoUrl] = useState("")
-  /** Mode perSlot: satu foto per indeks slot. */
+  /** Satu foto per indeks slot. */
   const [fotoPerSlot, setFotoPerSlot] = useState<Record<number, HTMLImageElement>>({})
   const [error, setError] = useState("")
   const [sedangUnduh, setSedangUnduh] = useState(false)
@@ -101,20 +97,6 @@ function TwibbonPage() {
       setError("Gambarnya tidak bisa dibaca. Coba berkas lain.")
     }
     img.src = url
-  }
-
-  useEffect(() => {
-    if (!photoUrl) return
-    return () => URL.revokeObjectURL(photoUrl)
-  }, [photoUrl])
-
-  function pilihFoto(berkas: File | undefined) {
-    if (!berkas) return
-    setError("")
-    muatGambar(berkas, MAKS_SATU, (img) => {
-      setPhotoUrl(img.src)
-      setPhoto(img)
-    })
   }
 
   function pilihFotoSlot(index: number, berkas: File | undefined) {
@@ -183,36 +165,33 @@ function TwibbonPage() {
   return (
     <>
       <Navbar />
-      <main className="mx-auto flex max-w-3xl flex-col items-center px-6 py-10">
+      <main className="mx-auto w-full max-w-[1280px] px-6 py-10">
         <h1 className="fade-up text-center font-heading text-3xl tracking-[-0.02em]">
           {campaign.name}
         </h1>
         {campaign.description && (
-          <p className="fade-up mt-2 max-w-md text-center text-muted-foreground">
+          <p className="fade-up mx-auto mt-2 max-w-md text-center text-muted-foreground">
             {campaign.description}
           </p>
         )}
-        <p className="fade-up mb-7 mt-2 text-sm text-muted-foreground">
+        <p className="fade-up mb-8 mt-2 text-center text-sm text-muted-foreground">
           {campaign.slots.length} area foto · oleh <strong>@{campaign.username}</strong>
         </p>
 
         {error && (
           <p
             role="alert"
-            className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+            className="mx-auto mb-4 max-w-xl rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
           >
             {error}
           </p>
         )}
 
-        <div className="fade-up-2 flex w-full flex-col items-center gap-5">
+        <div className="fade-up-2">
           <SlotFiller
             frameSrc={`/api/frame/${campaign.id}`}
             frameSize={{ width: campaign.frameWidth, height: campaign.frameHeight }}
             slots={campaign.slots}
-            mode={mode}
-            onMode={setMode}
-            photo={photo}
             fotoPerSlot={fotoPerSlot}
             onPilihFotoSlot={pilihFotoSlot}
             onGetFill={simpanPembaca}
@@ -220,33 +199,8 @@ function TwibbonPage() {
             sedangUnduh={sedangUnduh}
           />
 
-          {mode === "satu" && (
-            <label className="w-full max-w-md cursor-pointer rounded-lg border-2 border-dashed border-border bg-muted p-5 text-center transition-colors hover:border-primary">
-              <span className="flex items-center justify-center gap-1.5 font-semibold">
-                {photo ? (
-                  <>
-                    <HugeiconsIcon icon={Refresh01Icon} aria-hidden /> Ganti foto
-                  </>
-                ) : (
-                  <>
-                    <HugeiconsIcon icon={Camera01Icon} aria-hidden /> Pilih foto kamu
-                  </>
-                )}
-              </span>
-              <span className="mt-1 block text-xs text-muted-foreground">
-                Maksimal 15MB · fotonya diproses di browser, tidak dikirim ke mana pun
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                onChange={(e) => pilihFoto(e.target.files?.[0])}
-              />
-            </label>
-          )}
-
           {/* Share buttons */}
-          <div className="flex w-full max-w-md items-center justify-center gap-3">
+          <div className="mx-auto mt-8 flex w-full max-w-md items-center justify-center gap-3">
             <button
               type="button"
               onClick={() => bagikan("whatsapp")}

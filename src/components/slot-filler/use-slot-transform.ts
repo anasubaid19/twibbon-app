@@ -6,13 +6,8 @@ import type { FrameSize, SlotRect } from "@/lib/geometry"
 const ZOOM_MIN = 0.25
 const ZOOM_MAKS = 3
 
-type Mode = "satu" | "perSlot"
-
 type Params = {
-  mode: Mode
-  /** Mode `satu`: satu foto untuk semua slot. */
-  photo: HTMLImageElement | null
-  /** Mode `perSlot`: satu foto per indeks slot. */
+  /** Satu foto per indeks slot. */
   fotoPerSlot: Record<number, HTMLImageElement>
   slots: readonly SlotRect[]
   /** Ukuran kanvas preview dalam piksel. */
@@ -22,22 +17,18 @@ type Params = {
 }
 
 /**
- * Transform foto tiap slot (mode `perSlot`) atau foto tunggal (mode `satu`).
+ * Transform foto tiap slot.
  *
- * Mode `satu`: semua slot berbagi satu transform — tarikan di slot mana pun
- * menggerakkan semuanya. Mode `perSlot`: tiap slot punya transform sendiri,
- * dan foto mana pun bisa digeser langsung tanpa memilih slot lebih dulu.
+ * Tiap slot punya transform sendiri, dan foto mana pun bisa digeser langsung
+ * tanpa memilih slot lebih dulu — indeksnya didapat dari hit-test di pointer.
  *
  * Geser dijepit keras ke batas slot (`panBounds`) — tanpa rubber-band dan
  * tanpa spring. Tidak ada animasi: pointer melepas nilai tepat di tempatnya.
  */
-export function useSlotTransform({ mode, photo, fotoPerSlot, slots, canvas, redraw }: Params) {
+export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params) {
   // Transform tinggal di ref, bukan state: menggeser tidak perlu re-render
   // React, cukup gambar ulang kanvas.
-  const satu = useRef<Transform>({ ...IDENTITAS })
   const perSlot = useRef<Record<number, Transform>>({})
-  /** Ukuran slot acuan tarikan terakhir. Dipakai `setScale` mode `satu`. */
-  const ukuranTerakhir = useRef<FrameSize>({ width: 0, height: 0 })
 
   // Skala disimpan dobel sebagai state supaya slider zoom ikut re-render.
   const [skala, setSkalaState] = useState<Record<number, number>>({})
@@ -55,17 +46,15 @@ export function useSlotTransform({ mode, photo, fotoPerSlot, slots, canvas, redr
   } | null>(null)
 
   function baca(index: number): Transform {
-    return mode === "satu" ? satu.current : (perSlot.current[index] ?? IDENTITAS)
+    return perSlot.current[index] ?? IDENTITAS
   }
 
   function tulis(index: number, t: Transform) {
-    if (mode === "satu") satu.current = t
-    else perSlot.current[index] = t
+    perSlot.current[index] = t
   }
 
-  /** Ukuran slot dalam piksel kanvas; mode `satu` memakai slot yang terakhir disentuh. */
+  /** Ukuran slot dalam piksel kanvas. */
   function ukuranSlot(index: number): FrameSize {
-    if (mode === "satu") return ukuranTerakhir.current
     const slot = slots[index]
     if (!slot) return { width: 0, height: 0 }
     return {
@@ -79,14 +68,12 @@ export function useSlotTransform({ mode, photo, fotoPerSlot, slots, canvas, redr
   const bacaTransform = (index: number): Transform => baca(index)
 
   function mulai(event: ReactPointerEvent) {
-    if (mode === "satu" && !photo) return
-
     const box = event.currentTarget.getBoundingClientRect()
     const titik = { x: event.clientX - box.left, y: event.clientY - box.top }
     const kena = slotAt(slots, titik, canvas)
     if (kena < 0) return
-    // Mode per-slot: tanpa foto di slot itu, tidak ada yang bisa digeser.
-    const img = mode === "satu" ? photo : fotoPerSlot[kena]
+    // Tanpa foto di slot itu, tidak ada yang bisa digeser.
+    const img = fotoPerSlot[kena]
     if (!img) return
 
     const slot = slots[kena]
@@ -97,10 +84,6 @@ export function useSlotTransform({ mode, photo, fotoPerSlot, slots, canvas, redr
     }
     if (ukuran.width <= 0) return
 
-    // Laju geser memakai ukuran slot yang disentuh, bukan slot lain — tanpa
-    // itu isi slot berukuran lain bergerak lebih cepat atau lebih lambat
-    // daripada jari.
-    ukuranTerakhir.current = ukuran
     event.currentTarget.setPointerCapture(event.pointerId)
     drag.current = {
       pointerId: event.pointerId,
@@ -115,7 +98,7 @@ export function useSlotTransform({ mode, photo, fotoPerSlot, slots, canvas, redr
   function geser(event: ReactPointerEvent) {
     const d = drag.current
     if (!d || d.pointerId !== event.pointerId) return
-    const img = mode === "satu" ? photo : fotoPerSlot[d.index]
+    const img = fotoPerSlot[d.index]
     if (!img) return
 
     // Delta dihitung dari titik awal, bukan bertahap, supaya galat tidak
@@ -146,7 +129,7 @@ export function useSlotTransform({ mode, photo, fotoPerSlot, slots, canvas, redr
   }
 
   function setScale(index: number, nilai: number) {
-    const img = mode === "satu" ? photo : fotoPerSlot[index]
+    const img = fotoPerSlot[index]
     if (!img) return
     const berikut = Math.min(ZOOM_MAKS, Math.max(ZOOM_MIN, nilai))
 

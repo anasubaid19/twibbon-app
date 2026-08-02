@@ -1,16 +1,20 @@
-import { RotateLeft01Icon } from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import {
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react"
 import { useElementSize } from "@/components/area-editor/use-element-size"
 import { Button } from "@/components/ui/button"
-import { renderComposite, type SlotFill } from "@/lib/composite"
-import type { FrameSize, SlotRect } from "@/lib/geometry"
+import { renderComposite, type SlotFill, slotAt } from "@/lib/composite"
+import { type FrameSize, type SlotRect, toPixels } from "@/lib/geometry"
+import { EditPanel } from "./edit-panel"
+import { SlotSelector } from "./slot-selector"
 import { useSlotTransform } from "./use-slot-transform"
 
 /** Sisi terpanjang kanvas preview di layar. */
 const PREVIEW_MAKS = 460
-
-export type ModeIsi = "satu" | "perSlot"
 
 /**
  * Slot seperti yang diterima halaman partisipan: koordinat plus label.
@@ -22,11 +26,7 @@ type Props = {
   frameSrc: string
   frameSize: FrameSize
   slots: readonly SlotTampil[]
-  mode: ModeIsi
-  onMode: (mode: ModeIsi) => void
-  /** Mode `satu`: foto tunggal untuk semua slot. */
-  photo: HTMLImageElement | null
-  /** Mode `perSlot`: satu foto per indeks slot. */
+  /** Satu foto per indeks slot. */
   fotoPerSlot: Record<number, HTMLImageElement>
   onPilihFotoSlot: (index: number, berkas: File | undefined) => void
   /** Menyerahkan pembaca isi ke halaman, supaya unduhan memakai nilai terkini. */
@@ -39,9 +39,6 @@ export function SlotFiller({
   frameSrc,
   frameSize,
   slots,
-  mode,
-  onMode,
-  photo,
   fotoPerSlot,
   onPilihFotoSlot,
   onGetFill,
@@ -77,29 +74,22 @@ export function SlotFiller({
   const redraw = useCallback(() => gambarRef.current(), [])
 
   const t = useSlotTransform({
-    mode,
-    photo,
     fotoPerSlot,
     slots,
     canvas: kanvasSize,
     redraw,
   })
 
-  /*
-   * Inti spec 6.2: mode single dan multi bukan dua fitur, melainkan satu fitur
-   * dengan sumber isi berbeda. Yang berganti hanya fungsi pencari ini —
-   * renderComposite tidak pernah tahu mode mana yang aktif.
-   */
+  /** Slot yang sedang diatur. Klik area di preview atau kartu memindahnya. */
+  const [selected, setSelected] = useState(0)
+
   const getFill = useCallback(
     (index: number): SlotFill | undefined => {
-      if (mode === "satu") {
-        return photo ? { image: photo, transform: t.bacaTransform(0) } : undefined
-      }
       const img = fotoPerSlot[index]
       if (!img) return undefined
       return { image: img, transform: t.bacaTransform(index) }
     },
-    [mode, photo, fotoPerSlot, t.bacaTransform],
+    [fotoPerSlot, t.bacaTransform],
   )
 
   const gambar = useCallback(() => {
@@ -121,7 +111,7 @@ export function SlotFiller({
 
   gambarRef.current = gambar
 
-  // Gambar ulang saat apa pun berubah — frame termuat, slot, mode, foto baru.
+  // Gambar ulang saat apa pun berubah — frame termuat, slot, foto baru.
   useEffect(() => {
     gambar()
   }, [gambar])
@@ -130,170 +120,161 @@ export function SlotFiller({
     onGetFill(getFill)
   }, [onGetFill, getFill])
 
-  const adaIsi = mode === "satu" ? Boolean(photo) : Object.keys(fotoPerSlot).length > 0
+  /** Klik area memilih slot; tarikan tetap menggeser foto di slot itu. */
+  function onCanvasPointerDown(event: ReactPointerEvent<HTMLCanvasElement>) {
+    const box = event.currentTarget.getBoundingClientRect()
+    const kena = slotAt(
+      slots,
+      { x: event.clientX - box.left, y: event.clientY - box.top },
+      kanvasSize,
+    )
+    if (kena >= 0) setSelected(kena)
+    t.mulai(event)
+  }
+
+  const jumlahTerisi = Object.keys(fotoPerSlot).length
+  const adaIsi = jumlahTerisi > 0
+  const persen = slots.length ? Math.round((jumlahTerisi / slots.length) * 100) : 0
+
+  function UnduhRow() {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">Unduh</span>
+        <div className="grid flex-1 grid-cols-3 gap-2">
+          {[1, 2, 3].map((s) => (
+            <Button
+              key={s}
+              type="button"
+              size="sm"
+              variant={s === 1 ? "default" : "outline"}
+              disabled={sedangUnduh}
+              onClick={() => onUnduh(s)}
+            >
+              {sedangUnduh ? "…" : `${s}×`}
+            </Button>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      {/* Mode satu foto ditawarkan lebih dulu dan jadi bawaan (PRD US-04).
-          ponytail: dua tombol yang sudah ada, bukan komponen tabs baru. */}
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant={mode === "satu" ? "default" : "outline"}
-          size="sm"
-          onClick={() => onMode("satu")}
-        >
-          Satu foto
-        </Button>
-        <Button
-          type="button"
-          variant={mode === "perSlot" ? "default" : "outline"}
-          size="sm"
-          onClick={() => onMode("perSlot")}
-        >
-          Upload per Slot
-        </Button>
-      </div>
+    <div className="grid w-full gap-6 pb-24 md:pb-0 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      {/* Kiri: preview tetap terlihat saat kolom kanan digulir. */}
+      <div className="flex flex-col items-center gap-4 lg:sticky lg:top-6 lg:self-start">
+        <div className="relative w-full" style={{ maxWidth: lebarPreview }}>
+          <canvas
+            ref={kanvasRef}
+            style={{
+              width: "100%",
+              height: "auto",
+              touchAction: "none",
+              cursor: adaIsi ? "grab" : "default",
+            }}
+            className="block rounded-xl shadow-[0_8px_40px_#00000050]"
+            onPointerDown={onCanvasPointerDown}
+            onPointerMove={t.geser}
+            onPointerUp={t.selesai}
+            onPointerCancel={t.selesai}
+          />
 
-      <canvas
-        ref={kanvasRef}
-        style={{
-          // Menyusut mengikuti lebar yang tersedia, tapi tidak pernah lebih
-          // besar dari resolusi bitmap-nya.
-          width: "100%",
-          maxWidth: lebarPreview,
-          height: "auto",
-          touchAction: "none",
-          cursor: adaIsi ? "grab" : "default",
-        }}
-        className="rounded-xl shadow-[0_8px_40px_#00000050]"
-        onPointerDown={t.mulai}
-        onPointerMove={t.geser}
-        onPointerUp={t.selesai}
-        onPointerCancel={t.selesai}
-      />
-
-      {mode === "perSlot" && (
-        <div className="flex w-full max-w-md flex-col gap-2">
-          {slots.map((slot, index) => (
-            <div
-              // biome-ignore lint/suspicious/noArrayIndexKey: urutan slot adalah identitasnya
-              key={index}
-              className="flex items-center gap-2 rounded-lg border border-border bg-card p-2"
+          {/* Outline area di atas kanvas. pointer-events-none supaya tidak
+              menghalangi tarikan — outline hidup di overlay, bukan di
+              renderComposite, jadi tidak ikut ke berkas unduhan. */}
+          {kanvasSize.width > 0 && (
+            <svg
+              className="pointer-events-none absolute inset-0"
+              width={kanvasSize.width}
+              height={kanvasSize.height}
+              viewBox={`0 0 ${kanvasSize.width} ${kanvasSize.height}`}
+              role="presentation"
             >
-              <span className="w-6 text-center text-sm font-semibold text-muted-foreground">
-                {index + 1}
-              </span>
-              <span className="flex-1 truncate text-sm text-muted-foreground">
-                {slot.label || `Area ${index + 1}`}
-                {!fotoPerSlot[index] && " · belum ada foto"}
-              </span>
-              <label className="cursor-pointer rounded-lg border border-border px-3 py-1 text-xs transition-colors hover:bg-muted">
-                {fotoPerSlot[index] ? "Ganti" : "Pilih foto"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  onChange={(e) => {
-                    onPilihFotoSlot(index, e.target.files?.[0])
-                  }}
-                />
-              </label>
-            </div>
-          ))}
-          <p className="text-center text-xs text-muted-foreground">Maksimal 5MB per slot</p>
-        </div>
-      )}
-
-      {adaIsi && (
-        <div className="flex w-full max-w-md flex-col gap-3">
-          {mode === "perSlot" ? (
-            slots.map(
-              (_slot, index) =>
-                fotoPerSlot[index] && (
-                  <div
+              <title>Area foto</title>
+              {slots.map((slot, index) => {
+                const kotak = toPixels(slot, kanvasSize)
+                const derajat = slot.rotation ?? 0
+                const aktif = index === selected
+                return (
+                  <g
                     // biome-ignore lint/suspicious/noArrayIndexKey: urutan slot adalah identitasnya
                     key={index}
-                    className="rounded-lg border border-border bg-card p-4"
+                    transform={
+                      derajat
+                        ? `rotate(${derajat} ${kotak.x + kotak.width / 2} ${kotak.y + kotak.height / 2})`
+                        : undefined
+                    }
                   >
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Zoom · area {index + 1}
-                      </span>
-                      <span className="rounded-lg border border-border bg-muted px-2.5 py-0.5 font-mono text-sm text-primary">
-                        {Math.round(t.scaleOf(index) * 100)}%
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0.25}
-                      max={3}
-                      step={0.01}
-                      value={t.scaleOf(index)}
-                      onChange={(e) => t.setScale(index, Number(e.target.value))}
-                      className="w-full accent-brand"
-                      aria-label={`Zoom foto area ${index + 1}`}
+                    <rect
+                      x={kotak.x}
+                      y={kotak.y}
+                      width={kotak.width}
+                      height={kotak.height}
+                      fill={aktif ? "var(--color-primary)" : "transparent"}
+                      fillOpacity={aktif ? 0.08 : 0}
+                      stroke={aktif ? "var(--color-primary)" : "var(--color-border)"}
+                      strokeWidth={aktif ? 2 : 1}
+                      rx={2}
                     />
-                    <button
-                      type="button"
-                      onClick={() => t.reset(index)}
-                      className="mt-2 flex w-full items-center justify-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      <HugeiconsIcon icon={RotateLeft01Icon} aria-hidden /> Reset posisi
-                    </button>
-                  </div>
-                ),
-            )
-          ) : (
-            <div className="rounded-lg border border-border bg-card p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Zoom
-                </span>
-                <span className="rounded-lg border border-border bg-muted px-2.5 py-0.5 font-mono text-sm text-primary">
-                  {Math.round(t.scaleOf(0) * 100)}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min={0.25}
-                max={3}
-                step={0.01}
-                value={t.scaleOf(0)}
-                onChange={(e) => t.setScale(0, Number(e.target.value))}
-                className="w-full accent-brand"
-                aria-label="Zoom foto"
+                  </g>
+                )
+              })}
+            </svg>
+          )}
+        </div>
+
+        <p className="text-center text-xs text-muted-foreground">
+          Klik area untuk memilih, geser fotonya untuk mengatur posisi.
+        </p>
+
+        <div className="flex w-full max-w-sm flex-col gap-3">
+          <div>
+            <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                {jumlahTerisi} / {slots.length} foto terunggah
+              </span>
+              <span>{persen}%</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${persen}%` }}
               />
-              <button
-                type="button"
-                onClick={() => t.reset(0)}
-                className="mt-2 flex w-full items-center justify-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <HugeiconsIcon icon={RotateLeft01Icon} aria-hidden /> Reset posisi
-              </button>
+            </div>
+          </div>
+
+          {adaIsi && (
+            <div className="hidden flex-col gap-2 md:flex">
+              <UnduhRow />
+              <p className="text-center text-xs text-muted-foreground">
+                {frameSize.width}×{frameSize.height} px pada 1×
+              </p>
             </div>
           )}
+        </div>
+      </div>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Geser fotonya langsung di gambar untuk mengatur posisi.
-          </p>
+      {/* Kanan: selector + panel edit slot yang sedang dipilih. */}
+      <div className="flex w-full flex-col gap-4">
+        <SlotSelector
+          slots={slots}
+          fotoPerSlot={fotoPerSlot}
+          selected={selected}
+          onSelect={setSelected}
+        />
+        <EditPanel
+          nama={slots[selected]?.label || `Area ${selected + 1}`}
+          adaFoto={Boolean(fotoPerSlot[selected])}
+          onPilihFoto={(berkas) => onPilihFotoSlot(selected, berkas)}
+          skala={t.scaleOf(selected)}
+          onSkala={(nilai) => t.setScale(selected, nilai)}
+          onReset={() => t.reset(selected)}
+        />
+      </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            {[1, 2, 3].map((s) => (
-              <Button
-                key={s}
-                type="button"
-                variant={s === 1 ? "default" : "outline"}
-                disabled={sedangUnduh}
-                onClick={() => onUnduh(s)}
-              >
-                {sedangUnduh ? "…" : `Unduh ${s}×`}
-              </Button>
-            ))}
-          </div>
-          <p className="text-center text-xs text-muted-foreground">
-            {frameSize.width}×{frameSize.height} px pada 1×
-          </p>
+      {/* Mobile: unduhan menempel di bawah, siap diakses tanpa menggulir. */}
+      {adaIsi && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur md:hidden">
+          <UnduhRow />
         </div>
       )}
     </div>
