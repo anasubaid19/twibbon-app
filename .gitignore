@@ -9,3 +9,5 @@ uploads
 .DS_Store
 *.log
 .superpowers
+# Scaffold uikit yang tidak dipakai di repo ini; jangan sampai ikut deploy
+uikit
