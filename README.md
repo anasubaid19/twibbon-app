@@ -75,9 +75,3 @@ dan tidak pernah dikirim ke server.
 
 TanStack Start (React 19) · Vite · Bun · PostgreSQL + Drizzle ORM · Better Auth
 (plugin username) · Tailwind CSS v4 · Biome.
-
-## Dokumen
-
-- Spesifikasi desain: `docs/superpowers/specs/`
-- Rencana implementasi: `docs/superpowers/plans/`
-- Persyaratan produk: `PRD.md`
