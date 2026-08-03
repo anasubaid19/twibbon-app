@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react"
+import { createPortal } from "react-dom"
 import { useElementSize } from "@/components/area-editor/use-element-size"
 import { Button } from "@/components/ui/button"
 import { renderComposite, type SlotFill, slotAt } from "@/lib/composite"
@@ -161,7 +162,7 @@ export function SlotFiller({
   return (
     <div className="grid w-full gap-6 pb-24 md:pb-0 lg:grid-cols-[minmax(0,1fr)_20rem]">
       {/* Kiri: preview tetap terlihat saat kolom kanan digulir. */}
-      <div className="flex flex-col items-center gap-4 lg:sticky lg:top-6 lg:self-start">
+      <div className="flex min-w-0 flex-col items-center gap-4 lg:sticky lg:top-6 lg:self-start">
         <div className="relative w-full" style={{ maxWidth: lebarPreview }}>
           <canvas
             ref={kanvasRef}
@@ -254,7 +255,7 @@ export function SlotFiller({
       </div>
 
       {/* Kanan: selector + panel edit slot yang sedang dipilih. */}
-      <div className="flex w-full flex-col gap-4">
+      <div className="flex min-w-0 w-full flex-col gap-4">
         <SlotSelector
           slots={slots}
           fotoPerSlot={fotoPerSlot}
@@ -271,12 +272,16 @@ export function SlotFiller({
         />
       </div>
 
-      {/* Mobile: unduhan menempel di bawah, siap diakses tanpa menggulir. */}
-      {adaIsi && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur md:hidden">
-          <UnduhRow />
-        </div>
-      )}
+      {/* Mobile: unduhan menempel di bawah, siap diakses tanpa menggulir.
+          Portal ke body karena ancestor ber-transform (animasi fade-up) akan
+          menelan position:fixed dan bar-nya ikut menggeser. */}
+      {adaIsi &&
+        createPortal(
+          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur md:hidden">
+            <UnduhRow />
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }
