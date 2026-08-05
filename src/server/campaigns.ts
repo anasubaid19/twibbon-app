@@ -6,7 +6,7 @@ import { db } from "@/db"
 import { campaignEvents, campaigns, frameSlots, user } from "@/db/schema"
 import { isValidSlot } from "@/lib/geometry"
 import { resolveSlug, SLUG_PATTERN, slugify } from "@/lib/slug"
-import { requireUserId } from "@/server/require-user"
+import { getOptionalUserId, requireUserId } from "@/server/require-user"
 import { deleteFrameDir, hapusBerkas, saveFrame, validateFrame } from "@/server/upload"
 
 /* --- Skema bersama ------------------------------------------------------ */
@@ -116,7 +116,7 @@ function parseCreateInput(input: unknown) {
 export const createCampaign = createServerFn({ method: "POST" })
   .validator(parseCreateInput)
   .handler(async ({ data }) => {
-    const userId = await requireUserId()
+    const userId = await getOptionalUserId()
 
     const bytes = Buffer.from(await data.frame.arrayBuffer())
     const frame = await validateFrame(bytes)
@@ -142,7 +142,7 @@ export const createCampaign = createServerFn({ method: "POST" })
       await db.transaction(async (tx) => {
         await tx.insert(campaigns).values({
           id,
-          userId,
+          userId: userId ?? sql`NULL`,
           name: data.name,
           description: data.description,
           slug,
@@ -313,7 +313,7 @@ export const getCampaignBySlug = createServerFn({ method: "GET" })
         ownerName: user.name,
       })
       .from(campaigns)
-      .innerJoin(user, eq(user.id, campaigns.userId))
+      .leftJoin(user, eq(user.id, campaigns.userId))
       // `isPublic` sengaja TIDAK ikut menyaring di sini. Privat berarti
       // "tidak terdaftar", bukan "hanya pemilik": slug adalah tautannya, dan
       // siapa pun yang memegang tautan itu boleh membuka halamannya. Yang
@@ -524,6 +524,23 @@ export const listPublic = createServerFn({ method: "GET" })
     // `userId` sengaja tidak ikut.
     return { rows, total, hal, totalHal }
   })
+
+export const getStats = createServerFn({ method: "GET" }).handler(async () => {
+  const [stats] = await db
+    .select({
+      campaignCount: count(campaigns.id),
+      useCount: sql<number>`COALESCE(SUM(${campaigns.useCount}), 0)`,
+      creatorCount: sql<number>`COUNT(DISTINCT ${campaigns.userId})`,
+    })
+    .from(campaigns)
+    .where(eq(campaigns.isPublic, true))
+
+  return {
+    campaignCount: stats?.campaignCount ?? 0,
+    useCount: Number(stats?.useCount ?? 0),
+    creatorCount: Number(stats?.creatorCount ?? 0),
+  }
+})
 
 /* --- deleteCampaign ------------------------------------------------------ */
 

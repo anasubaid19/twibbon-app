@@ -20,3 +20,8 @@ export async function requireUserId(): Promise<string> {
   if (!session) throw new Error("Kamu harus masuk dulu")
   return session.user.id
 }
+
+export async function getOptionalUserId(): Promise<string | null> {
+  const session = await auth.api.getSession({ headers: getRequestHeaders() })
+  return session?.user.id ?? null
+}

@@ -1,4 +1,5 @@
 import {
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
@@ -133,6 +134,20 @@ export function SlotFiller({
     t.mulai(event)
   }
 
+  function onCanvasKeyDown(event: ReactKeyboardEvent<HTMLCanvasElement>) {
+    const arah: Record<string, [number, number]> = {
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0],
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
+    }
+    const langkah = arah[event.key]
+    if (!langkah || !fotoPerSlot[selected]) return
+
+    event.preventDefault()
+    t.nudge(selected, langkah[0], langkah[1])
+  }
+
   const jumlahTerisi = Object.keys(fotoPerSlot).length
   const adaIsi = jumlahTerisi > 0
   const persen = slots.length ? Math.round((jumlahTerisi / slots.length) * 100) : 0
@@ -172,11 +187,14 @@ export function SlotFiller({
               touchAction: "none",
               cursor: adaIsi ? "grab" : "default",
             }}
-            className="block rounded-xl shadow-[0_8px_40px_#00000050]"
+            className="block rounded-xl shadow-[0_8px_40px_#00000050] focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+            tabIndex={0}
+            aria-label="Pratinjau foto. Gunakan tombol panah untuk menggeser foto di area terpilih."
             onPointerDown={onCanvasPointerDown}
             onPointerMove={t.geser}
             onPointerUp={t.selesai}
             onPointerCancel={t.selesai}
+            onKeyDown={onCanvasKeyDown}
           />
 
           {/* Outline area di atas kanvas. pointer-events-none supaya tidak
@@ -237,7 +255,7 @@ export function SlotFiller({
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full rounded-full bg-primary transition-all"
+                className="h-full rounded-full bg-primary transition-[width]"
                 style={{ width: `${persen}%` }}
               />
             </div>
@@ -277,7 +295,7 @@ export function SlotFiller({
           menelan position:fixed dan bar-nya ikut menggeser. */}
       {adaIsi &&
         createPortal(
-          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur md:hidden">
+          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
             <UnduhRow />
           </div>,
           document.body,

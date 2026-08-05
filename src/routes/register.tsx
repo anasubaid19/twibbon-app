@@ -166,9 +166,11 @@ function RegisterPage() {
             </Label>
             <Input
               id="username"
+              name="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
+              autoComplete="username"
               autoFocus
               placeholder="pilih username unik"
             />
@@ -183,10 +185,12 @@ function RegisterPage() {
             </Label>
             <Input
               id="password"
+              name="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="new-password"
               placeholder="••••••••"
             />
           </div>

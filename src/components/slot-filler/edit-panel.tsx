@@ -52,7 +52,7 @@ export function EditPanel({ nama, adaFoto, onPilihFoto, skala, onSkala, onReset 
           value={skala}
           disabled={!adaFoto}
           onChange={(e) => onSkala(Number(e.target.value))}
-          className="w-full accent-brand disabled:opacity-50"
+          className="w-full accent-primary disabled:opacity-50"
           aria-label={`Zoom foto ${nama}`}
         />
       </div>

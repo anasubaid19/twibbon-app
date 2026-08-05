@@ -71,9 +71,11 @@ function LoginPage() {
             </Label>
             <Input
               id="username"
+              name="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
+              autoComplete="username"
               autoFocus
               placeholder="username kamu"
             />
@@ -88,10 +90,12 @@ function LoginPage() {
             </Label>
             <Input
               id="password"
+              name="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
               placeholder="••••••••"
             />
           </div>

@@ -5,6 +5,7 @@ import type { FrameSize, SlotRect } from "@/lib/geometry"
 /** Zoom minimum 0.25 — foto bisa diperkecil, celah kosong wajar. */
 const ZOOM_MIN = 0.25
 const ZOOM_MAKS = 3
+const KEYBOARD_NUDGE = 0.01
 
 type Params = {
   /** Satu foto per indeks slot. */
@@ -150,6 +151,21 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
     redrawRef.current()
   }
 
+  function nudge(index: number, dx: number, dy: number) {
+    const img = fotoPerSlot[index]
+    const ukuran = ukuranSlot(index)
+    if (!img || ukuran.width <= 0 || ukuran.height <= 0) return
+
+    const t = baca(index)
+    const b = panBounds({ width: img.naturalWidth, height: img.naturalHeight }, ukuran, t.scale)
+    tulis(index, {
+      scale: t.scale,
+      offsetX: Math.min(b.x, Math.max(-b.x, t.offsetX + dx * KEYBOARD_NUDGE)),
+      offsetY: Math.min(b.y, Math.max(-b.y, t.offsetY + dy * KEYBOARD_NUDGE)),
+    })
+    redrawRef.current()
+  }
+
   function reset(index: number) {
     tulis(index, { ...IDENTITAS })
     setSkalaState((s) => ({ ...s, [index]: 1 }))
@@ -160,6 +176,7 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
     bacaTransform,
     scaleOf,
     setScale,
+    nudge,
     reset,
     mulai,
     geser,

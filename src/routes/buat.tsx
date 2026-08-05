@@ -1,7 +1,7 @@
 import { Image01Icon, Image02Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { useEffect, useRef, useState } from "react"
 import { AreaEditor, type SlotEditor } from "@/components/area-editor/area-editor"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Alert } from "@/components/ui/alert"
@@ -10,11 +10,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { authClient } from "@/lib/auth-client"
 import { type FrameSize, isValidSlot, type SlotRect } from "@/lib/geometry"
 import { pesanError } from "@/lib/pesan-error"
 import { slugify } from "@/lib/slug"
 import { createCampaign } from "@/server/campaigns"
-import { getSession } from "@/server/session"
 
 /** Cermin dari MAX_FRAME_BYTES di server — di sini hanya supaya pesannya cepat muncul. */
 const MAX_BYTES = 10 * 1024 * 1024
@@ -23,16 +23,12 @@ const MAX_BYTES = 10 * 1024 * 1024
 const SLOT_AWAL: SlotRect = { x: 20, y: 20, width: 60, height: 60 }
 
 export const Route = createFileRoute("/buat")({
-  beforeLoad: async () => {
-    const session = await getSession()
-    if (!session) throw redirect({ to: "/login" })
-    return { username: session.user.username }
-  },
   component: BuatPage,
 })
 
 function BuatPage() {
   const navigate = useNavigate()
+  const { data: session, isPending: sessionPending } = authClient.useSession()
   const [modeSlot, setModeSlot] = useState<"tunggal" | "multi" | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [frameSrc, setFrameSrc] = useState("")
@@ -46,6 +42,7 @@ function BuatPage() {
   const [slugDiedit, setSlugDiedit] = useState(false)
   const [description, setDescription] = useState("")
   const [isPublic, setIsPublic] = useState(true)
+  const frameRequest = useRef(0)
 
   function ubahNama(nilai: string) {
     setName(nilai)
@@ -77,6 +74,7 @@ function BuatPage() {
 
   function handleFile(chosen: File | undefined) {
     if (!chosen) return
+    const request = ++frameRequest.current
     setError("")
 
     if (chosen.size > MAX_BYTES) {
@@ -93,6 +91,10 @@ function BuatPage() {
     const url = URL.createObjectURL(chosen)
     const probe = new Image()
     probe.onload = () => {
+      if (request !== frameRequest.current) {
+        URL.revokeObjectURL(url)
+        return
+      }
       setFrameSize({ width: probe.naturalWidth, height: probe.naturalHeight })
       setFrameSrc(url)
       setFile(chosen)
@@ -100,13 +102,15 @@ function BuatPage() {
     }
     probe.onerror = () => {
       URL.revokeObjectURL(url)
+      if (request !== frameRequest.current) return
       setError("Frame harus berkas PNG yang valid")
     }
     probe.src = url
   }
 
   const areaValid = slots.every((slot) => isValidSlot(slot, frameSize))
-  const bisaSimpan = Boolean(file) && name.trim().length >= 3 && areaValid && !saving
+  const bisaSimpan =
+    Boolean(file) && name.trim().length >= 3 && areaValid && !saving && !sessionPending
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -123,8 +127,12 @@ function BuatPage() {
       form.set("isPublic", String(isPublic))
       form.set("slots", JSON.stringify(slots))
 
-      await createCampaign({ data: form })
-      navigate({ to: "/dashboard" })
+      const campaign = await createCampaign({ data: form })
+      navigate(
+        session?.user
+          ? { to: "/dashboard" }
+          : { to: "/twibbon/$slug", params: { slug: campaign.slug } },
+      )
     } catch (err) {
       setError(pesanError(err))
     } finally {
@@ -138,7 +146,10 @@ function BuatPage() {
         <h1 className="font-heading text-2xl">Bikin Kampanye</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link to="/dashboard" className={buttonVariants({ variant: "outline", size: "sm" })}>
+          <Link
+            to={session?.user ? "/dashboard" : "/"}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
             Batal
           </Link>
         </div>
@@ -329,14 +340,30 @@ function BuatPage() {
             />
           </div>
 
-          <Label className="flex items-start gap-2 text-sm font-normal text-muted-foreground">
-            <Checkbox
-              checked={isPublic}
-              onCheckedChange={(v) => setIsPublic(v === true)}
-              className="mt-0.5"
-            />
-            Tampilkan di galeri publik
-          </Label>
+          <div>
+            <Label className="flex items-start gap-2 text-sm font-normal text-muted-foreground">
+              <Checkbox
+                checked={isPublic}
+                onCheckedChange={(v) => setIsPublic(v === true)}
+                className="mt-0.5"
+              />
+              Tampilkan di galeri publik
+            </Label>
+            {!sessionPending && !session?.user && !isPublic && (
+              <p className="mt-2 pl-6 text-xs leading-5 text-muted-foreground">
+                Kampanye privat hanya bisa dibuka lewat tautan. Tanpa akun, kamu tidak bisa mengedit
+                atau menghapusnya nanti.{" "}
+                <Link to="/login" className="text-primary hover:underline">
+                  Masuk
+                </Link>{" "}
+                atau{" "}
+                <Link to="/register" className="text-primary hover:underline">
+                  daftar gratis
+                </Link>{" "}
+                untuk mengelolanya.
+              </p>
+            )}
+          </div>
 
           <Button type="submit" disabled={!bisaSimpan}>
             {saving ? "Menyimpan..." : "Simpan Kampanye"}

@@ -258,6 +258,7 @@ export function AreaEditor({
           value={terpilih?.label ?? ""}
           maxLength={40}
           placeholder={`Label area ${selectedIndex + 1} (opsional)`}
+          aria-label={`Label area ${selectedIndex + 1}`}
           disabled={!terpilih}
           className="h-8 w-52"
           onChange={(event) =>

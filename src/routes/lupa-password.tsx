@@ -175,9 +175,11 @@ function LupaPasswordPage() {
             </Label>
             <Input
               id="username"
+              name="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
+              autoComplete="username"
               autoFocus
               placeholder="username kamu"
             />
@@ -189,9 +191,11 @@ function LupaPasswordPage() {
             </Label>
             <Input
               id="recovery"
+              name="recoveryCode"
               value={recoveryCode}
               onChange={(e) => setRecoveryCode(e.target.value)}
               required
+              autoComplete="one-time-code"
               placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
               className="font-mono tracking-wide"
             />
@@ -203,10 +207,12 @@ function LupaPasswordPage() {
             </Label>
             <Input
               id="new-password"
+              name="newPassword"
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
+              autoComplete="new-password"
               placeholder="••••••••"
             />
           </div>
@@ -217,10 +223,12 @@ function LupaPasswordPage() {
             </Label>
             <Input
               id="confirm-password"
+              name="confirmPassword"
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               required
+              autoComplete="new-password"
               placeholder="••••••••"
             />
           </div>

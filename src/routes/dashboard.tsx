@@ -71,6 +71,8 @@ function DashboardPage() {
   const [dailyData, setDailyData] = useState<
     Array<{ date: string; views: number; downloads: number; shares: number }>
   >([])
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [analyticsError, setAnalyticsError] = useState("")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [campaignToDelete, setCampaignToDelete] = useState<{ id: string; name: string } | null>(
     null,
@@ -96,15 +98,45 @@ function DashboardPage() {
   const selectItems = campaigns.map((c) => ({ value: c.id, label: c.name }))
 
   useEffect(() => {
-    if (!selectedCampaignId) return
+    const selectedStillExists = selectedCampaignId
+      ? campaigns.some((campaign) => campaign.id === selectedCampaignId)
+      : false
+    const nextId = selectedStillExists ? selectedCampaignId : (campaigns[0]?.id ?? null)
+
+    if (nextId !== selectedCampaignId) {
+      setSelectedCampaignId(nextId)
+      setDailyData([])
+      setAnalyticsError("")
+      return
+    }
+
+    if (!nextId) {
+      setDailyData([])
+      setAnalyticsLoading(false)
+      return
+    }
+
     let cancel = false
-    getDailyAnalytics({ data: { id: selectedCampaignId } }).then((data) => {
-      if (!cancel) setDailyData(data)
-    })
+    setDailyData([])
+    setAnalyticsError("")
+    setAnalyticsLoading(true)
+    getDailyAnalytics({ data: { id: nextId } })
+      .then((data) => {
+        if (!cancel) setDailyData(data)
+      })
+      .catch((err) => {
+        if (!cancel) {
+          setDailyData([])
+          setAnalyticsError(pesanError(err))
+        }
+      })
+      .finally(() => {
+        if (!cancel) setAnalyticsLoading(false)
+      })
     return () => {
       cancel = true
     }
-  }, [selectedCampaignId])
+  }, [campaigns, selectedCampaignId])
 
   async function salin(slug: string) {
     try {
@@ -189,7 +221,15 @@ function DashboardPage() {
     setAvatarError("")
     setAvatarLoading(true)
     try {
-      const ext = avatarFile.name.split(".").pop() ?? "png"
+      const ext = {
+        "image/png": "png",
+        "image/jpeg": "jpg",
+        "image/webp": "webp",
+      }[avatarFile.type as "image/png" | "image/jpeg" | "image/webp"]
+      if (!ext) {
+        setAvatarError("Format gambar harus PNG, JPG, atau WebP")
+        return
+      }
       const reader = new FileReader()
       const data = await new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string)
@@ -197,7 +237,7 @@ function DashboardPage() {
         reader.readAsDataURL(avatarFile)
       })
       const result = await uploadAvatar({
-        data: { data, ext: ext as "png" | "jpg" | "jpeg" | "webp" },
+        data: { data, ext },
       })
       setAvatarPreview(result.image)
       setAvatarFile(null)
@@ -285,7 +325,7 @@ function DashboardPage() {
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {campaigns.map((campaign) => (
                 <li key={campaign.id}>
-                  <Card className="overflow-hidden transition-all hover:-translate-y-[3px] hover:border-primary">
+                  <Card className="overflow-hidden transition-[border-color,transform] motion-safe:hover:-translate-y-[3px] hover:border-primary">
                     <Link to="/edit/$id" params={{ id: campaign.id }} className="block">
                       <img
                         src={`/api/frame/${campaign.id}`}
@@ -358,7 +398,15 @@ function DashboardPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                {dailyData.length > 0 ? (
+                {analyticsError ? (
+                  <Alert variant="destructive" role="alert">
+                    {analyticsError}
+                  </Alert>
+                ) : analyticsLoading ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    Memuat analytics…
+                  </p>
+                ) : dailyData.length > 0 ? (
                   <AnalyticsChart
                     data={dailyData}
                     xKey="date"

@@ -80,9 +80,7 @@ export const campaigns = pgTable(
   "campaigns",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description").default("").notNull(),
     // Satu URL kanonik per campaign. Unique-nya ditegakkan database, bukan

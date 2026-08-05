@@ -5,7 +5,7 @@ import appCss from "@/styles/app.css?url"
 
 const getTheme = createServerFn({ method: "GET" }).handler(() => {
   const cookie = getRequestHeaders().get("cookie") ?? ""
-  return cookie.includes("theme=light") ? "light" : "dark"
+  return cookie.split(";").some((part) => part.trim() === "theme=light") ? "light" : "dark"
 })
 
 export const Route = createRootRoute({

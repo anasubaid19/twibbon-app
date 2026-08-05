@@ -166,6 +166,7 @@ function TwibbonPage() {
   }
 
   async function bagikan(metode: "whatsapp" | "twitter" | "copy") {
+    setError("")
     const url = window.location.href
     const teks = `Buat twibbon ${campaign.name} di OpenFrame!`
     if (metode === "whatsapp") {
@@ -176,17 +177,26 @@ function TwibbonPage() {
         "_blank",
       )
     } else {
-      await navigator.clipboard.writeText(url)
+      try {
+        await navigator.clipboard.writeText(url)
+      } catch {
+        setError("Gagal menyalin. Salin tautan dari bilah alamat browser.")
+        return
+      }
       setTersalin(true)
       setTimeout(() => setTersalin(false), 2000)
     }
-    await trackEvent({ data: { id: campaign.id, type: "share" } })
+    await trackEvent({ data: { id: campaign.id, type: "share" } }).catch(() => {})
   }
+
+  const adaFoto = Object.keys(fotoPerSlot).length > 0
 
   return (
     <>
       <Navbar />
-      <main className="mx-auto w-full max-w-[1280px] px-6 py-10">
+      <main
+        className={`mx-auto w-full max-w-[1280px] px-6 py-10 ${adaFoto ? "pb-32 md:pb-10" : ""}`}
+      >
         <h1 className="fade-up text-center font-heading text-3xl tracking-[-0.02em]">
           {campaign.name}
         </h1>
@@ -196,7 +206,8 @@ function TwibbonPage() {
           </p>
         )}
         <p className="fade-up mb-8 mt-2 text-center text-sm text-muted-foreground">
-          {campaign.slots.length} area foto · oleh <strong>@{campaign.username}</strong>
+          {campaign.slots.length} area foto · oleh{" "}
+          <strong>{campaign.username ? `@${campaign.username}` : "OpenFrame"}</strong>
         </p>
 
         {error && (

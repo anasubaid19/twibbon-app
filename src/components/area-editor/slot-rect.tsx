@@ -88,7 +88,8 @@ export function SlotRect({
         stroke={stroke}
         strokeWidth={2}
         strokeDasharray={isSelected ? undefined : "6 4"}
-        style={{ cursor: "move", touchAction: "none", outline: "none" }}
+        className="focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+        style={{ cursor: "move", touchAction: "none" }}
         tabIndex={0}
         /* `application`, bukan `button`: menekan Enter tidak melakukan apa pun di
            sini — kotaknya digerakkan panah. Peran ini juga memberi tahu pembaca
@@ -128,7 +129,6 @@ export function SlotRect({
             stroke={stroke}
             strokeWidth={2}
             style={{ cursor: "grab", touchAction: "none" }}
-            aria-label={`Putar area ${index + 1}. Geser untuk memutar, Shift menahan kelipatan 15 derajat.`}
             onPointerDown={(event) => {
               onSelect()
               onHandleDown("rotate", event)
@@ -146,7 +146,6 @@ export function SlotRect({
               stroke={stroke}
               strokeWidth={2}
               style={{ cursor: handle.cursor, touchAction: "none" }}
-              aria-label={`Ubah ukuran dari ${handle.label}`}
               onPointerDown={(event) => onHandleDown(handle.mode, event)}
             />
           ))}

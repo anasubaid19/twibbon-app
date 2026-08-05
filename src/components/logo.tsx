@@ -19,8 +19,7 @@ export function Logo({ className }: Props) {
     <svg
       viewBox="0 0 172.27394 162.47771"
       className={className}
-      role="img"
-      aria-label="OpenFrame"
+      aria-hidden="true"
       xmlns="http://www.w3.org/2000/svg"
     >
       <g transform="translate(-5.2782427,0.0116041)">
