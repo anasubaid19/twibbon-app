@@ -209,6 +209,8 @@ export const listMyCampaigns = createServerFn({ method: "GET" }).handler(async (
   // dikembalikan server function terlihat di payload hidrasi.
   return rows.map((row) => ({
     ...row,
+    viewCount: Number(row.viewCount),
+    shareCount: Number(row.shareCount),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }))
@@ -538,7 +540,12 @@ export const getDailyAnalytics = createServerFn({ method: "GET" })
       .groupBy(sql`DATE(${campaignEvents.createdAt})`)
       .orderBy(sql`DATE(${campaignEvents.createdAt})`)
 
-    return rows
+    return rows.map((row) => ({
+      ...row,
+      views: Number(row.views),
+      downloads: Number(row.downloads),
+      shares: Number(row.shares),
+    }))
   })
 
 /* --- getDashboardAnalytics ----------------------------------------------- */
