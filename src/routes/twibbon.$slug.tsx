@@ -30,6 +30,10 @@ export const Route = createFileRoute("/twibbon/$slug")({
         { property: "og:image", content: loaderData.ogImage },
         { property: "og:url", content: loaderData.ogUrl },
         { name: "twitter:card", content: "summary_large_image" },
+        // Privat = tautan-saja. Siapa pun yang dikirimi tautannya boleh
+        // membuka halaman ini, tapi mesin pencari tidak boleh jadi pihak
+        // yang menyebarkan tautan itu.
+        ...(loaderData.isPublic ? [] : [{ name: "robots", content: "noindex" }]),
       ],
     }
   },
@@ -44,7 +48,7 @@ export const Route = createFileRoute("/twibbon/$slug")({
         />
         <h1 className="mb-2 font-heading text-2xl">Kampanye tidak ditemukan</h1>
         <p className="mb-6 text-muted-foreground">
-          Mungkin tautannya salah, atau kampanyenya sudah privat.
+          Mungkin tautannya salah, atau kampanyenya sudah dihapus.
         </p>
         <Link to="/" search={{ q: "", hal: 1 }} className="text-primary hover:underline">
           Kembali ke beranda

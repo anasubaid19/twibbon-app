@@ -303,6 +303,7 @@ export const getCampaignBySlug = createServerFn({ method: "GET" })
         name: campaigns.name,
         description: campaigns.description,
         slug: campaigns.slug,
+        isPublic: campaigns.isPublic,
         frameWidth: campaigns.frameWidth,
         frameHeight: campaigns.frameHeight,
         useCount: campaigns.useCount,
@@ -313,10 +314,12 @@ export const getCampaignBySlug = createServerFn({ method: "GET" })
       })
       .from(campaigns)
       .innerJoin(user, eq(user.id, campaigns.userId))
-      // `isPublic` masuk ke dalam WHERE, bukan diperiksa setelah barisnya
-      // didapat. Campaign privat jadi "tidak ditemukan", bukan 403 —
-      // keberadaannya tidak boleh bocor ke orang yang bukan pemiliknya.
-      .where(and(eq(campaigns.slug, data.slug), eq(campaigns.isPublic, true)))
+      // `isPublic` sengaja TIDAK ikut menyaring di sini. Privat berarti
+      // "tidak terdaftar", bukan "hanya pemilik": slug adalah tautannya, dan
+      // siapa pun yang memegang tautan itu boleh membuka halamannya. Yang
+      // menjaga kerahasiaannya adalah listPublic — campaign privat tidak
+      // pernah muncul di galeri, jadi tidak bisa ditemukan tanpa tautan.
+      .where(eq(campaigns.slug, data.slug))
       .limit(1)
 
     if (!row) throw new Error(TIDAK_DITEMUKAN)
@@ -356,12 +359,12 @@ export const incrementUse = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     // Tanpa sesi: partisipan memang anonim. Dinaikkan lewat ekspresi SQL,
     // bukan baca-lalu-tulis, supaya dua unduhan bersamaan tidak saling
-    // menimpa. isPublic ikut di WHERE supaya campaign privat tidak bisa
-    // dinaikkan hitungannya dari luar.
+    // menimpa. `isPublic` tidak disaring: campaign privat tetap bisa dipakai
+    // lewat tautannya, jadi pemakaiannya harus ikut terhitung juga.
     await db
       .update(campaigns)
       .set({ useCount: sql`${campaigns.useCount} + 1` })
-      .where(and(eq(campaigns.id, data.id), eq(campaigns.isPublic, true)))
+      .where(eq(campaigns.id, data.id))
 
     return { ok: true as const }
   })
