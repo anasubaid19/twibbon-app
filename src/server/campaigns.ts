@@ -322,7 +322,7 @@ export const getCampaignBySlug = createServerFn({ method: "GET" })
       .where(eq(campaigns.slug, data.slug))
       .limit(1)
 
-    if (!row) throw new Error(TIDAK_DITEMUKAN)
+    if (!row) return null
 
     const slots = await db
       .select({

@@ -1,6 +1,6 @@
 import { Sad01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute, Link, notFound } from "@tanstack/react-router"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Footer } from "@/components/footer"
 import { Navbar } from "@/components/navbar"
@@ -16,7 +16,11 @@ import { getCampaignBySlug, incrementUse, trackEvent } from "@/server/campaigns"
 const MAKS_PER_SLOT = 5 * 1024 * 1024
 
 export const Route = createFileRoute("/twibbon/$slug")({
-  loader: ({ params }) => getCampaignBySlug({ data: { slug: params.slug } }),
+  loader: async ({ params }) => {
+    const campaign = await getCampaignBySlug({ data: { slug: params.slug } })
+    if (!campaign) throw notFound()
+    return campaign
+  },
   head: ({ loaderData }) => {
     if (!loaderData) return {}
     const ringkas = loaderData.description || "Bikin twibbonmu di OpenFrame."
@@ -37,7 +41,7 @@ export const Route = createFileRoute("/twibbon/$slug")({
       ],
     }
   },
-  errorComponent: () => (
+  notFoundComponent: () => (
     <>
       <Navbar />
       <main className="mx-auto max-w-md p-6 text-center">
@@ -50,6 +54,19 @@ export const Route = createFileRoute("/twibbon/$slug")({
         <p className="mb-6 text-muted-foreground">
           Mungkin tautannya salah, atau kampanyenya sudah dihapus.
         </p>
+        <Link to="/" search={{ q: "", hal: 1 }} className="text-primary hover:underline">
+          Kembali ke beranda
+        </Link>
+      </main>
+      <Footer />
+    </>
+  ),
+  errorComponent: () => (
+    <>
+      <Navbar />
+      <main className="mx-auto max-w-md p-6 text-center">
+        <h1 className="mb-2 font-heading text-2xl">Terjadi kesalahan</h1>
+        <p className="mb-6 text-muted-foreground">Kampanye gagal dimuat. Coba lagi nanti.</p>
         <Link to="/" search={{ q: "", hal: 1 }} className="text-primary hover:underline">
           Kembali ke beranda
         </Link>

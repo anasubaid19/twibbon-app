@@ -1,4 +1,4 @@
-import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router"
+import { createRootRoute, HeadContent, Link, Outlet, Scripts } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
 import appCss from "@/styles/app.css?url"
@@ -30,6 +30,22 @@ export const Route = createRootRoute({
     ],
   }),
   loader: () => getTheme(),
+  notFoundComponent: () => (
+    <main
+      style={{
+        margin: "4rem auto",
+        maxWidth: "28rem",
+        padding: "1.5rem",
+        textAlign: "center",
+      }}
+    >
+      <h1>Halaman tidak ditemukan</h1>
+      <p>Tautan yang dibuka tidak tersedia atau sudah dihapus.</p>
+      <Link to="/" search={{ q: "", hal: 1 }}>
+        Kembali ke beranda
+      </Link>
+    </main>
+  ),
   component: RootComponent,
 })
 
