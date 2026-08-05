@@ -8,7 +8,7 @@ import { isValidSlot } from "@/lib/geometry"
 import { resolveSlug, SLUG_PATTERN, slugify } from "@/lib/slug"
 import { asalUrl } from "@/server/origin"
 import { getOptionalUserId, requireUserId } from "@/server/require-user"
-import { deleteFrameDir, hapusBerkas, saveFrame, validateFrame } from "@/server/upload"
+import { deleteFrameDir, hapusBerkas, readFrame, saveFrame, validateFrame } from "@/server/upload"
 
 /* --- Skema bersama ------------------------------------------------------ */
 
@@ -32,12 +32,14 @@ const slotSchema = z.object({
   label: z.string().max(40, "Label area maksimal 40 karakter").default(""),
 })
 
+const namaSchema = z
+  .string()
+  .trim()
+  .min(3, "Nama kampanye minimal 3 karakter")
+  .max(80, "Nama kampanye maksimal 80 karakter")
+
 const detailSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(3, "Nama kampanye minimal 3 karakter")
-    .max(80, "Nama kampanye maksimal 80 karakter"),
+  name: namaSchema,
   description: z.string().trim().max(500, "Deskripsi maksimal 500 karakter").default(""),
   isPublic: z.boolean(),
   // Fase 2 hanya membuat satu slot lewat UI, tapi bentuk datanya memang array
@@ -293,6 +295,99 @@ export const updateCampaign = createServerFn({ method: "POST" })
     })
 
     return { ok: true as const }
+  })
+
+/* --- renameCampaign ------------------------------------------------------- */
+
+export const renameCampaign = createServerFn({ method: "POST" })
+  .validator((input: unknown) => z.object({ id: idSchema, name: namaSchema }).parse(input))
+  .handler(async ({ data }) => {
+    const userId = await requireUserId()
+
+    // `returning` memberitahu apakah barisnya benar-benar milik user — tanpa
+    // itu, rename campaign orang lain terlihat berhasil padahal nihil.
+    const renamed = await db
+      .update(campaigns)
+      .set({ name: data.name, updatedAt: new Date() })
+      .where(and(eq(campaigns.id, data.id), eq(campaigns.userId, userId)))
+      .returning({ id: campaigns.id })
+
+    if (renamed.length === 0) throw new Error(TIDAK_DITEMUKAN)
+    return { ok: true as const }
+  })
+
+/* --- duplicateCampaign ---------------------------------------------------- */
+
+export const duplicateCampaign = createServerFn({ method: "POST" })
+  .validator((input: unknown) => z.object({ id: idSchema }).parse(input))
+  .handler(async ({ data }) => {
+    const userId = await requireUserId()
+
+    const [src] = await db
+      .select({
+        id: campaigns.id,
+        name: campaigns.name,
+        description: campaigns.description,
+        isPublic: campaigns.isPublic,
+        framePath: campaigns.framePath,
+        frameWidth: campaigns.frameWidth,
+        frameHeight: campaigns.frameHeight,
+      })
+      .from(campaigns)
+      .where(and(eq(campaigns.id, data.id), eq(campaigns.userId, userId)))
+      .limit(1)
+
+    if (!src) throw new Error(TIDAK_DITEMUKAN)
+
+    const slots = await db
+      .select({
+        x: frameSlots.x,
+        y: frameSlots.y,
+        width: frameSlots.width,
+        height: frameSlots.height,
+        rotation: frameSlots.rotation,
+        label: frameSlots.label,
+      })
+      .from(frameSlots)
+      .where(eq(frameSlots.campaignId, src.id))
+      .orderBy(frameSlots.slotIndex)
+
+    const id = randomUUID()
+    const base = slugify(`${src.name} salinan`)
+    const mirip = await db
+      .select({ slug: campaigns.slug })
+      .from(campaigns)
+      .where(or(eq(campaigns.slug, base), like(campaigns.slug, `${base}-%`)))
+    const slug = resolveSlug(
+      base,
+      mirip.map((row) => row.slug),
+    )
+
+    // Frame disalin lewat disk: baca bytes lama, tulis ulang di bawah id baru
+    // (saveFrame mengacak nama berkas sendiri). Slotsnya db tulis ulang.
+    const framePath = await saveFrame(id, Buffer.from(await readFrame(src.framePath)))
+
+    try {
+      await db.transaction(async (tx) => {
+        await tx.insert(campaigns).values({
+          id,
+          userId,
+          name: src.name,
+          description: src.description,
+          slug,
+          framePath,
+          frameWidth: src.frameWidth,
+          frameHeight: src.frameHeight,
+          isPublic: src.isPublic,
+        })
+        await tx.insert(frameSlots).values(slotRows(id, slots))
+      })
+    } catch (error) {
+      await deleteFrameDir(id)
+      throw error
+    }
+
+    return { id, slug }
   })
 
 /* --- getCampaignBySlug --------------------------------------------------- */

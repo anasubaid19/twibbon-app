@@ -1,14 +1,18 @@
 import {
   Add01Icon,
+  Award01Icon,
   BarChartIcon,
   CheckmarkCircle02Icon,
+  Copy01Icon,
   CopyLinkIcon,
   Delete01Icon,
   Download01Icon,
+  Edit01Icon,
   EyeIcon,
   GlobeIcon,
   Image01Icon,
   MoreHorizontalIcon,
+  PencilEdit02Icon,
   Search01Icon,
   Share01Icon,
   SquareLock01Icon,
@@ -38,6 +42,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -50,11 +55,18 @@ import { pesanError } from "@/lib/pesan-error"
 import {
   type FilterVisibilitas,
   filterDanSortKampanye,
+  type KampanyeRingkas,
   SORT_OPTIONS,
   type SortKampanye,
 } from "@/lib/sort-kampanye"
 import { cn } from "@/lib/utils"
-import { deleteCampaign, getDailyAnalytics, listMyCampaigns } from "@/server/campaigns"
+import {
+  deleteCampaign,
+  duplicateCampaign,
+  getDailyAnalytics,
+  listMyCampaigns,
+  renameCampaign,
+} from "@/server/campaigns"
 import { getSession } from "@/server/session"
 
 export const Route = createFileRoute("/dashboard")({
@@ -63,6 +75,7 @@ export const Route = createFileRoute("/dashboard")({
     if (!session) throw redirect({ to: "/login" })
   },
   loader: () => listMyCampaigns(),
+  pendingComponent: GridSkeleton,
   component: DashboardPage,
 })
 
@@ -98,6 +111,14 @@ function DashboardPage() {
   const [campaignToDelete, setCampaignToDelete] = useState<{ id: string; name: string } | null>(
     null,
   )
+
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false)
+  const [campaignToRename, setCampaignToRename] = useState<{ id: string; name: string } | null>(
+    null,
+  )
+  const [renameValue, setRenameValue] = useState("")
+  const [renameLoading, setRenameLoading] = useState(false)
+  const [renameError, setRenameError] = useState("")
 
   const terlihat = useMemo(
     () => filterDanSortKampanye(campaigns, cari, filter, sort),
@@ -178,6 +199,35 @@ function DashboardPage() {
     }
   }
 
+  async function gandakan(id: string) {
+    setError("")
+    try {
+      await duplicateCampaign({ data: { id } })
+      await router.invalidate()
+    } catch (err) {
+      setError(pesanError(err))
+    }
+  }
+
+  function mulaiRename(kampanye: { id: string; name: string }) {
+    setCampaignToRename(kampanye)
+    setRenameValue(kampanye.name)
+    setRenameError("")
+    setRenameDialogOpen(true)
+  }
+
+  async function confirmRename() {
+    if (!campaignToRename) return
+    try {
+      await renameCampaign({ data: { id: campaignToRename.id, name: renameValue } })
+      setRenameDialogOpen(false)
+      setCampaignToRename(null)
+      await router.invalidate()
+    } catch (err) {
+      setRenameError(pesanError(err))
+    }
+  }
+
   return (
     <>
       <Navbar />
@@ -204,7 +254,7 @@ function DashboardPage() {
           aria-label="Ringkasan"
           className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
         >
-          <StatRingkas icon={Image01Icon} label="Kampanye" nilai={ringkasan.total} />
+          <StatRingkas icon={Image01Icon} label="Total Kampanye" nilai={ringkasan.total} />
           <StatRingkas icon={GlobeIcon} label="Publik" nilai={ringkasan.publik} />
           <StatRingkas icon={SquareLock01Icon} label="Privat" nilai={ringkasan.privat} />
           <StatRingkas icon={EyeIcon} label="Tampilan" nilai={ringkasan.tampilan} />
@@ -328,7 +378,7 @@ function DashboardPage() {
                           </span>
                         </div>
                         <div className="px-4 pt-4">
-                          <h2 className="truncate font-heading text-base">{campaign.name}</h2>
+                          <h2 className="line-clamp-2 font-heading text-base">{campaign.name}</h2>
                           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                             <span className="inline-flex items-center gap-1 tabular-nums">
                               <HugeiconsIcon icon={Image01Icon} aria-hidden className="size-4" />
@@ -373,6 +423,17 @@ function DashboardPage() {
                               <HugeiconsIcon icon={CopyLinkIcon} aria-hidden />
                             )}
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            aria-label="Analytics"
+                            onClick={() => {
+                              setTab("analytics")
+                              setSelectedCampaignId(campaign.id)
+                            }}
+                          >
+                            <HugeiconsIcon icon={BarChartIcon} aria-hidden />
+                          </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger
                               render={
@@ -389,21 +450,22 @@ function DashboardPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuGroup>
                                 <DropdownMenuItem
-                                  render={
-                                    <Link to="/twibbon/$slug" params={{ slug: campaign.slug }} />
-                                  }
+                                  render={<Link to="/edit/$id" params={{ id: campaign.id }} />}
                                 >
-                                  <HugeiconsIcon icon={EyeIcon} aria-hidden />
-                                  Lihat
+                                  <HugeiconsIcon icon={Edit01Icon} aria-hidden />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => gandakan(campaign.id)}>
+                                  <HugeiconsIcon icon={Copy01Icon} aria-hidden />
+                                  Duplicate
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => {
-                                    setTab("analytics")
-                                    setSelectedCampaignId(campaign.id)
-                                  }}
+                                  onClick={() =>
+                                    mulaiRename({ id: campaign.id, name: campaign.name })
+                                  }
                                 >
-                                  <HugeiconsIcon icon={BarChartIcon} aria-hidden />
-                                  Analytics
+                                  <HugeiconsIcon icon={PencilEdit02Icon} aria-hidden />
+                                  Rename
                                 </DropdownMenuItem>
                               </DropdownMenuGroup>
                               <DropdownMenuSeparator />
@@ -428,57 +490,71 @@ function DashboardPage() {
           </TabsContent>
 
           <TabsContent value="analytics">
-            <section>
-              <Card className="p-4">
-                <div className="mb-4">
-                  <label
-                    htmlFor="campaign-select"
-                    className="mb-1 block text-sm text-muted-foreground"
-                  >
-                    Pilih kampanye
-                  </label>
-                  <Select
-                    items={selectItems}
-                    value={selectedCampaignId ?? ""}
-                    onValueChange={(nilai) => setSelectedCampaignId(nilai || null)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Pilih kampanye" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {campaigns.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {analyticsError ? (
-                  <Alert variant="destructive" role="alert">
-                    {analyticsError}
-                  </Alert>
-                ) : analyticsLoading ? (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
-                    Memuat analytics…
-                  </p>
-                ) : dailyData.length > 0 ? (
-                  <AnalyticsChart
-                    data={dailyData}
-                    xKey="date"
-                    lines={[
-                      { key: "views", color: "#3b82f6", name: "Views" },
-                      { key: "downloads", color: "#22c55e", name: "Downloads" },
-                      { key: "shares", color: "#f59e0b", name: "Shares" },
-                    ]}
+            {campaigns.length === 0 ? (
+              <AnalyticsKosong />
+            ) : (
+              <section className="grid gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <StatRingkas icon={EyeIcon} label="Total View" nilai={ringkasan.tampilan} />
+                  <StatRingkas
+                    icon={Download01Icon}
+                    label="Total Download"
+                    nilai={ringkasan.pemakaian}
                   />
-                ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
-                    Belum ada data analytics untuk kampanye ini.
-                  </p>
-                )}
-              </Card>
-            </section>
+                  <StatRingkas icon={Share01Icon} label="Total Share" nilai={ringkasan.share} />
+                </div>
+
+                <Terpopuler kampanye={campaigns} />
+
+                <Card className="p-4">
+                  <div className="mb-4">
+                    <label
+                      htmlFor="campaign-select"
+                      className="mb-1 block text-sm text-muted-foreground"
+                    >
+                      Pilih kampanye
+                    </label>
+                    <Select
+                      items={selectItems}
+                      value={selectedCampaignId ?? ""}
+                      onValueChange={(nilai) => setSelectedCampaignId(nilai || null)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Pilih kampanye" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {campaigns.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {analyticsError ? (
+                    <Alert variant="destructive" role="alert">
+                      {analyticsError}
+                    </Alert>
+                  ) : analyticsLoading ? (
+                    <SkeletonChart />
+                  ) : dailyData.length > 0 ? (
+                    <AnalyticsChart
+                      data={dailyData}
+                      xKey="date"
+                      lines={[
+                        { key: "views", color: "#3b82f6", name: "Views" },
+                        { key: "downloads", color: "#22c55e", name: "Downloads" },
+                        { key: "shares", color: "#f59e0b", name: "Shares" },
+                      ]}
+                    />
+                  ) : (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      Belum ada data analytics untuk kampanye ini.
+                    </p>
+                  )}
+                </Card>
+              </section>
+            )}
           </TabsContent>
         </Tabs>
       </main>
@@ -500,6 +576,62 @@ function DashboardPage() {
               Hapus
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ubah nama kampanye</DialogTitle>
+            <DialogDescription>Beri nama baru untuk "{campaignToRename?.name}".</DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              setRenameLoading(true)
+              confirmRename().finally(() => setRenameLoading(false))
+            }}
+            className="grid gap-4"
+          >
+            {renameError && (
+              <Alert variant="destructive" role="alert">
+                {renameError}
+              </Alert>
+            )}
+            <div className="grid gap-2">
+              <Label htmlFor="rename-input">Nama kampanye</Label>
+              <Input
+                id="rename-input"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                required
+                minLength={3}
+                maxLength={80}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setRenameDialogOpen(false)
+                  setRenameError("")
+                  setCampaignToRename(null)
+                }}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                isLoading={renameLoading}
+                disabled={renameLoading || renameValue.trim().length < 3}
+              >
+                Simpan
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </>
@@ -547,6 +679,99 @@ function Kosong() {
           <HugeiconsIcon icon={Add01Icon} aria-hidden /> Bikin Kampanye
         </Link>
       </div>
+    </div>
+  )
+}
+
+function Terpopuler({ kampanye }: { kampanye: KampanyeRingkas[] }) {
+  const teratas = [...kampanye].sort((a, b) => b.viewCount - a.viewCount).slice(0, 3)
+  const puncak = teratas[0]?.viewCount ?? 0
+
+  if (puncak === 0) {
+    return (
+      <Card className="p-4">
+        <div className="flex items-center gap-2">
+          <HugeiconsIcon icon={Award01Icon} aria-hidden className="size-4 text-muted-foreground" />
+          <h3 className="font-heading text-sm font-semibold">Campaign Terpopuler</h3>
+        </div>
+        <p className="mt-2 text-sm text-muted-foreground">Belum ada data kunjungan.</p>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <HugeiconsIcon icon={Award01Icon} aria-hidden className="size-4 text-muted-foreground" />
+        <h3 className="font-heading text-sm font-semibold">Campaign Terpopuler</h3>
+      </div>
+      <ul className="grid gap-3">
+        {teratas.map((c, i) => (
+          <li key={c.id} className="flex items-center justify-between gap-3">
+            <span className="flex min-w-0 items-center gap-3">
+              <span className="w-4 shrink-0 font-heading text-sm text-muted-foreground tabular-nums">
+                {i + 1}
+              </span>
+              <span className="truncate text-sm font-medium">{c.name}</span>
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1 text-sm text-muted-foreground tabular-nums">
+              <HugeiconsIcon icon={EyeIcon} aria-hidden className="size-4" />
+              {c.viewCount.toLocaleString("id-ID")}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  )
+}
+
+function AnalyticsKosong() {
+  return (
+    <Card className="p-10 text-center">
+      <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+        <HugeiconsIcon icon={BarChartIcon} aria-hidden className="size-6" />
+      </div>
+      <h3 className="mt-4 font-heading text-lg font-semibold">Belum ada data analytics</h3>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Buat kampanye dulu — statistik tampilan, unduhan, dan share akan muncul di sini.
+      </p>
+    </Card>
+  )
+}
+
+function SkeletonChart() {
+  return (
+    <div className="py-2" role="status" aria-label="Memuat analytics">
+      <div className="flex h-40 items-end gap-2">
+        {["a", "b", "c", "d", "e", "f", "g"].map((k, i) => (
+          <div
+            key={k}
+            className="flex-1 animate-pulse rounded-t bg-muted"
+            style={{ height: `${40 + ((i * 13) % 45)}%` }}
+          />
+        ))}
+      </div>
+      <div className="mt-3 h-2 w-40 animate-pulse rounded bg-muted" />
+    </div>
+  )
+}
+
+function GridSkeleton() {
+  return (
+    <div
+      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      role="status"
+      aria-label="Memuat kampanye"
+    >
+      {["a", "b", "c", "d", "e", "f", "g", "h"].map((k) => (
+        <div key={k} className="overflow-hidden rounded-xl border border-border/70">
+          <div className="aspect-square animate-pulse bg-muted" />
+          <div className="space-y-2 p-4">
+            <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+            <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

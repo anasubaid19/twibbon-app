@@ -63,29 +63,16 @@ describe("filterDanSortKampanye", () => {
     expect(ambilId(filterDanSortKampanye(data, "", "semua", "terbaru"))).toEqual(["a", "c", "b"])
   })
 
-  test("sorting terakhir-diubah pakai updatedAt menurun", () => {
-    expect(ambilId(filterDanSortKampanye(data, "", "semua", "terakhir-diubah"))).toEqual([
-      "b",
-      "a",
-      "c",
-    ])
+  test("sorting terlama pakai createdAt menaik", () => {
+    expect(ambilId(filterDanSortKampanye(data, "", "semua", "terlama"))).toEqual(["b", "c", "a"])
   })
 
-  test("sorting nama alfabetis", () => {
+  test("sorting nama A-Z", () => {
     expect(ambilId(filterDanSortKampanye(data, "", "semua", "nama"))).toEqual(["b", "c", "a"])
   })
 
-  test("sorting sering-dipakai dan banyak-dilihat menurun", () => {
-    expect(ambilId(filterDanSortKampanye(data, "", "semua", "sering-dipakai"))).toEqual([
-      "c",
-      "a",
-      "b",
-    ])
-    expect(ambilId(filterDanSortKampanye(data, "", "semua", "banyak-dilihat"))).toEqual([
-      "b",
-      "a",
-      "c",
-    ])
+  test("sorting nama Z-A", () => {
+    expect(ambilId(filterDanSortKampanye(data, "", "semua", "nama-z"))).toEqual(["a", "c", "b"])
   })
 
   test("tidak mengubah array asal", () => {
@@ -95,13 +82,7 @@ describe("filterDanSortKampanye", () => {
   })
 
   test("kombinasi cari + filter + sort", () => {
-    const semuaSort: SortKampanye[] = [
-      "terbaru",
-      "terakhir-diubah",
-      "nama",
-      "sering-dipakai",
-      "banyak-dilihat",
-    ]
+    const semuaSort: SortKampanye[] = ["terbaru", "terlama", "nama", "nama-z"]
     for (const sort of semuaSort) {
       const nama = filterDanSortKampanye(data, "hut", "publik", sort).map((r) => r.name)
       expect(new Set(nama)).toEqual(new Set(["HUT RI", "HUT Kota"]))

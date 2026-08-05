@@ -1,11 +1,6 @@
 export type FilterVisibilitas = "semua" | "publik" | "privat"
 
-export type SortKampanye =
-  | "terbaru"
-  | "terakhir-diubah"
-  | "nama"
-  | "sering-dipakai"
-  | "banyak-dilihat"
+export type SortKampanye = "terbaru" | "terlama" | "nama" | "nama-z"
 
 export type KampanyeRingkas = {
   id: string
@@ -22,10 +17,9 @@ export type KampanyeRingkas = {
 
 export const SORT_OPTIONS: ReadonlyArray<{ value: SortKampanye; label: string }> = [
   { value: "terbaru", label: "Terbaru" },
-  { value: "terakhir-diubah", label: "Terakhir diubah" },
-  { value: "nama", label: "Nama" },
-  { value: "sering-dipakai", label: "Paling sering dipakai" },
-  { value: "banyak-dilihat", label: "Paling banyak dilihat" },
+  { value: "terlama", label: "Terlama" },
+  { value: "nama", label: "Nama A-Z" },
+  { value: "nama-z", label: "Nama Z-A" },
 ]
 
 /** Filter (nama + visibilitas) lalu urut, tanpa mengubah array asal. */
@@ -47,10 +41,11 @@ export function filterDanSortKampanye(
   // Comparator dibalik (b vs a) untuk urutan menurun.
   const pembanding: Record<SortKampanye, (a: KampanyeRingkas, b: KampanyeRingkas) => number> = {
     terbaru: (a, b) => b.createdAt.localeCompare(a.createdAt),
-    "terakhir-diubah": (a, b) => b.updatedAt.localeCompare(a.updatedAt),
+    terlama: (a, b) => a.createdAt.localeCompare(b.createdAt),
     nama: (a, b) => a.name.localeCompare(b.name, "id"),
-    "sering-dipakai": (a, b) => b.useCount - a.useCount,
-    "banyak-dilihat": (a, b) => b.viewCount - a.viewCount,
+    // Kebalikan dari `nama`, bukan `localeCompare` dibalik, karena hasilnya
+    // memang tidak simetris untuk aksen/lokale.
+    "nama-z": (a, b) => b.name.localeCompare(a.name, "id"),
   }
 
   return hasil.sort(pembanding[sort])
