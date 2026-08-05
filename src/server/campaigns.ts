@@ -185,6 +185,7 @@ export const listMyCampaigns = createServerFn({ method: "GET" }).handler(async (
       isPublic: campaigns.isPublic,
       useCount: campaigns.useCount,
       createdAt: campaigns.createdAt,
+      updatedAt: campaigns.updatedAt,
       slotCount: count(frameSlots.id),
       viewCount:
         sql<number>`COALESCE(SUM(CASE WHEN ${campaignEvents.eventType} = 'view' THEN 1 ELSE 0 END), 0)`.as(
@@ -204,7 +205,11 @@ export const listMyCampaigns = createServerFn({ method: "GET" }).handler(async (
 
   // `userId` sengaja tidak ikut: tidak dipakai UI, dan apa pun yang
   // dikembalikan server function terlihat di payload hidrasi.
-  return rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() }))
+  return rows.map((row) => ({
+    ...row,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  }))
 })
 
 /* --- getCampaignForEdit ------------------------------------------------- */

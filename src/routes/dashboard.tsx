@@ -1,19 +1,25 @@
 import {
   Add01Icon,
-  Camera01Icon,
-  FileUploadIcon,
-  Logout01Icon,
-  Settings01Icon,
-  UserIcon,
+  BarChartIcon,
+  CheckmarkCircle02Icon,
+  CopyLinkIcon,
+  Delete01Icon,
+  Download01Icon,
+  EyeIcon,
+  GlobeIcon,
+  Image01Icon,
+  MoreHorizontalIcon,
+  Search01Icon,
+  Share01Icon,
+  SquareLock01Icon,
 } from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router"
-import { useEffect, useRef, useState } from "react"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
+import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router"
+import { useEffect, useMemo, useState } from "react"
+import { Navbar } from "@/components/navbar"
 import { Alert } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Card, CardFooter } from "@/components/ui/card"
 import { AnalyticsChart } from "@/components/ui/chart"
 import {
   Dialog,
@@ -28,12 +34,10 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -42,9 +46,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { authClient } from "@/lib/auth-client"
 import { pesanError } from "@/lib/pesan-error"
-import { changePassword, uploadAvatar } from "@/server/auth"
+import {
+  type FilterVisibilitas,
+  filterDanSortKampanye,
+  SORT_OPTIONS,
+  type SortKampanye,
+} from "@/lib/sort-kampanye"
+import { cn } from "@/lib/utils"
 import { deleteCampaign, getDailyAnalytics, listMyCampaigns } from "@/server/campaigns"
 import { getSession } from "@/server/session"
 
@@ -52,19 +61,30 @@ export const Route = createFileRoute("/dashboard")({
   beforeLoad: async () => {
     const session = await getSession()
     if (!session) throw redirect({ to: "/login" })
-    return { username: session.user.username, userImage: session.user.image ?? null }
   },
   loader: () => listMyCampaigns(),
   component: DashboardPage,
 })
 
+const FILTER_OPTIONS: Array<{ value: FilterVisibilitas; label: string }> = [
+  { value: "semua", label: "Semua" },
+  { value: "publik", label: "Publik" },
+  { value: "privat", label: "Privat" },
+]
+
+type TabDashboard = "kampanye" | "analytics"
+
 function DashboardPage() {
-  const { username, userImage } = Route.useRouteContext()
   const campaigns = Route.useLoaderData()
-  const navigate = useNavigate()
   const router = useRouter()
-  const [logoutError, setLogoutError] = useState("")
+  const [error, setError] = useState("")
   const [tersalin, setTersalin] = useState("")
+
+  const [tab, setTab] = useState<TabDashboard>("kampanye")
+  const [cari, setCari] = useState("")
+  const [filter, setFilter] = useState<FilterVisibilitas>("semua")
+  const [sort, setSort] = useState<SortKampanye>("terbaru")
+
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
     campaigns.length > 0 ? campaigns[0].id : null,
   )
@@ -73,54 +93,47 @@ function DashboardPage() {
   >([])
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
   const [analyticsError, setAnalyticsError] = useState("")
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [campaignToDelete, setCampaignToDelete] = useState<{ id: string; name: string } | null>(
     null,
   )
 
-  // Password change state
-  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
-  const [currentPassword, setCurrentPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [passwordLoading, setPasswordLoading] = useState(false)
-  const [passwordError, setPasswordError] = useState("")
-  const [passwordSuccess, setPasswordSuccess] = useState("")
+  const terlihat = useMemo(
+    () => filterDanSortKampanye(campaigns, cari, filter, sort),
+    [campaigns, cari, filter, sort],
+  )
 
-  // Avatar upload state
-  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false)
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(userImage)
-  const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [avatarLoading, setAvatarLoading] = useState(false)
-  const [avatarError, setAvatarError] = useState("")
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const ringkasan = useMemo(
+    () => ({
+      total: campaigns.length,
+      publik: campaigns.filter((c) => c.isPublic).length,
+      privat: campaigns.filter((c) => !c.isPublic).length,
+      tampilan: campaigns.reduce((n, c) => n + c.viewCount, 0),
+      pemakaian: campaigns.reduce((n, c) => n + c.useCount, 0),
+      share: campaigns.reduce((n, c) => n + c.shareCount, 0),
+    }),
+    [campaigns],
+  )
 
-  // Select items for campaign dropdown
   const selectItems = campaigns.map((c) => ({ value: c.id, label: c.name }))
 
+  // Kalau kampanye terpilih terhapus (misal lewat dialog), pindah ke yang pertama.
   useEffect(() => {
-    const selectedStillExists = selectedCampaignId
-      ? campaigns.some((campaign) => campaign.id === selectedCampaignId)
-      : false
-    const nextId = selectedStillExists ? selectedCampaignId : (campaigns[0]?.id ?? null)
+    const masihAda = selectedCampaignId ? campaigns.some((c) => c.id === selectedCampaignId) : false
+    const berikut = masihAda ? selectedCampaignId : (campaigns[0]?.id ?? null)
+    if (berikut !== selectedCampaignId) setSelectedCampaignId(berikut)
+  }, [campaigns, selectedCampaignId])
 
-    if (nextId !== selectedCampaignId) {
-      setSelectedCampaignId(nextId)
-      setDailyData([])
-      setAnalyticsError("")
-      return
-    }
-
-    if (!nextId) {
-      setDailyData([])
-      setAnalyticsLoading(false)
-      return
-    }
-
+  // Analytics hanya dimuat saat tab Analytics terbuka — membuka dashboard
+  // tidak lagi menyeret recharts/query sia-sia.
+  useEffect(() => {
+    if (tab !== "analytics" || !selectedCampaignId) return
     let cancel = false
     setDailyData([])
     setAnalyticsError("")
     setAnalyticsLoading(true)
-    getDailyAnalytics({ data: { id: nextId } })
+    getDailyAnalytics({ data: { id: selectedCampaignId } })
       .then((data) => {
         if (!cancel) setDailyData(data)
       })
@@ -136,7 +149,7 @@ function DashboardPage() {
     return () => {
       cancel = true
     }
-  }, [campaigns, selectedCampaignId])
+  }, [tab, selectedCampaignId])
 
   async function salin(slug: string) {
     try {
@@ -144,11 +157,11 @@ function DashboardPage() {
       setTersalin(slug)
       setTimeout(() => setTersalin(""), 2000)
     } catch {
-      setLogoutError("Gagal menyalin. Buka halaman kampanyenya lalu salin dari bilah alamat.")
+      setError("Gagal menyalin. Buka halaman kampanyenya lalu salin dari bilah alamat.")
     }
   }
 
-  async function hapus(id: string, nama: string) {
+  function hapus(id: string, nama: string) {
     setCampaignToDelete({ id, name: nama })
     setDeleteDialogOpen(true)
   }
@@ -161,216 +174,259 @@ function DashboardPage() {
       setCampaignToDelete(null)
       await router.invalidate()
     } catch (err) {
-      setLogoutError(pesanError(err))
-    }
-  }
-
-  async function handleLogout() {
-    setLogoutError("")
-    try {
-      await authClient.signOut()
-      navigate({ to: "/login" })
-    } catch (err) {
-      setLogoutError(pesanError(err))
-    }
-  }
-
-  async function handleChangePassword(e: React.FormEvent) {
-    e.preventDefault()
-    setPasswordError("")
-    setPasswordSuccess("")
-    setPasswordLoading(true)
-    try {
-      await changePassword({
-        data: {
-          currentPassword,
-          newPassword,
-        },
-      })
-      setPasswordSuccess("Password berhasil diubah!")
-      setCurrentPassword("")
-      setNewPassword("")
-      setTimeout(() => setPasswordDialogOpen(false), 1500)
-    } catch (err) {
-      setPasswordError(pesanError(err))
-    } finally {
-      setPasswordLoading(false)
-    }
-  }
-
-  function handleAvatarSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 5 * 1024 * 1024) {
-      setAvatarError("Ukuran gambar maksimal 5MB")
-      return
-    }
-    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
-      setAvatarError("Format gambar harus PNG, JPG, atau WebP")
-      return
-    }
-    setAvatarFile(file)
-    setAvatarError("")
-    const reader = new FileReader()
-    reader.onload = (ev) => setAvatarPreview(ev.target?.result as string)
-    reader.readAsDataURL(file)
-  }
-
-  async function handleAvatarUpload() {
-    if (!avatarFile) return
-    setAvatarError("")
-    setAvatarLoading(true)
-    try {
-      const ext = {
-        "image/png": "png",
-        "image/jpeg": "jpg",
-        "image/webp": "webp",
-      }[avatarFile.type as "image/png" | "image/jpeg" | "image/webp"]
-      if (!ext) {
-        setAvatarError("Format gambar harus PNG, JPG, atau WebP")
-        return
-      }
-      const reader = new FileReader()
-      const data = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(avatarFile)
-      })
-      const result = await uploadAvatar({
-        data: { data, ext },
-      })
-      setAvatarPreview(result.image)
-      setAvatarFile(null)
-      setAvatarDialogOpen(false)
-      await router.invalidate()
-    } catch (err) {
-      setAvatarError(pesanError(err))
-    } finally {
-      setAvatarLoading(false)
+      setError(pesanError(err))
     }
   }
 
   return (
-    <main className="mx-auto max-w-5xl p-6">
-      <header className="flex flex-wrap items-center justify-between gap-3 py-6">
-        <h1 className="font-heading text-2xl">Kampanye Saya</h1>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
+    <>
+      <Navbar />
+      <main className="mx-auto max-w-7xl p-6">
+        <header className="flex flex-wrap items-end justify-between gap-3 py-6">
+          <div>
+            <h1 className="font-heading text-2xl">Kampanye Saya</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Kelola seluruh campaign OpenFrame milikmu dari satu tempat.
+            </p>
+          </div>
+          <Link to="/buat" className={buttonVariants({})}>
+            <HugeiconsIcon icon={Add01Icon} aria-hidden /> Bikin Kampanye
+          </Link>
+        </header>
+
+        {error && (
+          <Alert variant="destructive" role="alert" className="mb-4">
+            {error}
+          </Alert>
+        )}
+
+        <section
+          aria-label="Ringkasan"
+          className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
+        >
+          <StatRingkas icon={Image01Icon} label="Kampanye" nilai={ringkasan.total} />
+          <StatRingkas icon={GlobeIcon} label="Publik" nilai={ringkasan.publik} />
+          <StatRingkas icon={SquareLock01Icon} label="Privat" nilai={ringkasan.privat} />
+          <StatRingkas icon={EyeIcon} label="Tampilan" nilai={ringkasan.tampilan} />
+          <StatRingkas icon={Download01Icon} label="Pemakaian" nilai={ringkasan.pemakaian} />
+          <StatRingkas icon={Share01Icon} label="Share" nilai={ringkasan.share} />
+        </section>
+
+        <Tabs value={tab} onValueChange={(nilai) => setTab((nilai as TabDashboard) ?? "kampanye")}>
+          <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <TabsList>
+              <TabsTrigger value="kampanye">Kampanye</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            </TabsList>
+
+            {tab === "kampanye" && campaigns.length > 0 && (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative flex-1 sm:w-72 sm:flex-none">
+                  <HugeiconsIcon
+                    icon={Search01Icon}
+                    aria-hidden
+                    className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                  />
+                  <Input
+                    aria-label="Cari kampanye"
+                    value={cari}
+                    onChange={(e) => setCari(e.target.value)}
+                    placeholder="Cari kampanye…"
+                    className="bg-background pl-9"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <fieldset
+                    aria-label="Filter visibilitas"
+                    className="inline-flex items-center gap-0.5 rounded-full bg-muted p-1"
+                  >
+                    {FILTER_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        aria-pressed={filter === opt.value}
+                        onClick={() => setFilter(opt.value)}
+                        className={cn(
+                          "rounded-full px-3 py-1 text-sm font-medium transition-colors",
+                          filter === opt.value
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-foreground/60 hover:text-foreground",
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </fieldset>
+                  <Select
+                    items={SORT_OPTIONS}
+                    value={sort}
+                    onValueChange={(nilai) => setSort((nilai as SortKampanye) ?? "terbaru")}
+                  >
+                    <SelectTrigger aria-label="Urutkan" size="sm" className="w-auto bg-background">
+                      <SelectValue placeholder="Urutkan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SORT_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <TabsContent value="kampanye">
+            {campaigns.length === 0 ? (
+              <Kosong />
+            ) : terlihat.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center">
+                <p className="text-muted-foreground">
+                  Tidak ada kampanye yang cocok dengan pencarian atau filter ini.
+                </p>
                 <Button
-                  type="button"
                   variant="outline"
-                  size="icon"
-                  aria-label="Akun"
-                  className="bg-muted"
-                />
-              }
-            >
-              {avatarPreview ? (
-                <img src={avatarPreview} alt="" className="size-4 rounded-full object-cover" />
-              ) : (
-                <HugeiconsIcon icon={UserIcon} aria-hidden />
-              )}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>{username}</DropdownMenuLabel>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem onClick={() => setAvatarDialogOpen(true)}>
-                  <HugeiconsIcon icon={Camera01Icon} aria-hidden />
-                  Ganti Foto Profil
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPasswordDialogOpen(true)}>
-                  <HugeiconsIcon icon={Settings01Icon} aria-hidden />
-                  Ganti Password
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem variant="destructive" onClick={handleLogout}>
-                  <HugeiconsIcon icon={Logout01Icon} aria-hidden />
-                  Keluar
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
-
-      {logoutError && (
-        <Alert variant="destructive" role="alert" className="mb-4">
-          {logoutError}
-        </Alert>
-      )}
-
-      <Link to="/buat" className={`mb-6 ${buttonVariants({})}`}>
-        <HugeiconsIcon icon={Add01Icon} aria-hidden /> Bikin Kampanye
-      </Link>
-
-      {campaigns.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
-          Belum ada kampanye. Unggah frame PNG-mu, gambar area fotonya, lalu bagikan tautannya.
-        </p>
-      ) : (
-        <Tabs defaultValue="campaigns">
-          <TabsList>
-            <TabsTrigger value="campaigns">Kampanye</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
-          <TabsContent value="campaigns">
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {campaigns.map((campaign) => (
-                <li key={campaign.id}>
-                  <Card className="overflow-hidden transition-[border-color,transform] motion-safe:hover:-translate-y-[3px] hover:border-primary">
-                    <Link to="/edit/$id" params={{ id: campaign.id }} className="block">
-                      <img
-                        src={`/api/frame/${campaign.id}`}
-                        alt=""
-                        loading="lazy"
-                        className="aspect-square w-full bg-muted object-contain"
-                      />
-                      <div className="px-4 pt-4">
-                        <h2 className="mb-1.5 truncate font-heading text-base">{campaign.name}</h2>
-                        <div className="flex flex-wrap gap-1.5">
-                          <Badge variant="netral">{campaign.slotCount} area</Badge>
-                          <Badge variant={campaign.isPublic ? "publik" : "privat"}>
-                            {campaign.isPublic ? "Publik" : "Privat"}
-                          </Badge>
-                          <Badge variant="netral">{campaign.useCount}x dipakai</Badge>
-                          <Badge variant="netral">{campaign.viewCount} lihat</Badge>
-                          <Badge variant="netral">{campaign.shareCount} share</Badge>
-                        </div>
-                      </div>
-                    </Link>
-
-                    <div className="flex flex-wrap gap-1.5 p-4">
+                  onClick={() => {
+                    setCari("")
+                    setFilter("semua")
+                  }}
+                  className="mt-4"
+                >
+                  Hapus filter
+                </Button>
+              </div>
+            ) : (
+              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {terlihat.map((campaign) => (
+                  <li key={campaign.id}>
+                    <Card className="overflow-hidden rounded-xl transition-[border-color,box-shadow,transform] focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background motion-safe:hover:-translate-y-[3px] hover:border-primary hover:shadow-[0_18px_50px_-22px_var(--primary)]">
                       <Link
-                        to="/twibbon/$slug"
-                        params={{ slug: campaign.slug }}
-                        className={buttonVariants({ variant: "outline", size: "sm" })}
+                        to="/edit/$id"
+                        params={{ id: campaign.id }}
+                        className="block focus-visible:outline-none"
                       >
-                        Lihat
+                        <div className="relative aspect-square overflow-hidden bg-muted">
+                          <img
+                            src={`/api/frame/${campaign.id}`}
+                            alt=""
+                            loading="lazy"
+                            className="size-full object-contain motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover/card:scale-[1.04]"
+                          />
+                          <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/85 px-2.5 py-1 text-[11px] font-semibold backdrop-blur">
+                            {campaign.isPublic ? (
+                              <HugeiconsIcon icon={GlobeIcon} aria-hidden className="size-3" />
+                            ) : (
+                              <HugeiconsIcon
+                                icon={SquareLock01Icon}
+                                aria-hidden
+                                className="size-3"
+                              />
+                            )}
+                            {campaign.isPublic ? "Publik" : "Privat"}
+                          </span>
+                        </div>
+                        <div className="px-4 pt-4">
+                          <h2 className="truncate font-heading text-base">{campaign.name}</h2>
+                          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                            <span className="inline-flex items-center gap-1 tabular-nums">
+                              <HugeiconsIcon icon={Image01Icon} aria-hidden className="size-4" />
+                              {campaign.slotCount}
+                            </span>
+                            <span className="inline-flex items-center gap-1 tabular-nums">
+                              <HugeiconsIcon icon={EyeIcon} aria-hidden className="size-4" />
+                              {campaign.viewCount.toLocaleString("id-ID")}
+                            </span>
+                            <span className="inline-flex items-center gap-1 tabular-nums">
+                              <HugeiconsIcon icon={Download01Icon} aria-hidden className="size-4" />
+                              {campaign.useCount.toLocaleString("id-ID")}
+                            </span>
+                            <span className="inline-flex items-center gap-1 tabular-nums">
+                              <HugeiconsIcon icon={Share01Icon} aria-hidden className="size-4" />
+                              {campaign.shareCount.toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                        </div>
                       </Link>
-                      <Button variant="outline" size="sm" onClick={() => salin(campaign.slug)}>
-                        {tersalin === campaign.slug ? "Tersalin!" : "Salin tautan"}
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => hapus(campaign.id, campaign.name)}
-                      >
-                        Hapus
-                      </Button>
-                    </div>
-                  </Card>
-                </li>
-              ))}
-            </ul>
+
+                      <CardFooter className="justify-between gap-2">
+                        <Link
+                          to="/edit/$id"
+                          params={{ id: campaign.id }}
+                          className={buttonVariants({ size: "sm" })}
+                        >
+                          Kelola
+                        </Link>
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            aria-label={
+                              tersalin === campaign.slug ? "Tautan tersalin" : "Salin tautan"
+                            }
+                            onClick={() => salin(campaign.slug)}
+                          >
+                            {tersalin === campaign.slug ? (
+                              <HugeiconsIcon icon={CheckmarkCircle02Icon} aria-hidden />
+                            ) : (
+                              <HugeiconsIcon icon={CopyLinkIcon} aria-hidden />
+                            )}
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  aria-label="Aksi kampanye"
+                                />
+                              }
+                            >
+                              <HugeiconsIcon icon={MoreHorizontalIcon} aria-hidden />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuGroup>
+                                <DropdownMenuItem
+                                  render={
+                                    <Link to="/twibbon/$slug" params={{ slug: campaign.slug }} />
+                                  }
+                                >
+                                  <HugeiconsIcon icon={EyeIcon} aria-hidden />
+                                  Lihat
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setTab("analytics")
+                                    setSelectedCampaignId(campaign.id)
+                                  }}
+                                >
+                                  <HugeiconsIcon icon={BarChartIcon} aria-hidden />
+                                  Analytics
+                                </DropdownMenuItem>
+                              </DropdownMenuGroup>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuGroup>
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onClick={() => hapus(campaign.id, campaign.name)}
+                                >
+                                  <HugeiconsIcon icon={Delete01Icon} aria-hidden />
+                                  Hapus
+                                </DropdownMenuItem>
+                              </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </CardFooter>
+                    </Card>
+                  </li>
+                ))}
+              </ul>
+            )}
           </TabsContent>
+
           <TabsContent value="analytics">
             <section>
               <Card className="p-4">
@@ -384,7 +440,7 @@ function DashboardPage() {
                   <Select
                     items={selectItems}
                     value={selectedCampaignId ?? ""}
-                    onValueChange={(value) => setSelectedCampaignId(value || null)}
+                    onValueChange={(nilai) => setSelectedCampaignId(nilai || null)}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Pilih kampanye" />
@@ -425,7 +481,7 @@ function DashboardPage() {
             </section>
           </TabsContent>
         </Tabs>
-      )}
+      </main>
 
       {/* Delete confirmation dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -446,123 +502,51 @@ function DashboardPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  )
+}
 
-      {/* Password change dialog */}
-      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ganti Password</DialogTitle>
-            <DialogDescription>Masukkan password lama dan password baru kamu.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleChangePassword} className="grid gap-4">
-            {passwordError && (
-              <Alert variant="destructive" role="alert">
-                {passwordError}
-              </Alert>
-            )}
-            {passwordSuccess && <Alert role="alert">{passwordSuccess}</Alert>}
-            <div className="grid gap-2">
-              <Label htmlFor="current-password">Password saat ini</Label>
-              <Input
-                id="current-password"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="new-password">Password baru</Label>
-              <Input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setPasswordDialogOpen(false)
-                  setPasswordError("")
-                  setPasswordSuccess("")
-                  setCurrentPassword("")
-                  setNewPassword("")
-                }}
-              >
-                Batal
-              </Button>
-              <Button type="submit" isLoading={passwordLoading} disabled={passwordLoading}>
-                Simpan
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+function StatRingkas({
+  icon,
+  label,
+  nilai,
+}: {
+  icon: IconSvgElement
+  label: string
+  nilai: number
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card/70 px-4 py-3 shadow-(--shadow-surface)">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+        <HugeiconsIcon icon={icon} aria-hidden className="size-4.5" />
+      </span>
+      <span className="min-w-0">
+        <span className="block font-heading text-lg leading-tight font-bold tabular-nums tracking-[-0.03em]">
+          {nilai.toLocaleString("id-ID")}
+        </span>
+        <span className="block truncate text-xs text-muted-foreground">{label}</span>
+      </span>
+    </div>
+  )
+}
 
-      {/* Avatar upload dialog */}
-      <Dialog open={avatarDialogOpen} onOpenChange={setAvatarDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ganti Foto Profil</DialogTitle>
-            <DialogDescription>Pilih foto baru (PNG, JPG, atau WebP, maks 5MB).</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4">
-            {avatarError && (
-              <Alert variant="destructive" role="alert">
-                {avatarError}
-              </Alert>
-            )}
-            {avatarPreview && (
-              <div className="flex justify-center">
-                <img
-                  src={avatarPreview}
-                  alt="Preview"
-                  className="size-24 rounded-full border-2 border-border object-cover"
-                />
-              </div>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              onChange={handleAvatarSelect}
-              className="hidden"
-            />
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setAvatarDialogOpen(false)
-                  setAvatarFile(null)
-                  setAvatarError("")
-                  setAvatarPreview(userImage)
-                  if (fileInputRef.current) fileInputRef.current.value = ""
-                }}
-              >
-                Batal
-              </Button>
-              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                <HugeiconsIcon icon={FileUploadIcon} aria-hidden />
-                Pilih Foto
-              </Button>
-              <Button
-                type="button"
-                isLoading={avatarLoading}
-                disabled={!avatarFile || avatarLoading}
-                onClick={handleAvatarUpload}
-              >
-                Simpan
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </main>
+function Kosong() {
+  return (
+    <div className="relative overflow-hidden rounded-[2rem] border border-dashed border-primary/25 bg-card px-6 py-16 text-center">
+      <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:radial-gradient(var(--primary)_1px,transparent_1px)] [background-size:18px_18px]" />
+      <div className="relative mx-auto max-w-md">
+        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <HugeiconsIcon icon={Image01Icon} aria-hidden className="size-7" />
+        </div>
+        <h3 className="mt-5 font-heading text-xl font-bold">Mulai kampanye pertamamu</h3>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Unggah frame PNG, atur area fotonya, lalu bagikan tautannya. Semua kampanyemu akan
+          terkelola di sini.
+        </p>
+        <Link to="/buat" className={`${buttonVariants({})} mt-6`}>
+          <HugeiconsIcon icon={Add01Icon} aria-hidden /> Bikin Kampanye
+        </Link>
+      </div>
+    </div>
   )
 }
