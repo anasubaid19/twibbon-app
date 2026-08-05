@@ -10,7 +10,8 @@
     "check": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "og:generate": "bun scripts/og-home.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
