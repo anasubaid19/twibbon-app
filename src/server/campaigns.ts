@@ -6,6 +6,7 @@ import { db } from "@/db"
 import { campaignEvents, campaigns, frameSlots, user } from "@/db/schema"
 import { isValidSlot } from "@/lib/geometry"
 import { resolveSlug, SLUG_PATTERN, slugify } from "@/lib/slug"
+import { asalUrl } from "@/server/origin"
 import { getOptionalUserId, requireUserId } from "@/server/require-user"
 import { deleteFrameDir, hapusBerkas, saveFrame, validateFrame } from "@/server/upload"
 
@@ -342,7 +343,7 @@ export const getCampaignBySlug = createServerFn({ method: "GET" })
     const { ownerName, username, ...campaign } = row
     // Open Graph mengabaikan URL relatif, dan hanya server yang tahu alamat
     // kanonik aplikasi.
-    const asal = process.env.BETTER_AUTH_URL ?? ""
+    const asal = asalUrl()
     return {
       ...campaign,
       username: username ?? ownerName,
