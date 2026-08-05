@@ -6,6 +6,7 @@ import type { FrameSize, SlotRect } from "@/lib/geometry"
 const ZOOM_MIN = 0.25
 const ZOOM_MAKS = 3
 const KEYBOARD_NUDGE = 0.01
+const PUTAR: readonly (0 | 90 | 180 | 270)[] = [0, 90, 180, 270]
 
 type Params = {
   /** Satu foto per indeks slot. */
@@ -108,12 +109,13 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
       { width: img.naturalWidth, height: img.naturalHeight },
       d.ukuran,
       d.awal.scale,
+      d.awal.rotate,
     )
     const mentahX = d.awal.offsetX + (event.clientX - d.startX) / d.ukuran.width
     const mentahY = d.awal.offsetY + (event.clientY - d.startY) / d.ukuran.height
 
     tulis(d.index, {
-      scale: d.awal.scale,
+      ...d.awal,
       offsetX: Math.min(b.x, Math.max(-b.x, mentahX)),
       offsetY: Math.min(b.y, Math.max(-b.y, mentahY)),
     })
@@ -133,6 +135,7 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
     const img = fotoPerSlot[index]
     if (!img) return
     const berikut = Math.min(ZOOM_MAKS, Math.max(ZOOM_MIN, nilai))
+    const t = baca(index)
 
     // Mengecilkan zoom menyempitkan ruang gerak; tarik offset masuk lagi
     // supaya celah kosong tidak muncul di tepi slot.
@@ -140,9 +143,10 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
       { width: img.naturalWidth, height: img.naturalHeight },
       ukuranSlot(index),
       berikut,
+      t.rotate,
     )
-    const t = baca(index)
     tulis(index, {
+      ...t,
       scale: berikut,
       offsetX: Math.min(b.x, Math.max(-b.x, t.offsetX)),
       offsetY: Math.min(b.y, Math.max(-b.y, t.offsetY)),
@@ -157,12 +161,53 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
     if (!img || ukuran.width <= 0 || ukuran.height <= 0) return
 
     const t = baca(index)
-    const b = panBounds({ width: img.naturalWidth, height: img.naturalHeight }, ukuran, t.scale)
+    const b = panBounds(
+      { width: img.naturalWidth, height: img.naturalHeight },
+      ukuran,
+      t.scale,
+      t.rotate,
+    )
     tulis(index, {
-      scale: t.scale,
+      ...t,
       offsetX: Math.min(b.x, Math.max(-b.x, t.offsetX + dx * KEYBOARD_NUDGE)),
       offsetY: Math.min(b.y, Math.max(-b.y, t.offsetY + dy * KEYBOARD_NUDGE)),
     })
+    redrawRef.current()
+  }
+
+  /** Memutar foto slot ke kiri/kanan sebesar 90°; offset dijepit ke batas baru. */
+  function setRotate(index: number, delta: -90 | 90) {
+    const img = fotoPerSlot[index]
+    if (!img) return
+    const t = baca(index)
+    const lama = PUTAR.indexOf((t.rotate ?? 0) as (typeof PUTAR)[number])
+    const derajat = PUTAR[(lama + (delta > 0 ? 1 : PUTAR.length - 1)) % PUTAR.length]
+    const b = panBounds(
+      { width: img.naturalWidth, height: img.naturalHeight },
+      ukuranSlot(index),
+      t.scale,
+      derajat,
+    )
+    tulis(index, {
+      ...t,
+      rotate: derajat,
+      offsetX: Math.min(b.x, Math.max(-b.x, t.offsetX)),
+      offsetY: Math.min(b.y, Math.max(-b.y, t.offsetY)),
+    })
+    redrawRef.current()
+  }
+
+  /** Membalik foto slot secara horizontal/vertikal. Pencerminan tidak
+   *  mengubah batas geser, jadi offset cukup dibiarkan. */
+  function setFlipH(index: number) {
+    const t = baca(index)
+    tulis(index, { ...t, flipH: !(t.flipH ?? false) })
+    redrawRef.current()
+  }
+
+  function setFlipV(index: number) {
+    const t = baca(index)
+    tulis(index, { ...t, flipV: !(t.flipV ?? false) })
     redrawRef.current()
   }
 
@@ -177,6 +222,9 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
     scaleOf,
     setScale,
     nudge,
+    setRotate,
+    setFlipH,
+    setFlipV,
     reset,
     mulai,
     geser,

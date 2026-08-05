@@ -397,7 +397,11 @@ export const getCampaignBySlug = createServerFn({ method: "GET" })
     z.object({ slug: z.string().regex(SLUG_PATTERN, TIDAK_DITEMUKAN) }).parse(input),
   )
   .handler(async ({ data }) => {
-    // Tidak ada `requireUserId` di sini: halaman partisipan memang publik.
+    // Tidak ada `requireUserId` di sini: halaman partisipan memang publik,
+    // dan yang perlu diketahui cukup "siapa yang membuka", lewat
+    // getOptionalUserId (server-only, tidak pernah menyeberang ke klien).
+    const viewerId = await getOptionalUserId()
+
     const [row] = await db
       .select({
         id: campaigns.id,
@@ -412,18 +416,23 @@ export const getCampaignBySlug = createServerFn({ method: "GET" })
         // ke `name` — pola yang sama dipakai getSession di server/session.ts.
         username: user.username,
         ownerName: user.name,
+        // `userId` dipakai bagian server untuk menilai kepemilikan, lalu
+        // dijatuhkan sebelum hasilnya keluar ke klien.
+        userId: campaigns.userId,
       })
       .from(campaigns)
       .leftJoin(user, eq(user.id, campaigns.userId))
-      // `isPublic` sengaja TIDAK ikut menyaring di sini. Privat berarti
-      // "tidak terdaftar", bukan "hanya pemilik": slug adalah tautannya, dan
-      // siapa pun yang memegang tautan itu boleh membuka halamannya. Yang
-      // menjaga kerahasiaannya adalah listPublic — campaign privat tidak
-      // pernah muncul di galeri, jadi tidak bisa ditemukan tanpa tautan.
       .where(eq(campaigns.slug, data.slug))
       .limit(1)
 
     if (!row) return null
+
+    // Privat artinya "hanya pemilik". Bukan pemilik tidak boleh melihat apa
+    // pun tentang kampanye itu — nama, deskripsi, maupun frame-nya — jadi
+    // balasan untuk mereka cuma status aksesnya, bukan datanya.
+    const isOwner = Boolean(row.userId && viewerId && row.userId === viewerId)
+    const akses = row.isPublic || isOwner ? "ok" : row.userId ? "privat-lain" : "privat-anonim"
+    if (akses === "privat-lain" || akses === "privat-anonim") return { akses }
 
     const slots = await db
       .select({
@@ -440,12 +449,13 @@ export const getCampaignBySlug = createServerFn({ method: "GET" })
 
     // `userId` sengaja tidak ikut. Yang keluar cuma username, yang memang
     // ditampilkan di halaman partisipan sebagai "oleh @siapa".
-    const { ownerName, username, ...campaign } = row
+    const { ownerName, username, userId: _userId, ...campaign } = row
     // Open Graph mengabaikan URL relatif, dan hanya server yang tahu alamat
     // kanonik aplikasi.
     const asal = asalUrl()
     return {
       ...campaign,
+      akses,
       username: username ?? ownerName,
       slots,
       ogImage: `${asal}/api/frame/${campaign.id}`,
@@ -460,8 +470,8 @@ export const incrementUse = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     // Tanpa sesi: partisipan memang anonim. Dinaikkan lewat ekspresi SQL,
     // bukan baca-lalu-tulis, supaya dua unduhan bersamaan tidak saling
-    // menimpa. `isPublic` tidak disaring: campaign privat tetap bisa dipakai
-    // lewat tautannya, jadi pemakaiannya harus ikut terhitung juga.
+    // menimpa. `isPublic` tidak disaring: pemilik campaign privat tetap bisa
+    // mengunduh sendiri, jadi pemakaiannya harus ikut terhitung juga.
     await db
       .update(campaigns)
       .set({ useCount: sql`${campaigns.useCount} + 1` })

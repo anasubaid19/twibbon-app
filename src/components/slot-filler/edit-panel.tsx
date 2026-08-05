@@ -1,4 +1,14 @@
-import { Camera01Icon, Refresh01Icon, RotateLeft01Icon } from "@hugeicons/core-free-icons"
+import {
+  Camera01Icon,
+  FilterResetIcon,
+  ImageFlipHorizontalIcon,
+  ImageFlipVerticalIcon,
+  Refresh01Icon,
+  RotateLeft01Icon,
+  RotateRight01Icon,
+  ZoomInAreaIcon,
+  ZoomOutAreaIcon,
+} from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Button } from "@/components/ui/button"
 
@@ -8,18 +18,30 @@ type Props = {
   onPilihFoto: (berkas: File | undefined) => void
   skala: number
   onSkala: (nilai: number) => void
+  onPutar: (delta: -90 | 90) => void
+  onFlipH: () => void
+  onFlipV: () => void
   onReset: () => void
 }
+
+const LANGKAH = 0.1
 
 /**
  * Panel kontrol untuk SATU slot yang sedang dipilih. Berubah otomatis saat
  * seleksi berpindah — bukan satu slider per area (brief: jangan pernah render
  * slider berjajar per slot).
- *
- * Aksi (Putar/Balik) sengaja disabled sebagai placeholder: rotasi, flip,
- * crop, AI auto fit, dan undo/redo masuk di sini tanpa mengubah layout.
  */
-export function EditPanel({ nama, adaFoto, onPilihFoto, skala, onSkala, onReset }: Props) {
+export function EditPanel({
+  nama,
+  adaFoto,
+  onPilihFoto,
+  skala,
+  onSkala,
+  onPutar,
+  onFlipH,
+  onFlipV,
+  onReset,
+}: Props) {
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-2">
@@ -44,30 +66,89 @@ export function EditPanel({ nama, adaFoto, onPilihFoto, skala, onSkala, onReset 
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Zoom
         </span>
-        <input
-          type="range"
-          min={0.25}
-          max={3}
-          step={0.01}
-          value={skala}
-          disabled={!adaFoto}
-          onChange={(e) => onSkala(Number(e.target.value))}
-          className="w-full accent-primary disabled:opacity-50"
-          aria-label={`Zoom foto ${nama}`}
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label={`Perkecil zoom foto ${nama}`}
+            disabled={!adaFoto}
+            onClick={() => onSkala(Math.max(0.25, Math.round((skala - LANGKAH) * 100) / 100))}
+          >
+            <HugeiconsIcon icon={ZoomOutAreaIcon} aria-hidden />
+          </Button>
+          <input
+            type="range"
+            min={0.25}
+            max={3}
+            step={0.01}
+            value={skala}
+            disabled={!adaFoto}
+            onChange={(e) => onSkala(Number(e.target.value))}
+            className="w-full accent-primary disabled:opacity-50"
+            aria-label={`Zoom foto ${nama}`}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label={`Perbesar zoom foto ${nama}`}
+            disabled={!adaFoto}
+            onClick={() => onSkala(Math.min(3, Math.round((skala + LANGKAH) * 100) / 100))}
+          >
+            <HugeiconsIcon icon={ZoomInAreaIcon} aria-hidden />
+          </Button>
+        </div>
       </div>
 
       <Button type="button" variant="outline" size="sm" onClick={onReset} disabled={!adaFoto}>
-        <HugeiconsIcon icon={RotateLeft01Icon} aria-hidden /> Reset posisi
+        <HugeiconsIcon icon={FilterResetIcon} aria-hidden /> Reset posisi
       </Button>
 
-      {/* Tempat fitur mendatang: Rotate, Flip, Crop, AI Auto Fit, Undo/Redo. */}
-      <div className="grid grid-cols-2 gap-2">
-        <Button type="button" variant="outline" size="sm" disabled title="Segera hadir">
-          Putar
+      <div className="grid grid-cols-4 gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-label={`Putar foto ${nama} ke kiri`}
+          disabled={!adaFoto}
+          onClick={() => onPutar(-90)}
+          title="Putar ke kiri"
+        >
+          <HugeiconsIcon icon={RotateLeft01Icon} aria-hidden />
         </Button>
-        <Button type="button" variant="outline" size="sm" disabled title="Segera hadir">
-          Balik
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-label={`Putar foto ${nama} ke kanan`}
+          disabled={!adaFoto}
+          onClick={() => onPutar(90)}
+          title="Putar ke kanan"
+        >
+          <HugeiconsIcon icon={RotateRight01Icon} aria-hidden />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-label={`Balik foto ${nama} horizontal`}
+          disabled={!adaFoto}
+          onClick={onFlipH}
+          title="Balik horizontal"
+        >
+          <HugeiconsIcon icon={ImageFlipHorizontalIcon} aria-hidden />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-label={`Balik foto ${nama} vertikal`}
+          disabled={!adaFoto}
+          onClick={onFlipV}
+          title="Balik vertikal"
+        >
+          <HugeiconsIcon icon={ImageFlipVerticalIcon} aria-hidden />
         </Button>
       </div>
     </div>

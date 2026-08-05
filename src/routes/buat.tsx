@@ -351,8 +351,8 @@ function BuatPage() {
             </Label>
             {!sessionPending && !session?.user && !isPublic && (
               <p className="mt-2 pl-6 text-xs leading-5 text-muted-foreground">
-                Kampanye privat hanya bisa dibuka lewat tautan. Tanpa akun, kamu tidak bisa mengedit
-                atau menghapusnya nanti.{" "}
+                Kampanye privat hanya bisa dilihat oleh pembuat yang sudah login. Tanpa akun, kamu
+                tidak bisa mengedit atau menghapusnya nanti.{" "}
                 <Link to="/login" className="text-primary hover:underline">
                   Masuk
                 </Link>{" "}

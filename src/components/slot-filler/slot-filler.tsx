@@ -1,5 +1,8 @@
+import { CheckmarkCircle01Icon, Download01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import {
   type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
@@ -9,10 +12,12 @@ import {
 import { createPortal } from "react-dom"
 import { useElementSize } from "@/components/area-editor/use-element-size"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { renderComposite, type SlotFill, slotAt } from "@/lib/composite"
 import { type FrameSize, type SlotRect, toPixels } from "@/lib/geometry"
+import { cn } from "@/lib/utils"
 import { EditPanel } from "./edit-panel"
-import { SlotSelector } from "./slot-selector"
+import { namaSlot, SlotSelector } from "./slot-selector"
 import { useSlotTransform } from "./use-slot-transform"
 
 /** Sisi terpanjang kanvas preview di layar. */
@@ -35,6 +40,8 @@ type Props = {
   onGetFill: (getFill: (index: number) => SlotFill | undefined) => void
   onUnduh: (scale: number) => void
   sedangUnduh: boolean
+  /** Rendar di area unduhan (mis. opsi berbagi) setelah berhasil unduh. */
+  trailerUnduh?: ReactNode
 }
 
 export function SlotFiller({
@@ -46,9 +53,11 @@ export function SlotFiller({
   onGetFill,
   onUnduh,
   sedangUnduh,
+  trailerUnduh,
 }: Props) {
   const kanvasRef = useRef<HTMLCanvasElement>(null)
   const [frame, setFrame] = useState<HTMLImageElement | null>(null)
+  const [skalaUnduh, setSkalaUnduh] = useState<1 | 2 | 3>(1)
 
   useEffect(() => {
     const img = new Image()
@@ -150,26 +159,49 @@ export function SlotFiller({
 
   const jumlahTerisi = Object.keys(fotoPerSlot).length
   const adaIsi = jumlahTerisi > 0
-  const persen = slots.length ? Math.round((jumlahTerisi / slots.length) * 100) : 0
+  const semuaTerisi = slots.length > 0 && jumlahTerisi >= slots.length
+  const teksProgress = !adaIsi
+    ? "Belum ada foto diisi"
+    : semuaTerisi
+      ? "Semua area sudah terisi"
+      : `${jumlahTerisi} dari ${slots.length} area selesai`
 
   function UnduhRow() {
     return (
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Unduh</span>
-        <div className="grid flex-1 grid-cols-3 gap-2">
-          {[1, 2, 3].map((s) => (
-            <Button
+      <div className="flex flex-col gap-2">
+        <fieldset className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
+          <legend className="sr-only">Skala unduhan</legend>
+          {([1, 2, 3] as const).map((s) => (
+            <button
               key={s}
               type="button"
-              size="sm"
-              variant={s === 1 ? "default" : "outline"}
-              disabled={sedangUnduh}
-              onClick={() => onUnduh(s)}
+              aria-pressed={skalaUnduh === s}
+              onClick={() => setSkalaUnduh(s)}
+              className={cn(
+                "rounded-md py-1.5 text-sm font-medium transition-colors",
+                skalaUnduh === s
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
             >
-              {sedangUnduh ? "…" : `${s}×`}
-            </Button>
+              {s}×
+            </button>
           ))}
-        </div>
+        </fieldset>
+        <Button
+          type="button"
+          size="lg"
+          className="w-full"
+          disabled={!adaIsi || sedangUnduh}
+          onClick={() => onUnduh(skalaUnduh)}
+        >
+          {sedangUnduh ? (
+            <Spinner aria-hidden />
+          ) : (
+            <HugeiconsIcon icon={Download01Icon} aria-hidden />
+          )}
+          Download PNG
+        </Button>
       </div>
     )
   }
@@ -196,6 +228,14 @@ export function SlotFiller({
             onPointerCancel={t.selesai}
             onKeyDown={onCanvasKeyDown}
           />
+
+          {!frame && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-muted/60">
+              <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Spinner aria-hidden /> Memuat bingkai…
+              </span>
+            </div>
+          )}
 
           {/* Outline area di atas kanvas. pointer-events-none supaya tidak
               menghalangi tarikan — outline hidup di overlay, bukan di
@@ -247,16 +287,22 @@ export function SlotFiller({
 
         <div className="flex w-full max-w-sm flex-col gap-3">
           <div>
-            <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-              <span>
-                {jumlahTerisi} / {slots.length} foto terunggah
+            <div className="mb-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                {semuaTerisi && (
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle01Icon}
+                    aria-hidden
+                    className="text-primary"
+                  />
+                )}
+                {teksProgress}
               </span>
-              <span>{persen}%</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-muted">
               <div
                 className="h-full rounded-full bg-primary transition-[width]"
-                style={{ width: `${persen}%` }}
+                style={{ width: `${(jumlahTerisi / slots.length) * 100 || 0}%` }}
               />
             </div>
           </div>
@@ -267,6 +313,7 @@ export function SlotFiller({
               <p className="text-center text-xs text-muted-foreground">
                 {frameSize.width}×{frameSize.height} px pada 1×
               </p>
+              {trailerUnduh}
             </div>
           )}
         </div>
@@ -281,11 +328,14 @@ export function SlotFiller({
           onSelect={setSelected}
         />
         <EditPanel
-          nama={slots[selected]?.label || `Area ${selected + 1}`}
+          nama={namaSlot(slots, selected)}
           adaFoto={Boolean(fotoPerSlot[selected])}
           onPilihFoto={(berkas) => onPilihFotoSlot(selected, berkas)}
           skala={t.scaleOf(selected)}
           onSkala={(nilai) => t.setScale(selected, nilai)}
+          onPutar={(delta) => t.setRotate(selected, delta)}
+          onFlipH={() => t.setFlipH(selected)}
+          onFlipV={() => t.setFlipV(selected)}
           onReset={() => t.reset(selected)}
         />
       </div>

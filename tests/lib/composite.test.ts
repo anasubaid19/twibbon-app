@@ -15,6 +15,19 @@ describe("coverScale", () => {
   test("foto kecil diperbesar, bukan dibiarkan menyisakan celah", () => {
     expect(coverScale({ width: 100, height: 100 }, { width: 200, height: 200 })).toBe(2)
   })
+
+  test("rotasi 90° membuat lanskap lebih sulit menutup slot lanskap", () => {
+    // Lanskap 400×200 di slot 400×200 pas menutup saat lurus (skala 1), tapi
+    // setelah diputar 90° lebar/tinnginya bertukar jadi 200×400 sehingga harus
+    // diperbesar sampai lebarnya menutup (skala 2).
+    expect(coverScale({ width: 400, height: 200 }, { width: 400, height: 200 }, 0)).toBe(1)
+    expect(coverScale({ width: 400, height: 200 }, { width: 400, height: 200 }, 90)).toBe(2)
+    expect(coverScale({ width: 400, height: 200 }, { width: 400, height: 200 }, 270)).toBe(2)
+  })
+
+  test("rotasi 180° tidak mengubah dimensi efektif", () => {
+    expect(coverScale({ width: 400, height: 200 }, { width: 400, height: 200 }, 180)).toBe(1)
+  })
 })
 
 describe("drawRect", () => {
@@ -64,6 +77,26 @@ describe("drawRect", () => {
       expect(besar.width).toBeCloseTo(satuX.width * s, 6)
     }
   })
+
+  test("rotasi 90° memakai dimensi efektif (lebar/tinggi bertukar) dan tetap memusat di slot", () => {
+    const diputar = drawRect({ width: 400, height: 200 }, SLOT, {
+      ...IDENTITAS,
+      rotate: 90,
+      scale: 1,
+    })
+    // Skala penutup untuk lanskap dirotasi = 1, jadi gambar 200×400 (bertukar),
+    // duduk di tengah slot persegi.
+    expect(diputar.width).toBe(200)
+    expect(diputar.height).toBe(400)
+    expect(diputar.x + diputar.width / 2).toBe(SLOT.x + SLOT.width / 2)
+    expect(diputar.y + diputar.height / 2).toBe(SLOT.y + SLOT.height / 2)
+  })
+
+  test("rotasi di bawah nilai default 0 menghasilkan kotak yang sama dengan tanpa rotasi", () => {
+    expect(drawRect({ width: 400, height: 200 }, SLOT, IDENTITAS)).toEqual(
+      drawRect({ width: 400, height: 200 }, SLOT, { ...IDENTITAS, rotate: 0 as const }),
+    )
+  })
 })
 
 describe("panBounds", () => {
@@ -81,6 +114,14 @@ describe("panBounds", () => {
   test("zoom memperbesar ruang gerak", () => {
     const b = panBounds({ width: 200, height: 200 }, { width: 200, height: 200 }, 2)
     expect(b.x).toBe(0.5)
+    expect(b.y).toBe(0.5)
+  })
+
+  test("rotasi 90° menghitung ruang gerak dengan dimensi efektif", () => {
+    // Lanskap 400×200 dirotasi jadi 200×400: luberan vertikal 200 → 0.5 slot,
+    // horizontal 0.
+    const b = panBounds({ width: 400, height: 200 }, { width: 200, height: 200 }, 1, 90)
+    expect(b.x).toBe(0)
     expect(b.y).toBe(0.5)
   })
 })

@@ -14,21 +14,47 @@ import {
  * maupun 3x — syarat P3, karena preview dan unduhan memakai fungsi yang sama
  * dan cuma berbeda skala.
  */
-export type Transform = { scale: number; offsetX: number; offsetY: number }
+export type Transform = {
+  scale: number
+  offsetX: number
+  offsetY: number
+  /** Rotasi foto 0/90/180/270 derajat, terpisah dari rotasi slot (P2). */
+  rotate?: 0 | 90 | 180 | 270
+  flipH?: boolean
+  flipV?: boolean
+}
 
-export const IDENTITAS: Transform = { scale: 1, offsetX: 0, offsetY: 0 }
+export const IDENTITAS: Transform = {
+  scale: 1,
+  offsetX: 0,
+  offsetY: 0,
+  rotate: 0,
+  flipH: false,
+  flipV: false,
+}
+
+/**
+ * Dimensi efektif foto dalam bingkai axis-aligned slot. Untuk 90°/270°
+ * lebar dan tinggi bertukar, karena foto digambar setelah diputar keliling
+ * tengah slot.
+ */
+function efektif(image: FrameSize, rotate?: number): FrameSize {
+  return rotate && rotate % 180 ? { width: image.height, height: image.width } : image
+}
 
 /** Seberapa besar foto harus diperbesar agar menutup slot tanpa menyisakan celah. */
-export function coverScale(image: FrameSize, slot: FrameSize): number {
-  if (image.width <= 0 || image.height <= 0) return 1
-  return Math.max(slot.width / image.width, slot.height / image.height)
+export function coverScale(image: FrameSize, slot: FrameSize, rotate = 0): number {
+  const dim = efektif(image, rotate)
+  if (dim.width <= 0 || dim.height <= 0) return 1
+  return Math.max(slot.width / dim.width, slot.height / dim.height)
 }
 
 /** Di mana foto digambar, dalam piksel kanvas yang sama dengan `slot`. */
 export function drawRect(image: FrameSize, slot: PixelRect, t: Transform): PixelRect {
-  const skala = coverScale(image, slot) * t.scale
-  const width = image.width * skala
-  const height = image.height * skala
+  const dim = efektif(image, t.rotate)
+  const skala = coverScale(dim, slot) * t.scale
+  const width = dim.width * skala
+  const height = dim.height * skala
 
   return {
     // Dipusatkan lebih dulu, baru digeser. Karena itu zoom membesar dari
@@ -49,10 +75,12 @@ export function panBounds(
   image: FrameSize,
   slot: FrameSize,
   scale: number,
+  rotate = 0,
 ): { x: number; y: number } {
-  const s = coverScale(image, slot) * scale
-  const luberX = image.width * s - slot.width
-  const luberY = image.height * s - slot.height
+  const dim = efektif(image, rotate)
+  const s = coverScale(dim, slot) * scale
+  const luberX = dim.width * s - slot.width
+  const luberY = dim.height * s - slot.height
   return {
     x: slot.width > 0 ? Math.abs(luberX) / 2 / slot.width : 0,
     y: slot.height > 0 ? Math.abs(luberY) / 2 / slot.height : 0,
@@ -150,36 +178,43 @@ export function renderComposite({
     // dipotong oleh kotak yang masih axis-aligned di ruang itu. Foto ikut
     // miring bersama slot — hasil yang sama di preview maupun berkas unduhan
     // (P3), karena keduanya memanggil renderComposite.
+    let gambarRect = kotak
     if (derajat) {
       const rad = (derajat * Math.PI) / 180
       ctx.translate(kotak.x + kotak.width / 2, kotak.y + kotak.height / 2)
       ctx.rotate(rad)
-      const lokal = {
+      gambarRect = {
         x: -kotak.width / 2,
         y: -kotak.height / 2,
         width: kotak.width,
         height: kotak.height,
       }
       ctx.beginPath()
-      ctx.rect(lokal.x, lokal.y, lokal.width, lokal.height)
+      ctx.rect(gambarRect.x, gambarRect.y, gambarRect.width, gambarRect.height)
       ctx.clip()
-      const gambar = drawRect(
-        { width: fill.image.naturalWidth, height: fill.image.naturalHeight },
-        lokal,
-        fill.transform,
-      )
-      ctx.drawImage(fill.image, gambar.x, gambar.y, gambar.width, gambar.height)
     } else {
       ctx.beginPath()
       ctx.rect(kotak.x, kotak.y, kotak.width, kotak.height)
       ctx.clip()
-      const gambar = drawRect(
-        { width: fill.image.naturalWidth, height: fill.image.naturalHeight },
-        kotak,
-        fill.transform,
-      )
-      ctx.drawImage(fill.image, gambar.x, gambar.y, gambar.width, gambar.height)
     }
+
+    const gambar = drawRect(
+      { width: fill.image.naturalWidth, height: fill.image.naturalHeight },
+      gambarRect,
+      fill.transform,
+    )
+
+    // Rotasi/flip foto diterapkan di dalam klip slot, diputar keliling
+    // tengahnya. drawRect sudah menghitung persegi memakai dimensi efektif
+    // (lebar/tinggi bertukar di 90°/270°), jadi foto tetap menutup slot.
+    const cx = gambarRect.x + gambarRect.width / 2
+    const cy = gambarRect.y + gambarRect.height / 2
+    ctx.translate(cx, cy)
+    if (fill.transform.rotate) ctx.rotate((fill.transform.rotate * Math.PI) / 180)
+    if (fill.transform.flipH) ctx.scale(-1, 1)
+    if (fill.transform.flipV) ctx.scale(1, -1)
+    ctx.drawImage(fill.image, gambar.x - cx, gambar.y - cy, gambar.width, gambar.height)
+
     ctx.restore()
   })
 
