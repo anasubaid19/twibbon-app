@@ -31,7 +31,7 @@ export const Route = createRootRoute({
           property: "og:description",
           content: "Buat dan bagikan twibbon tanpa ribet dengan OpenFrame.",
         },
-        { property: "og:image", content: asal ? `${asal}/og-home.png` : "/og-home.png" },
+        { property: "og:image", content: asal ? `${asal}/og-home.png?v=2` : "/og-home.png?v=2" },
         { property: "og:url", content: asal || "/" },
         { name: "twitter:card", content: "summary_large_image" },
       ],
