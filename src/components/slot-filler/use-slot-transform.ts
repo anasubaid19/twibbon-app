@@ -1,10 +1,16 @@
 import { type PointerEvent as ReactPointerEvent, useCallback, useRef, useState } from "react"
-import { IDENTITAS, panBounds, slotAt, type Transform } from "@/lib/composite"
+import { IDENTITAS, slotAt, type Transform } from "@/lib/composite"
 import type { FrameSize, SlotRect } from "@/lib/geometry"
 
-/** Zoom minimum 0.25 — foto bisa diperkecil, celah kosong wajar. */
+/** Zoom minimum 0.25 — foto boleh diperkecil di bawah cover, celah kosong wajar. */
 const ZOOM_MIN = 0.25
 const ZOOM_MAKS = 3
+/**
+ * Batas longgar geser bebas, sebagai pecahan ukuran slot. Foto boleh keluar
+ * jauh dari slot (meniru Twibbonize), tapi tidak tak terhingga supaya tidak
+ * "hilang" dan masih bisa ditarik kembali atau di-reset.
+ */
+const BATAS_BEBAS = 3
 const KEYBOARD_NUDGE = 0.01
 const PUTAR: readonly (0 | 90 | 180 | 270)[] = [0, 90, 180, 270]
 
@@ -21,11 +27,11 @@ type Params = {
 /**
  * Transform foto tiap slot.
  *
- * Tiap slot punya transform sendiri, dan foto mana pun bisa digeser langsung
- * tanpa memilih slot lebih dulu — indeksnya didapat dari hit-test di pointer.
- *
- * Geser dijepit keras ke batas slot (`panBounds`) — tanpa rubber-band dan
- * tanpa spring. Tidak ada animasi: pointer melepas nilai tepat di tempatnya.
+ * Tiap slot punya transform sendiri. Mode bebas (meniru Twibbonize): foto
+ * boleh digeser melewati tepi slot sampai keluar jauh, dan boleh diperkecil
+ * di bawah cover. Satu-satunya penjaga adalah `BATAS_BEBAS` supaya foto
+ * tidak hilang tak terlacak. Tidak ada animasi: pointer melepas nilai tepat
+ * di tempatnya.
  */
 export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params) {
   // Transform tinggal di ref, bukan state: menggeser tidak perlu re-render
@@ -72,7 +78,9 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
   function mulai(event: ReactPointerEvent) {
     const box = event.currentTarget.getBoundingClientRect()
     const titik = { x: event.clientX - box.left, y: event.clientY - box.top }
-    const kena = slotAt(slots, titik, canvas)
+    // Single-photo: tarikan dari mana saja di kanvas menggeser foto itu —
+    // tidak wajib tepat kena slot (meniru Twibbonize).
+    const kena = slots.length === 1 ? 0 : slotAt(slots, titik, canvas)
     if (kena < 0) return
     // Tanpa foto di slot itu, tidak ada yang bisa digeser.
     const img = fotoPerSlot[kena]
@@ -104,20 +112,14 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
     if (!img) return
 
     // Delta dihitung dari titik awal, bukan bertahap, supaya galat tidak
-    // menumpuk sepanjang tarikan. Lalu dijepit keras ke batas slot.
-    const b = panBounds(
-      { width: img.naturalWidth, height: img.naturalHeight },
-      d.ukuran,
-      d.awal.scale,
-      d.awal.rotate,
-    )
+    // menumpuk sepanjang tarikan. Mode bebas: hanya dijaga batas longgar.
     const mentahX = d.awal.offsetX + (event.clientX - d.startX) / d.ukuran.width
     const mentahY = d.awal.offsetY + (event.clientY - d.startY) / d.ukuran.height
 
     tulis(d.index, {
       ...d.awal,
-      offsetX: Math.min(b.x, Math.max(-b.x, mentahX)),
-      offsetY: Math.min(b.y, Math.max(-b.y, mentahY)),
+      offsetX: Math.min(BATAS_BEBAS, Math.max(-BATAS_BEBAS, mentahX)),
+      offsetY: Math.min(BATAS_BEBAS, Math.max(-BATAS_BEBAS, mentahY)),
     })
     redrawRef.current()
   }
@@ -137,20 +139,9 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
     const berikut = Math.min(ZOOM_MAKS, Math.max(ZOOM_MIN, nilai))
     const t = baca(index)
 
-    // Mengecilkan zoom menyempitkan ruang gerak; tarik offset masuk lagi
-    // supaya celah kosong tidak muncul di tepi slot.
-    const b = panBounds(
-      { width: img.naturalWidth, height: img.naturalHeight },
-      ukuranSlot(index),
-      berikut,
-      t.rotate,
-    )
-    tulis(index, {
-      ...t,
-      scale: berikut,
-      offsetX: Math.min(b.x, Math.max(-b.x, t.offsetX)),
-      offsetY: Math.min(b.y, Math.max(-b.y, t.offsetY)),
-    })
+    // Mode bebas: offset dibiarkan apa adanya. Mengecilkan zoom tidak
+    // menarik foto balik ke tengah, dan celah kosong memang wajar.
+    tulis(index, { ...t, scale: berikut })
     setSkalaState((s) => ({ ...s, [index]: berikut }))
     redrawRef.current()
   }
@@ -161,39 +152,22 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
     if (!img || ukuran.width <= 0 || ukuran.height <= 0) return
 
     const t = baca(index)
-    const b = panBounds(
-      { width: img.naturalWidth, height: img.naturalHeight },
-      ukuran,
-      t.scale,
-      t.rotate,
-    )
     tulis(index, {
       ...t,
-      offsetX: Math.min(b.x, Math.max(-b.x, t.offsetX + dx * KEYBOARD_NUDGE)),
-      offsetY: Math.min(b.y, Math.max(-b.y, t.offsetY + dy * KEYBOARD_NUDGE)),
+      offsetX: Math.min(BATAS_BEBAS, Math.max(-BATAS_BEBAS, t.offsetX + dx * KEYBOARD_NUDGE)),
+      offsetY: Math.min(BATAS_BEBAS, Math.max(-BATAS_BEBAS, t.offsetY + dy * KEYBOARD_NUDGE)),
     })
     redrawRef.current()
   }
 
-  /** Memutar foto slot ke kiri/kanan sebesar 90°; offset dijepit ke batas baru. */
+  /** Memutar foto slot ke kiri/kanan sebesar 90°; offset dibiarkan (mode bebas). */
   function setRotate(index: number, delta: -90 | 90) {
     const img = fotoPerSlot[index]
     if (!img) return
     const t = baca(index)
     const lama = PUTAR.indexOf((t.rotate ?? 0) as (typeof PUTAR)[number])
     const derajat = PUTAR[(lama + (delta > 0 ? 1 : PUTAR.length - 1)) % PUTAR.length]
-    const b = panBounds(
-      { width: img.naturalWidth, height: img.naturalHeight },
-      ukuranSlot(index),
-      t.scale,
-      derajat,
-    )
-    tulis(index, {
-      ...t,
-      rotate: derajat,
-      offsetX: Math.min(b.x, Math.max(-b.x, t.offsetX)),
-      offsetY: Math.min(b.y, Math.max(-b.y, t.offsetY)),
-    })
+    tulis(index, { ...t, rotate: derajat })
     redrawRef.current()
   }
 

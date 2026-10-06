@@ -282,7 +282,7 @@ export function SlotFiller({
         </div>
 
         <p className="text-center text-xs text-muted-foreground">
-          Klik area untuk memilih, geser fotonya untuk mengatur posisi.
+          Klik area untuk memilih, geser fotonya bebas untuk mengatur posisi — boleh keluar bingkai.
         </p>
 
         <div className="flex w-full max-w-sm flex-col gap-3">
