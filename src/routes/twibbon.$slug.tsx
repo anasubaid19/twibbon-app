@@ -9,6 +9,7 @@ import { SlotFiller } from "@/components/slot-filler/slot-filler"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { renderComposite, type SlotFill } from "@/lib/composite"
 import { pesanError } from "@/lib/pesan-error"
+import { namaBerkasUnduhan } from "@/lib/slug"
 import { getCampaignBySlug, incrementUse, trackEvent } from "@/server/campaigns"
 
 /**
@@ -240,7 +241,7 @@ function HalamanPublik({ campaign }: { campaign: KampanyePublik }) {
       })
 
       const tautan = document.createElement("a")
-      tautan.download = `openframe-${c.slug}-${scale}x.png`
+      tautan.download = namaBerkasUnduhan(c.name, `openframe-${c.slug}`, scale)
       tautan.href = kanvas.toDataURL("image/png")
       tautan.click()
 

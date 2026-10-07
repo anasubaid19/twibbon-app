@@ -50,3 +50,29 @@ export function resolveSlug(base: string, taken: readonly string[]): string {
 function withSuffix(base: string, suffix: string): string {
   return `${trimHyphens(base.slice(0, MAX_LENGTH - suffix.length))}${suffix}`
 }
+
+const MAKS_NAMA_BERKAS = 80
+
+/**
+ * Nama berkas unduhan mengikuti judul kampanye apa adanya — huruf besar dan
+ * spasi dipertahankan supaya terbaca ("FIELD TRIP 1 SMP & SMA AW1-1x.png").
+ * Hanya karakter yang ilegal sebagai nama berkas (Windows/macOS/Linux) yang
+ * dibuang. Jatuh ke `cadangan` (slug) kalau judul tidak menyisakan apa-apa.
+ */
+export function namaBerkasUnduhan(judul: string, cadangan: string, skala: number): string {
+  // Karakter kontrol tidak bisa ditulis sebagai rentang regex (aturan
+  // biome), jadi disaring lewat kode karakternya.
+  const tanpaKontrol = [...judul]
+    .filter((ch) => {
+      const kode = ch.codePointAt(0) ?? 32
+      return kode >= 32 && kode !== 127
+    })
+    .join("")
+  const bersih = tanpaKontrol
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[. ]+$/g, "")
+    .slice(0, MAKS_NAMA_BERKAS)
+  return `${bersih || cadangan}-${skala}x.png`
+}

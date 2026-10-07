@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { resolveSlug, SLUG_PATTERN, slugify } from "@/lib/slug"
+import { namaBerkasUnduhan, resolveSlug, SLUG_PATTERN, slugify } from "@/lib/slug"
 
 describe("slugify", () => {
   test.each([
@@ -57,5 +57,29 @@ describe("resolveSlug", () => {
     const hasil = resolveSlug(base, [base])
     expect(hasil.length).toBeLessThanOrEqual(60)
     expect(hasil).toMatch(SLUG_PATTERN)
+  })
+})
+
+describe("namaBerkasUnduhan", () => {
+  test("mengikuti judul apa adanya dengan sufiks skala", () => {
+    expect(namaBerkasUnduhan("FIELD TRIP 1 SMP & SMA AW1", "ft1-aw1", 1)).toBe(
+      "FIELD TRIP 1 SMP & SMA AW1-1x.png",
+    )
+  })
+
+  test("membuang karakter ilegal nama berkas", () => {
+    expect(namaBerkasUnduhan('Lomba "17/8" <Seru> | Final: Babak*?', "lomba", 2)).toBe(
+      "Lomba 178 Seru Final Babak-2x.png",
+    )
+  })
+
+  test("jatuh ke cadangan saat judul tidak menyisakan apa-apa", () => {
+    expect(namaBerkasUnduhan("???", "openframe-lomba", 3)).toBe("openframe-lomba-3x.png")
+  })
+
+  test("memotong judul sangat panjang", () => {
+    const hasil = namaBerkasUnduhan("a".repeat(200), "cadangan", 1)
+    expect(hasil.length).toBeLessThanOrEqual(80 + "-1x.png".length)
+    expect(hasil.endsWith("-1x.png")).toBe(true)
   })
 })
