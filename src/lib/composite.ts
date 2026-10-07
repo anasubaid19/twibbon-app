@@ -164,6 +164,12 @@ export function renderComposite({
   const ctx = canvas.getContext("2d")
   if (!ctx) return canvas
 
+  // Downscale satu langkah (mis. frame 2160px → preview 345px) dengan kualitas
+  // default ("low") menghasilkan tepi teks yang lembek. "high" mempertajam
+  // preview maupun berkas unduhan tanpa mengubah tata letak.
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = "high"
+
   const kanvasSize = { width: canvas.width, height: canvas.height }
 
   slots.forEach((slot, index) => {

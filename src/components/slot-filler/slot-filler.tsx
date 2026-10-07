@@ -107,12 +107,20 @@ export function SlotFiller({
     const kanvas = kanvasRef.current
     if (!kanvas || !frame) return
 
+    /*
+     * Bitmap preview dirender mengikuti densitas layar (retina), bukan 1:1
+     * piksel CSS — kalau tidak, di layar dpr 2–3 preview tampak blur karena
+     * 345px bitmap direntangkan ke ~700–1000px perangkat. Ukuran TAMPILAN
+     * tetap `lebarPreview` via CSS, jadi hit-test dan overlay tidak berubah:
+     * offset foto adalah pecahan slot, independen resolusi (P3).
+     */
+    const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 3) : 1
     const hasil = renderComposite({
       frame,
       frameSize,
       slots,
       getFill,
-      scale: lebarPreview / frameSize.width,
+      scale: (lebarPreview / frameSize.width) * dpr,
     })
 
     kanvas.width = hasil.width
