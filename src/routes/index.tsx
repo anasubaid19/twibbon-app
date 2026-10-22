@@ -73,11 +73,7 @@ function Beranda() {
 
           <div className="mx-auto grid max-w-[1140px] items-center gap-14 px-6 py-16 sm:py-24 lg:grid-cols-[0.92fr_1.08fr] lg:gap-10 lg:py-28">
             <div className="max-w-xl">
-              <div className="fade-up mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/8 px-3 py-1.5 text-xs font-semibold text-primary">
-                <span className="size-1.5 rounded-full bg-primary" />
-                Twibbon yang siap dibagikan
-              </div>
-              <h1 className="fade-up font-heading text-5xl font-extrabold leading-[0.98] tracking-[-0.055em] sm:text-7xl">
+                <h1 className="fade-up font-heading text-5xl font-extrabold leading-[0.98] tracking-[-0.055em] sm:text-7xl">
                 Satu frame.
                 <br />
                 <span className="text-primary">Semua cerita.</span>
