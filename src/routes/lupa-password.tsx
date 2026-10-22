@@ -102,7 +102,7 @@ function LupaPasswordPage() {
             Reset Berhasil
           </h1>
           <p className="mb-7 text-sm text-muted-foreground">
-            Password berhasil diperbarui. Recovery code lama sudah tidak berlaku — simpan yang baru
+            Password berhasil diperbarui. Recovery code lama sudah tidak berlaku. Simpan yang baru
             ini.
           </p>
 

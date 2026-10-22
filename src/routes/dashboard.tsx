@@ -351,7 +351,7 @@ function DashboardPage() {
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {terlihat.map((campaign) => (
                   <li key={campaign.id}>
-                    <Card className="overflow-hidden rounded-xl transition-[border-color,box-shadow,transform] focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background motion-safe:hover:-translate-y-[3px] hover:border-primary hover:shadow-[0_18px_50px_-22px_var(--primary)]">
+                    <Card className="overflow-hidden rounded-xl transition-[border-color,box-shadow,transform] focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background motion-safe:hover:-translate-y-[3px] hover:border-primary hover:shadow-md">
                       <Link
                         to="/edit/$id"
                         params={{ id: campaign.id }}
@@ -364,7 +364,7 @@ function DashboardPage() {
                             loading="lazy"
                             className="size-full object-contain motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover/card:scale-[1.04]"
                           />
-                          <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/85 px-2.5 py-1 text-[11px] font-semibold backdrop-blur">
+                          <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/85 px-2.5 py-1 text-[11px] font-semibold">
                             {campaign.isPublic ? (
                               <HugeiconsIcon icon={GlobeIcon} aria-hidden className="size-3" />
                             ) : (
@@ -665,7 +665,6 @@ function StatRingkas({
 function Kosong() {
   return (
     <div className="relative overflow-hidden rounded-[2rem] border border-dashed border-primary/25 bg-card px-6 py-16 text-center">
-      <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:radial-gradient(var(--primary)_1px,transparent_1px)] [background-size:18px_18px]" />
       <div className="relative mx-auto max-w-md">
         <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <HugeiconsIcon icon={Image01Icon} aria-hidden className="size-7" />
@@ -733,7 +732,7 @@ function AnalyticsKosong() {
       </div>
       <h3 className="mt-4 font-heading text-lg font-semibold">Belum ada data analytics</h3>
       <p className="mt-1 text-sm text-muted-foreground">
-        Buat kampanye dulu — statistik tampilan, unduhan, dan share akan muncul di sini.
+        Buat kampanye dulu. Statistik tampilan, unduhan, dan share akan muncul di sini.
       </p>
     </Card>
   )

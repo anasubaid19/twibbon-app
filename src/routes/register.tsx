@@ -84,7 +84,7 @@ function RegisterPage() {
             <HugeiconsIcon icon={Key01Icon} aria-hidden /> Simpan Kode
           </h1>
           <p className="mb-7 text-sm text-muted-foreground">
-            Akun berhasil dibuat! Kode ini <strong>hanya muncul sekali</strong> — simpan di tempat
+            Akun berhasil dibuat! Kode ini <strong>hanya muncul sekali</strong>. Simpan di tempat
             aman seperti catatan atau password manager.
           </p>
 
@@ -147,7 +147,7 @@ function RegisterPage() {
           OpenFrame<span className="text-primary">.</span>
         </h1>
         <p className="mb-7 text-sm text-muted-foreground">
-          Buat akun gratis — tanpa email, tanpa nomor telepon
+          Buat akun gratis. Tanpa email, tanpa nomor telepon
         </p>
 
         {error && (
