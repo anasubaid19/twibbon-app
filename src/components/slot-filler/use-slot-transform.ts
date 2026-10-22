@@ -53,6 +53,15 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
     ukuran: FrameSize
   } | null>(null)
 
+  const gesture = useRef<{
+    index: number
+    initialDistance: number
+    initialScale: number
+    initialCenter: { x: number; y: number }
+    initialOffset: { x: number; y: number }
+    slotSize: FrameSize
+  } | null>(null)
+
   function baca(index: number): Transform {
     return perSlot.current[index] ?? IDENTITAS
   }
@@ -146,6 +155,43 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
     redrawRef.current()
   }
 
+  function mulaiPinch(index: number, jarak: number, pusat: { x: number; y: number }) {
+    const img = fotoPerSlot[index]
+    if (!img) return
+    const t = baca(index)
+    const ukuran = ukuranSlot(index)
+    if (ukuran.width <= 0) return
+    gesture.current = {
+      index,
+      initialDistance: jarak,
+      initialScale: t.scale ?? 1,
+      initialCenter: pusat,
+      initialOffset: { x: t.offsetX, y: t.offsetY },
+      slotSize: ukuran,
+    }
+  }
+
+  function pinch(jarak: number, pusat: { x: number; y: number }) {
+    const g = gesture.current
+    if (!g) return
+    const img = fotoPerSlot[g.index]
+    if (!img) return
+    const rasio = jarak / g.initialDistance
+    const skalaBaru = Math.min(ZOOM_MAKS, Math.max(ZOOM_MIN, g.initialScale * rasio))
+    const dx = (pusat.x - g.initialCenter.x) / g.slotSize.width
+    const dy = (pusat.y - g.initialCenter.y) / g.slotSize.height
+    const offsetX = Math.min(BATAS_BEBAS, Math.max(-BATAS_BEBAS, g.initialOffset.x + dx))
+    const offsetY = Math.min(BATAS_BEBAS, Math.max(-BATAS_BEBAS, g.initialOffset.y + dy))
+
+    tulis(g.index, { ...baca(g.index), scale: skalaBaru, offsetX, offsetY })
+    setSkalaState((s) => ({ ...s, [g.index]: skalaBaru }))
+    redrawRef.current()
+  }
+
+  function selesaiPinch() {
+    gesture.current = null
+  }
+
   function nudge(index: number, dx: number, dy: number) {
     const img = fotoPerSlot[index]
     const ukuran = ukuranSlot(index)
@@ -203,5 +249,8 @@ export function useSlotTransform({ fotoPerSlot, slots, canvas, redraw }: Params)
     mulai,
     geser,
     selesai,
+    mulaiPinch,
+    pinch,
+    selesaiPinch,
   }
 }

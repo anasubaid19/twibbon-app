@@ -79,6 +79,9 @@ export function SlotFiller({
    */
   const kanvasSize = useElementSize(kanvasRef)
 
+  const pointerMap = useRef<Map<number, { x: number; y: number }>>(new Map())
+  const sedangPinch = useRef(false)
+
   // Transform tinggal di ref (di dalam hook), jadi gambar() selalu lewat
   // ref ini agar memakai fungsi terbaru tanpa menandai dependensi.
   const gambarRef = useRef<() => void>(() => {})
@@ -141,6 +144,8 @@ export function SlotFiller({
 
   /** Klik area memilih slot; tarikan tetap menggeser foto di slot itu. */
   function onCanvasPointerDown(event: ReactPointerEvent<HTMLCanvasElement>) {
+    pointerMap.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
     const box = event.currentTarget.getBoundingClientRect()
     const kena = slotAt(
       slots,
@@ -148,7 +153,33 @@ export function SlotFiller({
       kanvasSize,
     )
     if (kena >= 0) setSelected(kena)
-    t.mulai(event)
+
+    if (pointerMap.current.size === 1) {
+      t.mulai(event)
+    } else if (pointerMap.current.size === 2) {
+      // Batalkan tarikan satu jari, beralih ke pinch/pan dua jari.
+      t.selesai(event)
+      sedangPinch.current = true
+      const pts = [...pointerMap.current.values()]
+      const jarak = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y)
+      const pusat = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+      t.mulaiPinch(selected, jarak, pusat)
+    }
+  }
+
+  function onCanvasPointerMove(event: ReactPointerEvent<HTMLCanvasElement>) {
+    if (pointerMap.current.has(event.pointerId)) {
+      pointerMap.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    }
+
+    if (sedangPinch.current && pointerMap.current.size >= 2) {
+      const pts = [...pointerMap.current.values()]
+      const jarak = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y)
+      const pusat = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+      t.pinch(jarak, pusat)
+      return
+    }
+    t.geser(event)
   }
 
   function onCanvasKeyDown(event: ReactKeyboardEvent<HTMLCanvasElement>) {
@@ -163,6 +194,15 @@ export function SlotFiller({
 
     event.preventDefault()
     t.nudge(selected, langkah[0], langkah[1])
+  }
+
+  function onCanvasPointerUp(event: ReactPointerEvent<HTMLCanvasElement>) {
+    pointerMap.current.delete(event.pointerId)
+    if (pointerMap.current.size < 2) {
+      t.selesaiPinch()
+      sedangPinch.current = false
+    }
+    t.selesai(event)
   }
 
   const jumlahTerisi = Object.keys(fotoPerSlot).length
@@ -216,8 +256,8 @@ export function SlotFiller({
 
   return (
     <div className="grid w-full gap-6 pb-24 md:pb-0 lg:grid-cols-[minmax(0,1fr)_20rem]">
-      {/* Kiri: preview tetap terlihat saat kolom kanan digulir. */}
-      <div className="flex min-w-0 flex-col items-center gap-4 lg:sticky lg:top-6 lg:self-start">
+      {/* Kiri: preview. Di mobile ditampilkan setelah panel upload agar upload mudah ditemukan. */}
+      <div className="order-2 flex min-w-0 flex-col items-center gap-4 md:order-1 lg:sticky lg:top-6 lg:self-start">
         <div className="relative w-full" style={{ maxWidth: lebarPreview }}>
           <canvas
             ref={kanvasRef}
@@ -231,9 +271,9 @@ export function SlotFiller({
             tabIndex={0}
             aria-label="Pratinjau foto. Gunakan tombol panah untuk menggeser foto di area terpilih."
             onPointerDown={onCanvasPointerDown}
-            onPointerMove={t.geser}
-            onPointerUp={t.selesai}
-            onPointerCancel={t.selesai}
+            onPointerMove={onCanvasPointerMove}
+            onPointerUp={onCanvasPointerUp}
+            onPointerCancel={onCanvasPointerUp}
             onKeyDown={onCanvasKeyDown}
           />
 
@@ -327,8 +367,8 @@ export function SlotFiller({
         </div>
       </div>
 
-      {/* Kanan: selector + panel edit slot yang sedang dipilih. */}
-      <div className="flex min-w-0 w-full flex-col gap-4">
+      {/* Kanan: selector + panel edit slot yang sedang dipilih. Di mobile tampil lebih dulu. */}
+      <div id="area-upload" className="order-1 flex min-w-0 w-full scroll-mt-24 flex-col gap-4 md:order-2">
         <SlotSelector
           slots={slots}
           fotoPerSlot={fotoPerSlot}

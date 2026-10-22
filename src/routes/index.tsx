@@ -88,12 +88,12 @@ function Beranda() {
                 Upload frame, atur area foto, lalu bagikan link-nya. Gratis tanpa perlu bikin akun.
               </p>
               <div className="fade-up-3 mt-8 flex flex-wrap items-center gap-3">
-                <Link to="/buat" className={buttonVariants({ size: "lg" })}>
-                  Bikin twibbon gratis <HugeiconsIcon icon={ArrowRight01Icon} aria-hidden />
-                </Link>
-                <a href="#galeri" className={buttonVariants({ variant: "outline", size: "lg" })}>
-                  Lihat galeri
+                <a href="#galeri" className={buttonVariants({ size: "lg" })}>
+                  Pakai twibbon <HugeiconsIcon icon={ArrowRight01Icon} aria-hidden />
                 </a>
+                <Link to="/buat" className={buttonVariants({ variant: "outline", size: "lg" })}>
+                  Bikin twibbon baru
+                </Link>
               </div>
               <div className="fade-up-3 mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">

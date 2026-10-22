@@ -178,10 +178,10 @@ export function Navbar({ username }: Props) {
               </>
             )}
             <Link to="/" search={{ q: "", hal: 1 }} className={itemKelas(pathname === "/")}>
-              Galeri
+              Pakai twibbon
             </Link>
             <Link to="/buat" className={itemKelas(pathname === "/buat")}>
-              Bikin kampanye
+              Bikin twibbon
             </Link>
           </div>
         </div>
