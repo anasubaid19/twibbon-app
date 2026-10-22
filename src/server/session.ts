@@ -14,7 +14,11 @@ export const getSession = createServerFn({ method: "GET" }).handler(async () => 
    * tahu ada. Kembalikan hanya field aman yang memang dipakai — sekaligus
    * menetapkan bentuk aman untuk Fase 2 saat role/data campaign menempel. */
   return {
-    user: { username: session.user.username ?? session.user.name, image: session.user.image },
+    user: {
+      username: session.user.username ?? session.user.name,
+      image: session.user.image,
+      role: (session.user as { role?: string }).role ?? "user",
+    },
   }
 })
 

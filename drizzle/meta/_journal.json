@@ -50,6 +50,13 @@
       "when": 1785904431963,
       "tag": "0006_tiny_lorna_dane",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792666856897,
+      "tag": "0007_sour_maelstrom",
+      "breakpoints": true
     }
   ]
 }

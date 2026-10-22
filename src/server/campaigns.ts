@@ -7,7 +7,7 @@ import { campaignEvents, campaigns, frameSlots, user } from "@/db/schema"
 import { isValidSlot } from "@/lib/geometry"
 import { resolveSlug, SLUG_PATTERN, slugify } from "@/lib/slug"
 import { asalUrl } from "@/server/origin"
-import { getOptionalUserId, requireUserId } from "@/server/require-user"
+import { getOptionalUserId, requireSuperAdmin, requireUserId } from "@/server/require-user"
 import { deleteFrameDir, hapusBerkas, readFrame, saveFrame, validateFrame } from "@/server/upload"
 
 /* --- Skema bersama ------------------------------------------------------ */
@@ -732,4 +732,53 @@ export const replaceFrame = createServerFn({ method: "POST" })
     await hapusBerkas(lama.framePath)
 
     return { frameWidth: frame.width, frameHeight: frame.height }
+  })
+
+/* --- Admin: list semua kampanye ---------------------------------------- */
+
+export const listAllCampaigns = createServerFn({ method: "GET" }).handler(async () => {
+  await requireSuperAdmin()
+
+  const rows = await db
+    .select({
+      id: campaigns.id,
+      name: campaigns.name,
+      slug: campaigns.slug,
+      isPublic: campaigns.isPublic,
+      useCount: campaigns.useCount,
+      createdAt: campaigns.createdAt,
+      userId: campaigns.userId,
+      slotCount: count(frameSlots.id),
+      ownerUsername: user.username,
+      ownerName: user.name,
+    })
+    .from(campaigns)
+    .leftJoin(frameSlots, eq(frameSlots.campaignId, campaigns.id))
+    .leftJoin(user, eq(user.id, campaigns.userId))
+    .groupBy(campaigns.id, user.id)
+    .orderBy(desc(campaigns.createdAt))
+
+  return rows.map((row) => ({
+    ...row,
+    createdAt: row.createdAt.toISOString(),
+    owner: row.ownerUsername ?? row.ownerName ?? (row.userId ? row.userId : "anonim"),
+  }))
+})
+
+/* --- Admin: hapus kampanye mana pun ------------------------------------- */
+
+export const deleteCampaignAdmin = createServerFn({ method: "POST" })
+  .validator((input: unknown) => z.object({ id: idSchema }).parse(input))
+  .handler(async ({ data }) => {
+    await requireSuperAdmin()
+
+    const terhapus = await db
+      .delete(campaigns)
+      .where(eq(campaigns.id, data.id))
+      .returning({ id: campaigns.id })
+
+    if (terhapus.length === 0) throw new Error(TIDAK_DITEMUKAN)
+
+    await deleteFrameDir(data.id)
+    return { ok: true as const }
   })

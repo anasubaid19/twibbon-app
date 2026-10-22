@@ -20,6 +20,9 @@ export const user = pgTable("user", {
   // Diisi server tepat setelah pendaftaran. Nullable karena Better Auth
   // membuat baris user lebih dulu, baru kita tempelkan hash-nya.
   recoveryCodeHash: text("recovery_code_hash"),
+  // Peran pengguna. "user" biasa; "superadmin" boleh mengelola seluruh
+  // kampanye lewat CMS.
+  role: text("role").default("user").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })

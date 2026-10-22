@@ -31,6 +31,13 @@ export const auth = betterAuth({
         // lengkap beserta hash-nya di badan respons JSON.
         returned: false,
       },
+      role: {
+        type: "string",
+        required: false,
+        input: false,
+        returned: true,
+        defaultValue: "user",
+      },
     },
   },
 

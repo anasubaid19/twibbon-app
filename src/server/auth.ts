@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises"
 import { dirname, resolve } from "node:path"
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { user } from "@/db/schema"
@@ -68,8 +68,22 @@ export const registerUser = createServerFn({ method: "POST" })
     // sudah hilang, username tidak bisa didaftarkan ulang ("already taken"),
     // dan reset langsung ditolak karena tidak ada hash. Di aplikasi tanpa
     // email, itu terkunci permanen tanpa jalan pulih apa pun.
+    // Bootstrap super admin: pengguna pertama yang mendaftar (saat belum ada
+    // super admin sama sekali) otomatis jadi super admin, supaya CMS bisa
+    // dipakai tanpa langkah konfigurasi manual.
+    let role = "user"
     try {
-      await db.update(user).set({ recoveryCodeHash }).where(eq(user.id, result.user.id))
+      const [ada] = await db
+        .select({ n: sql`COUNT(*)` })
+        .from(user)
+        .where(eq(user.role, "superadmin"))
+      if (Number(ada?.n ?? 0) === 0) role = "superadmin"
+    } catch {
+      role = "user"
+    }
+
+    try {
+      await db.update(user).set({ recoveryCodeHash, role }).where(eq(user.id, result.user.id))
     } catch (error) {
       // Kembalikan ke keadaan semula supaya username bebas dan pengguna bisa
       // mencoba lagi. Baris session dan account ikut terhapus lewat cascade.

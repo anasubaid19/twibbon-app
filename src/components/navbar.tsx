@@ -166,9 +166,16 @@ export function Navbar({ username }: Props) {
 
           <div className="hidden items-center gap-1 text-sm font-medium md:flex">
             {loggedIn && (
-              <Link to="/dashboard" className={itemKelas(pathname === "/dashboard")}>
-                Dashboard
-              </Link>
+              <>
+                <Link to="/dashboard" className={itemKelas(pathname === "/dashboard")}>
+                  Dashboard
+                </Link>
+                {(session?.user as { role?: string } | undefined)?.role === "superadmin" && (
+                  <Link to="/admin" className={itemKelas(pathname === "/admin")}>
+                    CMS
+                  </Link>
+                )}
+              </>
             )}
             <Link to="/" search={{ q: "", hal: 1 }} className={itemKelas(pathname === "/")}>
               Galeri
