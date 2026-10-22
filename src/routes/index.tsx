@@ -68,7 +68,7 @@ function Beranda() {
       <Navbar />
 
       <main>
-        <section className="relative isolate overflow-hidden border-b border-border/70">
+        <section className="relative isolate overflow-hidden ">
           <div className="pointer-events-none absolute right-[12%] top-20 -z-10 h-32 w-32 rounded-full border border-primary/15 bg-primary/5 blur-[1px]" />
 
           <div className="mx-auto grid max-w-[1140px] items-center gap-14 px-6 py-16 sm:py-24 lg:grid-cols-[0.92fr_1.08fr] lg:gap-10 lg:py-28">
@@ -149,7 +149,7 @@ function Beranda() {
           </div>
         </section>
 
-        <section id="galeri" className="scroll-mt-24 border-y border-border/70 bg-muted/25">
+        <section id="galeri" className="scroll-mt-24  bg-muted/25">
           <div className="mx-auto max-w-[1140px] px-6 py-section">
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -211,7 +211,7 @@ function Beranda() {
                       params={{ slug: campaign.slug }}
                       className="group block"
                     >
-                      <Card className="overflow-hidden transition-[border-color,box-shadow,transform] motion-safe:group-hover:-translate-y-1 group-hover:border-primary/50 group-hover:shadow-md">
+                      <Card className="overflow-hidden transition-[border-color,box-shadow,transform] motion-safe:group-hover:-translate-y-1 group-hover:border-primary/50 group-hover:shadow-none">
                         <div className="relative aspect-square overflow-hidden bg-muted">
                           <img
                             src={`/api/frame/${campaign.id}`}
@@ -281,21 +281,21 @@ function FrameMockup() {
   return (
     <div className="relative mx-auto w-full max-w-[520px] px-4 py-8 sm:px-12">
       <div className="absolute inset-x-16 top-4 bottom-4 rounded-[3rem] bg-primary/15 blur-3xl" />
-      <div className="relative rotate-2 rounded-[2rem] border border-border/80 bg-card p-3 shadow-lg motion-safe:transition-transform motion-safe:duration-500 motion-safe:hover:rotate-0">
+      <div className="relative rotate-2 rounded-[2rem] border border-border/80 bg-card p-3 motion-safe:transition-transform motion-safe:duration-500 motion-safe:hover:rotate-0">
         <div className="relative aspect-[4/4.6] overflow-hidden rounded-[1.4rem] bg-muted">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_26%,color-mix(in_oklab,var(--primary)_22%,transparent),transparent_26%),linear-gradient(145deg,color-mix(in_oklab,var(--primary)_12%,var(--muted)),var(--muted))]" />
-          <div className="absolute left-[14%] top-[15%] aspect-square w-[32%] rounded-[1.4rem] border-4 border-background/80 bg-background/30 shadow-lg">
+          <div className="absolute inset-0 bg-muted" />
+          <div className="absolute left-[14%] top-[15%] aspect-square w-[32%] rounded-[1.4rem] border-4 border-background/80 bg-background/30">
             <div className="flex size-full items-center justify-center text-primary/70">
               <HugeiconsIcon icon={Camera01Icon} aria-hidden className="size-8" />
             </div>
           </div>
-          <div className="absolute bottom-[18%] right-[13%] aspect-[1.18] w-[38%] rounded-[1.4rem] border-4 border-background/80 bg-background/25 shadow-lg">
+          <div className="absolute bottom-[18%] right-[13%] aspect-[1.18] w-[38%] rounded-[1.4rem] border-4 border-background/80 bg-background/25">
             <div className="flex size-full items-center justify-center text-primary/70">
               <HugeiconsIcon icon={UserIcon} aria-hidden className="size-8" />
             </div>
           </div>
           <div className="absolute inset-0 rounded-[1.4rem] border-[14px] border-primary/20" />
-          <div className="absolute inset-x-5 bottom-5 rounded-2xl border border-background/40 bg-background/80 p-4 shadow-xl">
+          <div className="absolute inset-x-5 bottom-5 rounded-2xl border border-background/40 bg-background/80 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
@@ -310,7 +310,7 @@ function FrameMockup() {
           </div>
         </div>
       </div>
-      <div className="absolute -left-1 top-6 rounded-2xl border border-border bg-card px-3 py-2 shadow-lg sm:left-0">
+      <div className="absolute -left-1 top-6 rounded-2xl border border-border bg-card px-3 py-2 sm:left-0">
         <div className="flex items-center gap-2 text-xs font-semibold">
           <span className="flex size-7 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <HugeiconsIcon icon={FileUploadIcon} aria-hidden className="size-4" />
@@ -318,7 +318,7 @@ function FrameMockup() {
           Upload & arrange
         </div>
       </div>
-      <div className="absolute -right-1 bottom-6 rounded-2xl border border-border bg-card px-3 py-2 shadow-lg sm:right-0">
+      <div className="absolute -right-1 bottom-6 rounded-2xl border border-border bg-card px-3 py-2 sm:right-0">
         <div className="flex items-center gap-2 text-xs font-semibold">
           <span className="flex size-7 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <HugeiconsIcon icon={CopyLinkIcon} aria-hidden className="size-4" />
